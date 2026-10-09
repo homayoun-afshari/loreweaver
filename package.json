@@ -1,0 +1,10 @@
+{
+  "name": "loreweaver",
+  "private": true,
+  "description": "Worldbuilding copilot for novelists.",
+  "packageManager": "pnpm@12.10.1",
+  "devDependencies": {
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.9"
+  }
+}
