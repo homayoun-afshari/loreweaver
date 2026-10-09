@@ -6,3 +6,5 @@ services:
     environment:
       # Same key the web app reads from apps/web/.env.local (LEGACY_CMS_API_KEY).
       LEGACY_API_KEY: ${LEGACY_CMS_API_KEY:-dev-local-key}
+      # Override only for load tests (see docs/METRICS.md); the real default is 30.
+      LEGACY_RATE_LIMIT_PER_MIN: ${LEGACY_RATE_LIMIT_PER_MIN:-30}

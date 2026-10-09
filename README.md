@@ -31,6 +31,7 @@ Then open http://localhost:3000.
 
 - [Product requirements](docs/PRD.md)
 - [Architecture decisions](docs/adr/)
+- [Metrics](docs/METRICS.md)
 - [Daily reports](docs/reports/), starting with [Day 1](docs/reports/day-1.md)
 
 ## License
