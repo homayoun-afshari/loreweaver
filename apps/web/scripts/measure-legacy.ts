@@ -1,5 +1,5 @@
 /**
- * Day 1 load script: measures the legacy CMS and the web app's client in front of it.
+ * Load script: measures the legacy CMS and the web app's client in front of it.
  *
  *   Phase 1 (raw):    N direct HTTP calls -> latency p50/p95 and error rate of the CMS itself.
  *   Phase 2 (client): N calls through the legacy client (retries, timeout, circuit breaker)

@@ -13,7 +13,7 @@ Every figure reported in the README is measured and recorded here, with how it w
 | Date       | 2026-10-09                                                                                                        |
 | Target     | Legacy CMS in Docker on the same laptop (`http://localhost:8080`), so network time is close to zero               |
 | Rate limit | Raised from 30 to 100000 requests per minute for the run. Otherwise `429` would hide what is being measured       |
-| Load       | 100 requests (the guide's run) and 500 requests (for a steadier estimate); 4 at a time; characters 1 to 5 in turn |
+| Load       | 100 requests (baseline run) and 500 requests (for a steadier estimate); 4 at a time; characters 1 to 5 in turn    |
 | Client     | Default settings: 2 s timeout, up to 3 retries, backoff 200 ms doubling (capped 2 s) with jitter, circuit breaker |
 | Script     | `apps/web/scripts/measure-legacy.ts`                                                                              |
 

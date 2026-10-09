@@ -51,5 +51,5 @@ Option 2 stays as a quick development fallback only.
 
 **Follow-ups**
 
-- Cache slow reads if the measured latency requires it (revisit with Day 5 data).
+- Cache slow reads if the measured latency requires it (revisit once real production latency data exists).
 - Enforce tenant isolation (`world_id`) at the client and in code, not in prompts (see PRD risks).
