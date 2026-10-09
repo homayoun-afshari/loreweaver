@@ -1,0 +1,8 @@
+services:
+  legacy-cms:
+    build: ./services/legacy-cms
+    ports:
+      - "8080:8080"
+    environment:
+      # Same key the web app reads from apps/web/.env.local (LEGACY_CMS_API_KEY).
+      LEGACY_API_KEY: ${LEGACY_CMS_API_KEY:-dev-local-key}

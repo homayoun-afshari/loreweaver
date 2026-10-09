@@ -1,0 +1,21 @@
+{
+  "name": "loreweaver/legacy-cms",
+  "description": "Mock legacy story CMS: the system of record for character state.",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.2",
+    "ext-pdo_sqlite": "*",
+    "slim/slim": "^4.15",
+    "slim/psr7": "^1.7"
+  },
+  "autoload": {
+    "psr-4": {
+      "Legacy\\": "src/"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "optimize-autoloader": true
+  }
+}
