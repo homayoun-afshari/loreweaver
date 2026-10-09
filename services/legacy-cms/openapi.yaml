@@ -1,0 +1,175 @@
+openapi: 3.0.3
+info:
+  title: Legacy story CMS
+  version: 1.0.0
+  description: |
+    The system of record for character state. It is deliberately "legacy": snake_case fields,
+    numeric location codes, zero-padded numbers stored as strings, comma-separated lists,
+    odd date formats, an API key, a rate limit and occasional failures.
+
+    Location codes (the client maps these to names; the service does not):
+    3 = Salt Harbour, 4 = Ember Keep, 9 = Glass Library, 17 = Ice Citadel, 22 = Hollow Mine.
+servers:
+  - url: http://localhost:8080
+    description: Local Docker container
+security:
+  - ApiKeyAuth: []
+paths:
+  /health:
+    get:
+      summary: Liveness check (no API key, no rate limit, never flaky)
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+  /v1/characters/{id}/state:
+    get:
+      summary: Current state of one character
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        "200":
+          description: The character's state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CharacterState" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /v1/characters:
+    get:
+      summary: List the characters of one world (page-based pagination)
+      parameters:
+        - name: world_id
+          in: query
+          required: true
+          schema: { type: string, example: world_aethel }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: One page of characters
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CharacterPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    CharacterState:
+      type: object
+      required: [char_id, char_name, world_id, loc_code, inv_str, status, last_upd]
+      properties:
+        char_id: { type: integer, example: 1 }
+        char_name: { type: string, example: Aria Voss }
+        world_id: { type: string, example: world_aethel }
+        loc_code:
+          type: integer
+          description: Numeric location code, see the list at the top of this file.
+          example: 17
+        inv_str:
+          type: string
+          description: Inventory as one comma-separated string. Empty items are not expected.
+          example: flint,broken sword,health potion
+        status:
+          type: object
+          required: [mana_pts, hp_pts, cond_flag]
+          properties:
+            mana_pts:
+              type: string
+              description: Zero-padded number stored as text.
+              example: "020"
+            hp_pts:
+              type: string
+              description: Zero-padded number stored as text.
+              example: "085"
+            cond_flag:
+              type: string
+              enum: [OK, WND]
+              description: OK = healthy, WND = wounded.
+        last_upd:
+          type: string
+          description: Last update, format DD-MON-YY HH:MM (server time, no time zone).
+          example: 09-OCT-26 14:32
+    CharacterSummary:
+      type: object
+      required: [char_id, char_name, world_id]
+      properties:
+        char_id: { type: integer }
+        char_name: { type: string }
+        world_id: { type: string }
+    CharacterPage:
+      type: object
+      required: [page, per_page, total, total_pages, data]
+      properties:
+        page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+        total_pages: { type: integer }
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/CharacterSummary" }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: not_found }
+            message: { type: string }
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Missing or invalid X-API-Key
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Unknown character
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: More than 30 requests in the current minute. Retry-After says how many seconds to wait.
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unavailable:
+      description: Simulated outage (about 5% of requests). Safe to retry; all endpoints are read-only.
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
