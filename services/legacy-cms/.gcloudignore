@@ -1,0 +1,6 @@
+# Files that must not be uploaded to Cloud Build (the Dockerfile reinstalls dependencies).
+.git
+.gitignore
+vendor/
+data/
+*.sqlite*

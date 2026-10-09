@@ -10,6 +10,7 @@ Requires Node 24 (see `.nvmrc`) with Corepack enabled (`corepack enable`).
 
 ```sh
 pnpm install
+docker compose up --build -d   # the legacy CMS on http://localhost:8080
 cp apps/web/.env.example apps/web/.env.local
 pnpm dev
 ```
