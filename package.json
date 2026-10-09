@@ -16,6 +16,7 @@
     "lint": "pnpm --filter web lint",
     "typecheck": "pnpm --filter web typecheck",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "measure:legacy": "pnpm --filter web exec tsx scripts/measure-legacy.ts"
   }
 }
