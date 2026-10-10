@@ -115,3 +115,29 @@ Follow-ups added by the measurements:
 - Send the question's vector with fewer digits. On the development machine the 20 KB query parameter alone cost about 45 ms of a 53 ms search, and rounding it cut the search to 7 ms. The effect on ranking has to be checked first, and it may not exist on a hosted database.
 - Find out why about one search in ten is slower on Production (0.6 to 0.8 s, against about 0.29 s at p50). The measurement of the deployed search tool (see METRICS.md) did not separate the embedding from the database, and it did not show whether the large-parameter delay exists on the hosted database. A new connection on a cold serverless start is a likely suspect.
 - Grow the question set, especially unanswerable questions that mention real names, before relying on differences smaller than a few points.
+
+## Update 2026-10-10: the lore as data, and the world as the unit of isolation
+
+Two choices were made while building retrieval and were only implied above: what the lore files are and how they change, and what exactly is kept apart. The product-level assumptions are in the [PRD](../PRD.md#assumptions-v1). Where character state comes from is recorded in ADR-0001.
+
+### The lore
+
+- **What it is.** The canon of each world: what is always true of it (rules, places, history, factions, character backgrounds). Live character state is not lore and belongs to the CMS.
+- **Who writes it.** It is written by hand, as Markdown, to describe two worlds at one moment, and committed to the repository. The second, smaller world exists so that the separation of worlds can be tested.
+- **Format.** One folder per world, named with the world id the CMS also uses (`data/lore/world_aethel/`). One file per topic, with a front matter block that sets `doc_type` (`rule`, `location`, `history` or `character`) and `#`, `##` and `###` headings that decide the chunks and their heading paths. The full rules are in [data/lore/README.md](../../data/lore/README.md).
+- **Source of truth.** The files. The `lore_chunks` table is derived from them and can be rebuilt at any time.
+- **How it changes.** Only outside the product: a file is edited and `pnpm ingest` runs again. Unchanged chunks are skipped, changed ones are embedded again and removed ones are deleted. Each run counts as a new snapshot of the world. There is no upload, no editing from the chat and no sync with the author's own tools.
+
+### The world as the unit of isolation
+
+Options for what is kept apart:
+
+1. **Each author.** Pros: matches a product with accounts. Cons: there are no accounts in v1, and the co-writing team of the PRD shares one world among several authors, so an author is the wrong unit.
+2. **Each world (chosen).** Pros: the data is already split by world (lore folders, the CMS's `world_id`), so one id scopes lore search, the character tool and the prompt alike. It also fits several authors per world later. Cons: without accounts it limits what a conversation can see, not who can open a world.
+
+Decision and consequences:
+
+- **Each request has exactly one world**, decided on the server from an HttpOnly cookie that the world selector sets, and checked against the list of known worlds. The model never sees, chooses or changes it.
+- **There is no author in the data model.** Any visitor can open any known world, so v1 must only hold worlds that are fine to show to everyone. A co-writing team shares a world simply by choosing the same one.
+- **The list of worlds and their characters is kept by hand** in `apps/web/src/lib/worlds.ts`: world ids, labels, example questions and each world's character names and ids. The names and ids copy the CMS seed (see ADR-0001), so a change there has to be mirrored here.
+- **Sign-in** would add a list of the worlds each author may open, and the session would check the chosen world against it. Only `getSessionWorldId` in `apps/web/src/lib/session.ts` changes; lore search, the character tool and the prompt already take the world from there.
