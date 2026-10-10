@@ -1,165 +1,238 @@
 # Day 3 report: Lore, embeddings and retrieval
 
-**Status:** Build complete (steps 1 to 7). Two optional extras were not built: hybrid search and a reranker.
+**Status:** Build complete (steps 1 to 7). Not built: the optional hybrid search and reranker.
 
 ## 1. Summary
 
-Day 3 gave Loreweaver its knowledge of the author's world:
+Day 3 gave Loreweaver knowledge of the author's world, and the means to search it:
 
-- A **Lore Bible** of two worlds, written as Markdown files, and an **ingestion command** that turns it into searchable vectors in Postgres. Running it again costs nothing.
-- A **`search_lore` tool** that finds the passages that answer a question, with citation ids, **limited to the visitor's world** by the server and never by the model.
-- **Lore Citation cards** in the chat, so every cited passage can be opened and checked.
-- A **labeled question set and a command** that score the search on its own, before any model writes an answer.
-- **ADR-0003**, which records the chunking and retrieval strategy.
+- A **Lore Bible** (two worlds, as Markdown files) and **`pnpm ingest`**, which turns it into searchable vectors in Postgres.
+- A **`search_lore` tool** that returns the passages that answer a question, with citation ids, limited to the visitor's world by the server.
+- **Lore Citation cards** that show each cited passage in the chat.
+- A **world per request**, decided by the server and applied to lore search, character lookup and the system prompt.
+- A **labeled question set** and a command that scores the search without any model, and **ADR-0003**.
 
-The assistant answers lore questions only from retrieved passages and cites them. An off-topic question returns no passages, and when the lore does not answer a question the assistant says so.
+The assistant answers lore questions only from the passages it retrieves, and cites them.
 
 ## 2. Learn, Prepare and Build
 
-| Section                         | What was done                                                                                                                                                                                                                      |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Learn**                       | Embeddings and similarity, chunking strategies, metadata and tenant isolation, exact and approximate vector search, hybrid search, reranking, retrieval metrics. Plus what lore, canon, state and manuscript mean in this product. |
-| **Prepare**                     | Voyage AI account and keys (`dev` and `prod`) and the Vercel variables. The `vector` extension in Docker and Supabase, as a migration. The `data/lore/` and `evals/` folders and the Markdown parsing packages.                    |
-| **Build A: Lore and ingestion** | The Lore Bible (6 files for Aethel, 3 for Nox) and `pnpm ingest`: heading-aware chunking, embeddings, an idempotent write to `lore_chunks`.                                                                                        |
-| **Build B: Search and cards**   | The `search_lore` tool, the second system prompt version, and the Lore Citation cards with loading, empty and error states.                                                                                                        |
-| **Build C: World separation**   | A server-side session for the visitor's world and a world selector, the world limit applied to the lore search, the character tool, the system prompt and the fallback route, and a real-database test with a database in CI.      |
-| **Build D: Retrieval eval**     | A labeled question set, the scoring code, `pnpm eval:retrieval`, and ADR-0003.                                                                                                                                                     |
+| Section                         | What was done                                                                                                                                                                                                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Learn**                       | Embeddings and similarity, chunking, metadata and tenant isolation, exact and approximate vector search, hybrid search, reranking, retrieval metrics. Also what lore, canon, character state and manuscript mean in this product, and what each data store holds.  |
+| **Prepare**                     | Voyage AI account and keys (`dev` and `prod`) with the Vercel variables. The `vector` extension in Docker and Supabase, as a migration. The `data/lore/` and `evals/` folders and the Markdown packages. A real Voyage call to check the vector size (section 11). |
+| **Build A: Lore and ingestion** | The Lore Bible (6 files for Aethel, 3 for Nox) and `pnpm ingest`: cut at headings, embed, write to Postgres, safe to run again.                                                                                                                                    |
+| **Build B: Search and cards**   | The `search_lore` tool, a second system prompt version that tells the model how to use and cite it, and the Lore Citation cards.                                                                                                                                   |
+| **Build C: World separation**   | A server-side world for each request, a world selector, the world limit on lore search, the character tool, the prompt and the fallback route, and a test against a real database, with a database in CI.                                                          |
+| **Build D: Retrieval eval**     | A labeled question set, the scoring code and `pnpm eval:retrieval`; ADR-0003.                                                                                                                                                                                      |
 
 ## 3. By area
 
-| Area            | Most important things added or used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Frontend**    | `LoreCitationCards`: one collapsible card per passage (heading, file, kind, citation id, snippet; the full text when opened) built on a native `details` element, with skeleton, "no matching lore" and error states. `WorldSwitcher` in the header. `ChatPanel` maps the `tool-search_lore` part to the cards and clears the chat when the world changes. Passage text is rendered as text, never as HTML.                                                                                                                                                                                                |
-| **Backend**     | `src/lib/rag/`: `chunking.ts` (cut at headings, then by size, with overlap), `lore-files.ts` (front matter, line endings), `embeddings.ts` (Voyage client: batches, retries with backoff, size checks), `ingest-plan.ts` (what to keep, copy, embed or remove), `search.ts` (the SQL, similarity floor, citation ids). `src/lib/ai/tools.ts`: `search_lore`, and tools built per request with the session's world. `src/lib/session.ts` and `worlds.ts`: the world of a request. `src/lib/prompts/agent.v2.md`: a template filled with the characters of the visitor's world. `lore_chunks` in the schema. |
-| **Tooling**     | `pnpm ingest` (with `--world`, `--config`, `--dry-run`) and `pnpm eval:retrieval`. `unified`, `remark-parse` and `mdast-util-to-string` for Markdown. CI starts a throw-away `pgvector/pgvector:pg17` Postgres and applies the migrations to it. `zod` and `vitest` at the repository root, and `evals/` added to the type-check and the test run. A standalone database client for scripts.                                                                                                                                                                                                               |
-| **Documenting** | The Lore Bible and `data/lore/README.md`, ADR-0003, `evals/README.md`, the manuscript non-goal in the PRD, new README sections (lore and ingestion, searching the lore, database tests), and this report.                                                                                                                                                                                                                                                                                                                                                                                                  |
+**Frontend**
+
+| Item                  | What it is                                                                                                                                                      |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LoreCitationCards`   | One collapsible card per passage, built on a native `details` element, with loading, empty and error versions. Passage text is rendered as text, never as HTML. |
+| `WorldSwitcher`       | A header dropdown. It asks the server to remember the world, tells the page which one it is, and clears the chat on a change.                                   |
+| `ChatPanel` (changed) | Maps the `tool-search_lore` message part to the cards, and shows example questions that fit the selected world.                                                 |
+
+**Backend**
+
+| Item                              | What it is                                                                                                                                                                                              |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/rag/` ingestion modules  | `chunking.ts` (cut at headings, then by size, with overlap), `lore-files.ts` (front matter, line endings), `ingest-plan.ts` (what to keep, copy, embed or remove).                                      |
+| `src/lib/rag/embeddings.ts`       | The Voyage client: batches, retries with backoff, vector size checks, token and cost reporting.                                                                                                         |
+| `src/lib/rag/search.ts`           | The search: embed the question, one SQL query for the nearest chunks of the world, a similarity floor, citation ids. Failures are returned as data.                                                     |
+| `src/lib/ai/tools.ts`             | Tools are built for each request with the world inside them: `search_lore` (new) and `fetch_character_state` (now world-limited).                                                                       |
+| `src/lib/session.ts`, `worlds.ts` | The world of a request, read from an HttpOnly cookie and checked against the known worlds, and each world's characters and example questions. Route `/api/session/world`.                               |
+| `lore_chunks` and its migrations  | `0002` enables the pgvector extension, `0003` creates the table (section 9).                                                                                                                            |
+| `src/lib/prompts/agent.v2.md`     | A prompt template: use and cite the lore search, say when the lore does not cover a question, treat passages as data, read character state before searching. The character list is filled in per world. |
+| `src/lib/env.ts`                  | Adds `VOYAGE_API_KEY` and `EMBEDDING_MODEL`, and a smaller schema for scripts.                                                                                                                          |
+
+**Tooling**
+
+| Item                                              | What it is                                                                                                                    |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm ingest`, `pnpm eval:retrieval`              | The two commands of the day (sections 10 and 13). `ingest` has `--world`, `--config` and `--dry-run`.                         |
+| `unified`, `remark-parse`, `mdast-util-to-string` | A Markdown parser, so headings are found properly (a `#` in a code block is not a heading).                                   |
+| CI database                                       | CI starts a throw-away Postgres with pgvector and applies the migrations to it, so the isolation test runs there (section 6). |
+| Root `zod` and `vitest`                           | Let the root `evals/` folder resolve its packages. `evals/` is also part of the type-check and the test run.                  |
+| `src/db/standalone.ts`                            | A database client for scripts, which need only a connection string.                                                           |
+
+**Documenting**
+
+| Item                                     | What it is                                                                                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| The Lore Bible and `data/lore/README.md` | The lore itself, and the format of the files (section 13).                                                                        |
+| ADR-0003                                 | Chunking, embeddings, storage and search, and world isolation: options, decision, consequences, follow-ups.                       |
+| `evals/README.md`                        | The question set format and the scoring rules.                                                                                    |
+| PRD and README                           | The PRD says the manuscript is out of scope. The README has new sections: lore and ingestion, searching the lore, database tests. |
 
 ## 4. By environment
 
-| Environment | Web app and model                                                          | Database                                                          | Lore and embeddings                                                              | Secrets                                                             |
-| ----------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| **Dev**     | `pnpm dev`. Haiku 4.5 by default.                                          | Docker Postgres with pgvector, migrations applied locally         | `pnpm ingest` writes to the local table. Voyage `voyage-4-lite` with the dev key | `apps/web/.env.local` (adds `VOYAGE_API_KEY` and `EMBEDDING_MODEL`) |
-| **Preview** | One Vercel URL per pull request. Sonnet 5.5. The world cookie is `Secure`. | Supabase, with the `vector` extension and the `lore_chunks` table | Ingested into Supabase by hand: `pnpm ingest` with the connection string         | Vercel Preview variables (dev key)                                  |
-| **Prod**    | Vercel, from `main`. Sonnet 5.5.                                           | The same Supabase project as Preview                              | The same rows as Preview                                                         | Vercel Production variables (prod key)                              |
-| **CI**      | GitHub Actions: no model and no embedding key.                             | A throw-away Postgres with pgvector, created for each run         | The isolation test inserts its own test rows. Embeddings are faked in unit tests | None                                                                |
+| Environment | App and model                                                              | Database                                                             | Lore and embeddings                                                     | Secrets                                                        |
+| ----------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **Dev**     | `pnpm dev`. Haiku 4.5. The world cookie works over plain `http`.           | Docker Postgres with pgvector. Migrations applied with `db:migrate`. | `pnpm ingest` writes to the local table. Voyage `voyage-4-lite`.        | `apps/web/.env.local`, with the new Voyage key and model name. |
+| **Preview** | One Vercel URL per pull request. Sonnet 5.5. The world cookie is `Secure`. | Supabase, with the `vector` extension and the `lore_chunks` table.   | Loaded into Supabase by hand: `pnpm ingest` with its connection string. | Vercel Preview variables (`dev` key).                          |
+| **Prod**    | Vercel, from `main`. Sonnet 5.5.                                           | The same Supabase project as Preview, so the same lore.              | The same rows as Preview.                                               | Vercel Production variables (`prod` key).                      |
 
-Migrations are applied by hand to Supabase (`pnpm --filter web db:migrate` with its connection string), and the lore is loaded the same way. Preview and Production share one Supabase project, so they share the lore.
+Migrations are also applied to Supabase by hand. The app refuses to start if the Voyage variables are missing.
 
 ## 5. Routing
 
-| URL                               | File                                          | Kind     | Purpose                                                                                  |
-| --------------------------------- | --------------------------------------------- | -------- | ---------------------------------------------------------------------------------------- |
-| `/`                               | `src/app/(chat)/page.tsx`                     | Page     | The chat, now with a world selector                                                      |
-| `POST /api/chat`                  | `src/app/api/chat/route.ts`                   | Endpoint | Streams answers. Reads the visitor's world from the session and builds the tools with it |
-| `GET /api/session/world`          | `src/app/api/session/world/route.ts`          | Endpoint | The visitor's world and the list of worlds                                               |
-| `POST /api/session/world`         | `src/app/api/session/world/route.ts`          | Endpoint | Remembers a known world in an HttpOnly cookie (400 for an unknown one)                   |
-| `POST /api/feedback`              | `src/app/api/feedback/route.ts`               | Endpoint | Stores one feedback event (Day 2)                                                        |
-| `GET /api/health`                 | `src/app/api/health/route.ts`                 | Endpoint | Liveness (Day 1)                                                                         |
-| `GET /api/legacy/character-state` | `src/app/api/legacy/character-state/route.ts` | Endpoint | Development fallback (Day 1), now limited to the visitor's world                         |
+The folder path is the URL: `page.tsx` makes a screen for browsers, `route.ts` makes an endpoint for code.
 
-The model never calls an endpoint of ours for lore: the `search_lore` tool runs inside `/api/chat`, on the server.
+| URL                               | File                                          | Purpose                                                                                   |
+| --------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `/`                               | `src/app/(chat)/page.tsx`                     | The chat page, with the world selector                                                    |
+| `POST /api/chat`                  | `src/app/api/chat/route.ts`                   | Streams answers. Reads the world from the session and builds the tools and prompt with it |
+| `GET`, `POST /api/session/world`  | `src/app/api/session/world/route.ts`          | Read the world and the list of worlds. Remember a known world (400 for an unknown one)    |
+| `POST /api/feedback`              | `src/app/api/feedback/route.ts`               | Stores one feedback event (Day 2)                                                         |
+| `GET /api/health`                 | `src/app/api/health/route.ts`                 | Liveness (Day 1)                                                                          |
+| `GET /api/legacy/character-state` | `src/app/api/legacy/character-state/route.ts` | Development fallback (Day 1), now limited to the visitor's world                          |
+
+The model never calls an endpoint for lore: `search_lore` runs inside `/api/chat`, on the server.
 
 ## 6. Unit tests and CI
 
-**190 tests** (116 new today), Vitest. Almost all need no network, database or key. One file runs against a real Postgres.
+**193 tests** (119 new today), Vitest. Almost all need no network, database or key.
 
-| Area                | What is checked                                                                                                                                                                                                                                                      |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **World isolation** | **Against a real Postgres:** a query in one world never returns another world's chunks, even when they are the closest vectors, in both directions, for a world with no lore, and through the whole search. Removing the world filter on purpose made the test fail. |
-| Tools               | The search tool's schema has no world field, and a world sent by the model is dropped. Another world's character gives exactly the answer of a missing one. A failure is returned as data.                                                                           |
-| Chunking            | Heading paths nest and reset, a `#` in a code block is not a heading, no chunk exceeds the cap, no sentence is lost, overlap never crosses a heading.                                                                                                                |
-| Ingestion plan      | A second run embeds and writes nothing. Only an edited chunk is embedded. A model change re-embeds all. A moved chunk keeps its vector. A deleted file removes its rows.                                                                                             |
-| Embedding client    | Batches keep their order, 429 and 5xx are retried with backoff, `Retry-After` is obeyed, a wrong key is not retried and never appears in an error, a wrong vector size is rejected.                                                                                  |
-| Lore files          | Windows and Unix line endings give the same result. The real Lore Bible is valid.                                                                                                                                                                                    |
-| Session and prompt  | Only known worlds are accepted, bad cookies fall back to the default, the character list in the prompt is per world.                                                                                                                                                 |
-| Citation cards      | Collapsed by default, snippet and id shown, text escaped, empty, loading and error states.                                                                                                                                                                           |
-| Retrieval eval      | The scoring code against numbers worked out by hand. The real question set is valid, and every label points at a section that exists.                                                                                                                                |
+| Area                  | What is checked                                                                                                                                                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Isolation**         | **Against a real Postgres:** a query in one world never returns another world's chunks, even when they are the closest vectors, in both directions, for a world with no lore, and through the whole search. Removing the world filter on purpose made it fail. |
+| Tools and session     | The search tool's schema has no world field, and a world sent by the model is dropped. Another world's character gives exactly the answer of a missing one. Only known worlds are accepted from the cookie.                                                    |
+| Chunking and ingest   | Heading paths nest, no chunk exceeds the cap, no sentence is lost. A second ingest writes nothing, an edit re-embeds only that chunk, a model change re-embeds all, a deleted file removes its rows.                                                           |
+| Voyage client         | Batches keep their order. 429 and 5xx are retried with backoff. A wrong key is not retried and never appears in an error. A wrong vector size is rejected.                                                                                                     |
+| Lore and question set | Windows and Unix line endings give the same result. The real Lore Bible and question set are valid, and every label points at a section that exists. The scoring code matches numbers worked out by hand.                                                      |
+| UI and prompt         | Cards are collapsed by default, text is escaped, empty, loading and error states render. The prompt lists only the characters of the visitor's world.                                                                                                          |
 
-**CI** now also starts a throw-away Postgres with pgvector, applies the migrations to it (which proves they run on an empty database) and runs the tests, including the isolation test. If the database setting is missing in CI, a guard test fails, so the isolation test cannot be skipped silently. `next build` is still not run by CI; the Vercel preview build does it.
+**CI** runs on every pull request and push to `main`: `format:check`, `lint`, `typecheck`, then it starts a throw-away Postgres with pgvector, applies the migrations to it (which proves they run on an empty database) and runs the tests, including the isolation test. If the database setting is missing, a guard test fails, so the isolation test cannot be skipped silently. CI does not run `next build`; the Vercel preview does.
 
-## 7. What is stored: the lore and its index
+## 7. The tools and how they appear in the UI
 
-**Source of truth: the Markdown files** in `data/lore/<world_id>/`. The folder name is the world's id, the same one the legacy CMS uses. Each file starts with a `doc_type` (`rule`, `location`, `history` or `character`), then headings and text.
+| Tool                    | What it does                                                                                                | Input                           | Output                                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **`search_lore`** (new) | Finds the passages of the author's lore that answer a question: for rules, places, history and backstories. | `{ query, k? }`, no world field | `{ ok: true, hits }` (id, file, heading path, kind, text), or `{ ok: false, error }`. Top 3 by default, at most 8. |
+| `fetch_character_state` | Live state of one character from the CMS (Day 2), now limited to the visitor's world (section 12).          | `{ character_id }`              | `{ ok: true, character }` or `{ ok: false, error }`                                                                |
 
-| World          | Files                                                                                              | Content                                                                             |
-| -------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `world_aethel` | `magic-system`, `ice-citadel`, `ember-keep`, `glass-library`, `history-and-factions`, `characters` | Rules of mana and spells, three places, the history and factions, three characters  |
-| `world_nox`    | `magic-system`, `locations`, `characters`                                                          | A smaller world with look-alike rules and different values, for the isolation tests |
+**How a lore question runs.** The model calls `search_lore`. The tool embeds the question, runs one SQL query for the nearest chunks of the visitor's world, and drops passages below a cosine similarity of 0.30 (provisional), so an off-topic question returns nothing. The model answers from the passages and cites them as `[id]`; if two passages disagree it says so; for a question that needs a character's state, it reads the state first and searches with what it learned.
 
-The Aethel files contain specific rules that a question can target, and a few passages that deliberately conflict or are ambiguous. The lore describes what is always true of a world. Live character state stays in the CMS, and the manuscript is not stored (a PRD non-goal).
+**New card: the Lore Citation card.** The Character Status Card remains for character state; lore results appear as a second kind of card.
 
-**The index** is the table `lore_chunks` in Postgres, one row per chunk. It can always be rebuilt from the files.
+| Tool state                                      | What the user sees                                                 |
+| ----------------------------------------------- | ------------------------------------------------------------------ |
+| Starting (`input-streaming`, `input-available`) | A grey **skeleton** card                                           |
+| Result with passages                            | "N sources from your lore", then one **card per passage**          |
+| Result without passages                         | A "No matching lore" card                                          |
+| Tool failure                                    | An error card ("Lore search unavailable"). The chat keeps working. |
 
-| Column                            | Meaning                                                                                         |
-| --------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `id`                              | uuid. Its first 8 characters are the **citation id**                                            |
-| `world_id`                        | The tenant. Every search filters on it                                                          |
-| `chunking`                        | The name of the chunking configuration, so several can sit side by side                         |
-| `source_path`, `chunk_index`      | The file and the position of the chunk in it (unique together with the world and configuration) |
-| `doc_type`, `heading_path`        | The kind of document, and the headings above the chunk (for example `Magic > Casting Rules`)    |
-| `content`                         | The chunk's text, shown in the card and given to the model                                      |
-| `embedding`                       | `vector(1024)`, the search key                                                                  |
-| `embedding_model`, `content_hash` | Which model made the vector, and a hash of the model plus the exact text that was embedded      |
-| `token_estimate`, timestamps      | Size and bookkeeping                                                                            |
+Each card shows the **heading path** (for example `The Magic of Aethel > Casting Rules > Teleportation`), the **file name and kind** (Rule, Location, History, Character), a **citation id badge** that matches the `[id]` in the answer, and a **snippet**. Clicking it opens the **full passage**.
 
-**Idempotent ingestion.** The hash decides what happens to each chunk: unchanged chunks are kept, a chunk that only moved reuses its stored vector, new text is embedded (once, even if it appears twice), and rows that no longer correspond to a chunk are removed, all in one transaction. Changing the embedding model changes every hash, so everything is embedded again. The command prints the tokens it sent and their cost at list price.
+## 8. What the current UI can do
 
-**Chunking.** Each file is cut at its headings. A section longer than the cap is cut at paragraphs, then sentences, then words, with a small overlap that never crosses a heading. The text that is embedded starts with the heading path. Two named configurations exist (`heading-800`, the default, and `heading-80`). The table has Row Level Security switched on with no policies, like `feedback_events`, and has no vector index: at this size an exact scan is exact and fast.
+| Capability        | Detail                                                                                                                                          |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat              | Send with Enter (Shift+Enter adds a line). Replies stream in live, in plain text. "Thinking…" before the first token.                           |
+| Control           | **Stop** cancels the reply and the model call. **Regenerate** redoes the last answer. **Retry** appears after an error.                         |
+| World             | A selector in the header. Changing it starts a new conversation. The example questions in the empty chat fit the selected world.                |
+| Character state   | The Character Status Card: name, condition, location, mana and health bars, inventory, update time, with skeleton and error states.             |
+| Lore sources      | The Lore Citation cards (section 7). Answers carry `[id]` citations, and say when passages disagree or when the lore does not cover a question. |
+| Feedback          | Thumbs up, thumbs down and copy under each finished answer, stored in Postgres.                                                                 |
+| Transparency      | An "AI-generated suggestions" badge and a reminder under the input.                                                                             |
+| Accessibility     | The message list is a live region. Bars have progressbar roles, skeletons status roles, error cards alert roles. Cards open with the keyboard.  |
+| Not available yet | Sign-in, chat history across reloads, uploading or editing lore, showing which sentence of a passage supports which claim.                      |
 
-## 8. How a lore question is answered
+## 9. What the vector database stores, and why it is not the CMS
 
-1. The browser sends the chat. **The server** reads the visitor's world from the session cookie, checks it against the known worlds, and builds the tools for this request with that world inside them. It also fills the prompt's character list with that world's characters only.
-2. The model may call **`search_lore({ query, k? })`**. The schema has no world field, so the model can neither choose nor see the world.
-3. The tool embeds the question (Voyage, as a question), then runs one SQL query: nearest chunks by cosine distance, `WHERE world_id = <session world> AND chunking = <default>`, top 3 (at most 8).
-4. Passages below a cosine similarity of **0.30** are dropped, so an off-topic question returns nothing. A question that names real things of the lore but is not answered by it can still return passages, and the prompt tells the model to say that the lore does not cover it. The value is provisional.
-5. Each passage is returned with a citation id, its file, its heading path and its text. A failure is returned as data (`ok: false`), not thrown.
-6. The model answers from the passages, cites them as `[id]`, says so when two passages disagree, and treats passage text as data, not as instructions. The browser draws the passages as cards.
+**The vector database holds the world's lore as text. The legacy CMS holds the live state of characters. Nothing joins them in the database: the agent combines them at question time, through the two tools, tied by `world_id`.**
 
-For a question that needs both a rule and a character's state, the prompt tells the model to read the state first and then search with what it learned (for example the place the character is in), because the search cannot know it otherwise.
+|                 | Legacy CMS                                                  | Vector database (`lore_chunks`)                                     |
+| --------------- | ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| Holds           | Live state of characters: location, inventory, mana, health | The lore: rules, places, history, backstories, as chunks of text    |
+| Changes         | Often                                                       | Rarely                                                              |
+| Asked by        | Id (exact lookup)                                           | Meaning (similarity search)                                         |
+| Source of truth | Yes, for state                                              | No: an index that `pnpm ingest` can rebuild from the Markdown files |
 
-**The world in the session is a stand-in.** There is no sign-in yet, so the world comes from an HttpOnly cookie set by the world selector and checked against a list. It is not authentication: any visitor can pick any known world. It exists so that the rule "the world comes from the server, never from the model" has exactly one place to live, which sign-in will replace. The same session world also limits the **character tool** (another world's character gives exactly the answer of a missing one), the **prompt's character list**, and the **fallback route**.
+**One row per chunk:** `world_id` (the tenant), `chunking` (the configuration that made it), `source_path` and `chunk_index`, `doc_type`, `heading_path`, `content` (the text the model reads), `embedding` (`vector(1024)`, the search key), `embedding_model`, `content_hash`, `token_estimate`. The text is stored with the vector because a vector cannot be turned back into text. Not stored: character state, chat messages, feedback (its own table), the manuscript, secrets.
 
-## 9. What the UI can do (new today)
+**Choices made**
 
-| Capability        | Detail                                                                                                                               |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Lore sources      | After a lore question the chat shows the passages as cards: heading, file and kind, the citation id the answer cites, and a snippet. |
-| Open a passage    | Each card opens to the full text (keyboard accessible, no extra script).                                                             |
-| States            | A skeleton while searching, a "No matching lore" card, and an error card when the search is unavailable. The chat keeps working.     |
-| Choose a world    | A selector in the header. Changing it starts a new conversation, because earlier messages belong to the other world.                 |
-| Not available yet | Sign-in, uploading lore, editing lore from the chat, and showing which sentence of a passage supports which claim.                   |
+| Choice        | Decision                                                                                                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Where         | **Postgres with pgvector**, in Docker and Supabase: vectors, labels and the world filter in the database the app already has. Not in memory (tests only), not a separate vector service. |
+| How to search | **Exact scan, no index.** At hundreds of rows it is exact and fast. An approximate index (HNSW or IVF) comes when size or time demands it.                                               |
+| Distance      | Cosine (`<=>`). The vectors are normalized, so it ranks like a dot product.                                                                                                              |
+| Embeddings    | Voyage `voyage-4-lite`, 1024 dimensions. The same model embeds chunks and questions.                                                                                                     |
+| Chunking      | Cut at headings, size cap and overlap, heading path in front of the embedded text. Two named configurations are stored side by side.                                                     |
+| Safety        | Row Level Security on, with no policies, like `feedback_events`.                                                                                                                         |
 
-## 10. The retrieval eval
+## 10. Ingestion
 
-A way to measure the search **on its own**, with no model writing an answer.
+`pnpm ingest` (options `--world`, `--config`, `--dry-run`) turns `data/lore/` into rows:
 
-- **The question set** (`evals/retrieval.jsonl`): 36 questions. For each, the **sections** of the lore (a file and a heading path) that answer it, graded 2 (answers) or 1 (related). Four questions have no answer in the lore. Questions are tagged by kind (number, proper noun, paraphrase, several passages, conflict, a misleading passage, and so on).
-- **Labels name sections, not chunks.** Chunk boundaries change with every chunking configuration, so labels written against chunks would break when two configurations are compared. In scoring, a retrieved chunk counts as the section it was cut from, rank is counted in chunks, and a section counts once.
-- **The scoring code** (`evals/retrieval-metrics.ts`) computes hit rate, recall, precision, MRR and nDCG, and is tested against numbers worked out by hand.
-- **The command** `pnpm eval:retrieval` runs the same search the chat uses, for any stored chunking configuration (`--config`), any top-k (`--k`), with a per-question view (`--verbose`) or JSON (`--json`).
-- **Guards:** a test fails if a label points at a section that does not exist (for example after a heading is renamed). The set was committed before the scoring code was ever run and is not edited to fit a result.
+1. **Read** each file: the `doc_type` from its front matter, line endings normalized.
+2. **Cut** it at its headings, then by paragraph, sentence and word if a section is over the cap, with a small overlap that never crosses a heading.
+3. **Hash** each chunk: the model name plus the exact text that is embedded.
+4. **Compare** with the stored rows and sort each chunk: unchanged chunks are kept, a chunk that only moved reuses its vector, new text is embedded (once, even if repeated), rows with no chunk any more are removed.
+5. **Embed** only what is new, in batches, with retries.
+6. **Write** deletes and inserts in one transaction.
 
-## 11. ADR-0003
+Running it again on unchanged lore embeds nothing. Changing the model changes every hash, so everything is embedded again. It prints the tokens sent and their cost at list price. It writes to the database in `DATABASE_URL`; Supabase is filled by running it with its connection string.
 
-**Cut the lore at its headings, search it by cosine similarity in Postgres, and keep each world apart inside the query.** The record lists the options for chunking, the embedding model, storage and search, and world isolation, with pros and cons, and states the consequences, including the downsides (exact search will not scale to very large worlds, quality depends on how the author structures the lore, the similarity floor belongs to one embedding model, the world stand-in is not authentication). It is written to be extended with a dated update note.
+## 11. Testing Voyage AI: vector size and normalization
 
-## 12. Additional items
+Voyage's pages do not state whether its vectors are normalized, and the dashboard does not show it, so a real call tested it (two lore sentences as documents, one question as a query, `voyage-4-lite`):
 
-- Windows line endings are normalized when lore files are read, so the same file gives the same chunks and hashes on every machine.
-- Voyage requests send the vector size and refuse over-long texts instead of truncating them silently.
-- A character of another world is indistinguishable from a character that does not exist, and the prompt never names another world's characters. The older fallback route is limited the same way.
-- A manual check of the real agent found that calling the state tool and the lore search at the same time loses the place the character is in, so the second prompt version asks for them in order.
-- The Supabase Security Advisor reports the `vector` extension in the `public` schema. This is accepted on purpose, so the local and hosted databases stay identical.
-- Not built: hybrid search (keyword plus vector), a reranker.
+- The key is accepted, and token usage is reported with each response (used for the ingestion cost).
+- **1024 dimensions**, the model's default size. Every request sends `output_dimension` 1024, and every returned vector's length is checked against the column.
+- **Every vector has length 1.000000**: they are normalized, so cosine similarity and dot product rank identically.
+- A question was closer to the sentence it matched than to an unrelated one.
 
-## 13. Known limits
+## 12. World isolation
 
-- There is **no sign-in**. The world cookie is a stand-in, and any visitor can pick any known world.
-- Preview and Production share one Supabase project, so they share the lore. Both load it by hand.
-- The character list per world in the prompt is written by hand and can drift from the CMS.
-- Search quality depends on the question the model writes. Passages that are outdated or misleading can rank high, and the assistant has to read them critically.
-- The similarity floor of 0.30 is provisional and belongs to the current embedding model. It cannot tell an unanswerable question that mentions real names from a real one, so for those the assistant has to notice that the passages do not answer the question.
-- The question set was written by one person and is small, so it shows trends, not precise numbers. Section-level scoring cannot see whether only part of a section answers the question.
-- Exact search compares the question with every chunk of the world. That is fine for hundreds of chunks and has to be revisited for much larger worlds.
-- The dev model sometimes announces a tool call in a separate text bubble. The Preview and Production model was not checked for this.
+> **Never trust a world ID supplied by the LLM. Take it from the session.**
+
+| Layer              | What it does                                                                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| The model's tool   | `search_lore` has no world field. If the model sends one, the schema removes it.                                              |
+| The server         | The world is read from the session for each request, and the tools and the prompt are built with it. The model cannot see it. |
+| The database query | The world is a condition of the SQL `WHERE`, so a chunk of another world is never a candidate, however close its vector is.   |
+| The test           | A real-Postgres test proves it (section 6), and CI always runs it.                                                            |
+
+**The world stand-in.** There is no sign-in yet (it comes later), so "the session" is a stand-in: an HttpOnly cookie (`lw_world`) set by the world selector, checked against the known worlds, defaulting to Aethel, and read by one function, `getSessionWorldId`. It is not authentication: any visitor can pick any known world. Compared options: real sign-in now (not yet planned), one fixed world per deployment (nothing to switch between), a signed cookie (adds nothing while anyone can obtain one). The seam means sign-in will replace one function.
+
+**The `fetch_character_state` gap.** The CMS knows every world, and the model chooses the character id, so another world's character could be read. Three places were fixed, all with the session's world:
+
+| Place                                        | Problem                                                | Fix                                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `fetch_character_state`                      | An id of another world returned that world's character | Another world's character gives the same answer as a missing one, so it does not reveal that they exist |
+| System prompt                                | It named the characters of both worlds                 | A template filled with the visitor's world's characters only                                            |
+| Fallback route `/api/legacy/character-state` | Public, returned any character                         | Limited to the visitor's world, with the same 404                                                       |
+
+## 13. The `data` and `evals` folders
+
+| Folder       | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/lore/` | **The source of truth for the lore.** One folder per world, named like the world id the CMS uses (`world_aethel`, `world_nox`); one Markdown file per topic, starting with a `doc_type`. The Aethel files hold testable rules and a few passages that deliberately conflict. The lore says what is always true of a world, never where a character is now. The manuscript is out of scope.                                                                                                                                                                                 |
+| `evals/`     | **Measures the search on its own, with no model.** `retrieval.jsonl` has 36 questions, each with the lore **sections** (a file and a heading path) that answer it, graded 2 or 1; four have no answer. Labels name sections, not chunks, because chunk boundaries change with the configuration. `retrieval-metrics.ts` computes hit rate, recall, precision, MRR and nDCG; `pnpm eval:retrieval` runs the real search for any stored configuration. A test fails if a label points at a section that no longer exists. The set was committed before the scoring code ran. |
+
+## 14. Additional items and known limits
+
+**Additional items**
+
+- The example questions in the empty chat follow the selected world (a final touch, after the first deploy suggested a Nox character in the Aethel chat).
+- Voyage requests refuse over-long texts instead of truncating them silently.
+- Calling the state tool and the lore search at the same time loses the character's place, so the prompt asks for them in order.
+- Not built: hybrid search (keywords plus vectors) and a reranker.
+
+**Known limits**
+
+- **No sign-in.** The world cookie is a stand-in, and any visitor can pick any known world.
+- **"Extension in Public" warning.** The Supabase Security Advisor reports the `vector` extension in the `public` schema. It stays on purpose, so the local and hosted databases are identical.
+- Preview and Production share one Supabase project, so they share the lore, which is loaded by hand.
+- The character list per world is written by hand and can drift from the CMS.
+- The similarity floor of 0.30 is provisional and belongs to the current embedding model. It cannot tell an unanswerable question that names real things from a real one, so for those the assistant has to notice that the passages do not answer it.
+- Search quality depends on the question the model writes, and outdated or misleading passages can rank high.
+- The question set was written by one person, is small, and is scored on whole sections.
+- Exact search compares the question with every chunk of the world, which has to be revisited for much larger worlds.
+- The dev model sometimes announces a tool call in a separate text bubble; the Preview and Production model was not checked for this.
 - ESLint does not cover the `evals/` folder (the type-check, tests and Prettier do).

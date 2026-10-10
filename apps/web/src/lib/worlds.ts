@@ -8,6 +8,11 @@ export const KNOWN_WORLDS = [
   {
     id: "world_aethel",
     label: "Aethel",
+    // Example questions for the empty chat. They name only things of this world.
+    examples: [
+      "What does Aria Voss have on them?",
+      "Can fire magic be cast inside the Ice Citadel?",
+    ],
     characters: [
       { id: 1, name: "Aria Voss" },
       { id: 2, name: "Brannoc Hale" },
@@ -17,6 +22,7 @@ export const KNOWN_WORLDS = [
   {
     id: "world_nox",
     label: "Nox",
+    examples: ["What does Kael Draven have on them?", "How much mana does teleportation cost?"],
     characters: [
       { id: 4, name: "Kael Draven" },
       { id: 5, name: "Mira Sol" },
@@ -36,6 +42,12 @@ export const DEFAULT_WORLD_ID: KnownWorldId = "world_aethel";
  */
 export function charactersOf(worldId: string): readonly { id: number; name: string }[] {
   return KNOWN_WORLDS.find((world) => world.id === worldId)?.characters ?? [];
+}
+
+/** Two example questions for a world's empty chat (the default world's for an unknown world). */
+export function examplesOf(worldId: string): readonly string[] {
+  const world = KNOWN_WORLDS.find((w) => w.id === worldId) ?? KNOWN_WORLDS[0];
+  return world.examples;
 }
 
 export function isKnownWorld(value: unknown): value is KnownWorldId {

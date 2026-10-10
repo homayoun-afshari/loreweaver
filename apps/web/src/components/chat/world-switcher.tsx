@@ -10,9 +10,12 @@ import { KNOWN_WORLDS } from "@/lib/worlds";
  */
 export function WorldSwitcher({
   disabled,
+  onWorld,
   onChanged,
 }: {
   disabled: boolean;
+  /** Called with the current world once it is known, and again after every change. */
+  onWorld: (worldId: string) => void;
   /** Called after the server has accepted the new world, so the chat can start afresh. */
   onChanged: () => void;
 }) {
@@ -24,13 +27,17 @@ export function WorldSwitcher({
     fetch("/api/session/world")
       .then((response) => response.json())
       .then((data: { worldId: string }) => {
-        if (!cancelled) setWorldId(data.worldId);
+        if (!cancelled) {
+          setWorldId(data.worldId);
+          onWorld(data.worldId);
+        }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, []);
+    // The parent passes a state setter, which never changes, so this still runs once.
+  }, [onWorld]);
 
   async function change(next: string) {
     const response = await fetch("/api/session/world", {
@@ -40,6 +47,7 @@ export function WorldSwitcher({
     }).catch(() => null);
     if (response?.ok) {
       setWorldId(next);
+      onWorld(next);
       onChanged();
     }
   }

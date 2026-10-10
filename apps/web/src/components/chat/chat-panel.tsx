@@ -14,6 +14,7 @@ import {
   LoreCitationCardsError,
   LoreCitationCardsSkeleton,
 } from "./lore-citation-cards";
+import { DEFAULT_WORLD_ID, examplesOf } from "@/lib/worlds";
 import { WorldSwitcher } from "./world-switcher";
 import {
   CharacterStatusCard,
@@ -55,6 +56,8 @@ export function ChatPanel() {
       transport: new DefaultChatTransport({ api: "/api/chat" }),
     });
   const [input, setInput] = useState("");
+  // The world of this visitor, so the example questions fit it. The default until the page knows.
+  const [worldId, setWorldId] = useState<string>(DEFAULT_WORLD_ID);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   // True while the user is reading at the bottom. If they scroll up, we stop pulling them down.
@@ -89,7 +92,7 @@ export function ChatPanel() {
         <h1 className="text-xl font-semibold tracking-tight">Loreweaver</h1>
         <div className="flex items-center gap-3">
           {/* A new world means a new conversation: earlier messages belong to the other world. */}
-          <WorldSwitcher disabled={busy} onChanged={() => setMessages([])} />
+          <WorldSwitcher disabled={busy} onWorld={setWorldId} onChanged={() => setMessages([])} />
           {/* Always visible: users must know that the suggestions come from a model. */}
           <Badge variant="outline">AI-generated suggestions</Badge>
         </div>
@@ -107,8 +110,8 @@ export function ChatPanel() {
       >
         {messages.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Ask about your world, for example: “What does Kael have on them?” or “How does
-            teleportation work?”
+            Ask about your world, for example: “{examplesOf(worldId)[0]}” or “
+            {examplesOf(worldId)[1]}”
           </p>
         )}
 
