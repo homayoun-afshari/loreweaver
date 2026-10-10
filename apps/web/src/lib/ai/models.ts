@@ -17,7 +17,7 @@ export function isModelId(value: unknown): value is ModelId {
 }
 
 /**
- * Picks the model for one request. A caller may ask for a specific model (the bake-off does),
+ * Picks the model for one request. A caller may ask for a specific model (the benchmark does),
  * but only from the allowlist, and never in production: a public visitor must not be able
  * to pick the expensive model.
  */

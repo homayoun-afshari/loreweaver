@@ -26,3 +26,6 @@ Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
 *.sqlite-*
+
+# Raw output of local scripts
+scripts/.out/

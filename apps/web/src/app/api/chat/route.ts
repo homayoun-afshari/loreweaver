@@ -39,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
   return result.toUIMessageStreamResponse({
     // Never send raw provider errors (they can contain internals) to the browser.
     onError: () => GENERIC_ERROR,
-    // Sent once, when the model finishes. The bake-off script reads it to compute cost.
+    // Sent once, when the model finishes. The benchmark script reads it to compute cost.
     messageMetadata: ({ part }) =>
       part.type === "finish"
         ? {

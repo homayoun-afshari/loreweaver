@@ -1,19 +1,19 @@
 /**
- * Mini model bake-off: sends the same prompts through POST /api/chat to each model and
+ * Mini model benchmark: sends the same prompts through POST /api/chat to each model and
  * records time to first token (TTFT), total latency, output tokens and cost.
  * Quality is judged by a human afterwards, from the saved responses.
  *
  *   pnpm dev                                   # terminal 1 (needs ANTHROPIC_API_KEY)
- *   pnpm --filter web exec tsx scripts/bakeoff.ts   # terminal 2
+ *   pnpm --filter web exec tsx scripts/benchmark.ts   # terminal 2
  *
  * The model override only works outside production (see src/lib/ai/models.ts).
  */
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { costUsd, isModelId, MODELS, type ModelId } from "../src/lib/ai/models";
 
-const baseUrl = (process.env.BAKEOFF_URL ?? "http://localhost:3000").replace(/\/+$/, "");
-const runs = Number(process.env.BAKEOFF_RUNS ?? 1);
-const models: ModelId[] = (process.env.BAKEOFF_MODELS ?? "claude-haiku-4-5,claude-sonnet-5-5")
+const baseUrl = (process.env.BENCHMARK_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+const runs = Number(process.env.BENCHMARK_RUNS ?? 1);
+const models: ModelId[] = (process.env.BENCHMARK_MODELS ?? "claude-haiku-4-5,claude-sonnet-5-5")
   .split(",")
   .filter(isModelId);
 
@@ -86,11 +86,13 @@ async function runOnce(model: ModelId, prompt: { id: string; text: string }): Pr
       if (part.type === "text-delta") {
         if (!ttftMs) ttftMs = performance.now() - start;
         text += part.delta;
-      } else if (part.type === "message-metadata") {
-        inputTokens = part.messageMetadata?.inputTokens ?? 0;
-        outputTokens = part.messageMetadata?.outputTokens ?? 0;
       } else if (part.type === "error") {
         throw new Error(part.errorText);
+      }
+      // The route attaches usage to the final "finish" event as messageMetadata.
+      if (part.messageMetadata) {
+        inputTokens = part.messageMetadata.inputTokens ?? 0;
+        outputTokens = part.messageMetadata.outputTokens ?? 0;
       }
     }
   }
@@ -136,10 +138,13 @@ async function main() {
     );
   }
 
-  // Full answers, so a human can score quality afterwards.
-  const out = samples.map((s) => `## ${s.model} | ${s.prompt}\n\n${s.text}\n`).join("\n");
-  writeFileSync("../../docs/bakeoff-responses.md", `# Bake-off responses\n\n${out}`);
-  console.log("\nFull responses written to docs/bakeoff-responses.md");
+  // Full answers (git-ignored). A human reads them to score quality, then copies the
+  // ones worth keeping into docs/BENCHMARK.md.
+  const outDir = "scripts/.out";
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(`${outDir}/benchmark-latest.json`, JSON.stringify(samples, null, 2));
+  console.log(`
+Full answers written to apps/web/${outDir}/benchmark-latest.json`);
 }
 
 main().catch((error) => {
