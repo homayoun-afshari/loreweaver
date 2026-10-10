@@ -172,6 +172,7 @@ On Vercel, import the GitHub repository and set the project's **Root Directory**
 | `pnpm typecheck`                | Type-check with TypeScript                                                  |
 | `pnpm format`                   | Format the whole repo with Prettier                                         |
 | `pnpm ingest`                   | Chunk and embed the lore into Postgres (idempotent; `--dry-run` to preview) |
+| `pnpm eval:retrieval`           | Score the lore search on its own against a labeled set of questions         |
 | `pnpm --filter web db:generate` | Create a database migration from the schema                                 |
 | `pnpm --filter web db:migrate`  | Apply migrations to the database in `DATABASE_URL`                          |
 | `pnpm measure:legacy`           | Load-test the legacy CMS and its client                                     |
@@ -188,6 +189,7 @@ Every number reported about the project is recorded in [`docs/METRICS.md`](docs/
 
 - [Product requirements](docs/PRD.md)
 - [Architecture decisions](docs/adr/)
+- [Retrieval eval](evals/README.md): the labeled questions and how the lore search is scored
 - [Metrics](docs/METRICS.md) and [model benchmark](docs/BENCHMARK.md)
 - [Daily reports](docs/reports/): [Day 1](docs/reports/day-1.md), [Day 2](docs/reports/day-2.md)
 
