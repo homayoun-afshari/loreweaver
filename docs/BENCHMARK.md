@@ -24,17 +24,17 @@ A full agent answer will be slower than these numbers: it adds the CMS call (abo
 
 ## 3. Setup
 
-| Item          | Value                                                                                                                                                                  |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Date          | 2026-10-10                                                                                                                                                             |
-| Where it ran  | Local dev server (`pnpm dev`) on my laptop. The script calls `http://localhost:3000/api/chat`, so the route is included. The model call goes to the real Anthropic API |
-| Models        | `claude-haiku-4-5` ($1 / $5 per million input / output tokens) and `claude-sonnet-5-5` ($2 / $10). Prices from the Day 2 guide                                         |
-| Credentials   | Dev API key, scoped to a workspace                                                                                                                                     |
-| System prompt | The Day 2 prompt in `apps/web/src/lib/ai/system-prompt.ts`, identical for both models (see below)                                                                      |
-| Sampling      | Provider defaults. Temperature, top-p and max tokens were **not** set                                                                                                  |
-| Runs          | 1 run per prompt and model: 10 calls in total                                                                                                                          |
-| Order         | All Haiku prompts, then all Sonnet prompts, one at a time (no parallel calls)                                                                                          |
-| Script        | `apps/web/scripts/benchmark.ts`, run with `pnpm benchmark`                                                                                                             |
+| Item          | Value                                                                                                                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Date          | 2026-10-10                                                                                                                                                                              |
+| Where it ran  | Local dev server (`pnpm dev`) on my laptop. The script calls `http://localhost:3000/api/chat`, so the route is included. The model call goes to the real Anthropic API                  |
+| Models        | `claude-haiku-4-5` ($1 / $5 per million input / output tokens) and `claude-sonnet-5-5` ($2 / $10). Prices from the Day 2 guide                                                          |
+| Credentials   | Dev API key, scoped to a workspace                                                                                                                                                      |
+| System prompt | The original three-line prompt (at commit `414cddb`, in `apps/web/src/lib/ai/system-prompt.ts`, since replaced by `src/lib/prompts/agent.v1.md`), identical for both models (see below) |
+| Sampling      | Provider defaults. Temperature, top-p and max tokens were **not** set                                                                                                                   |
+| Runs          | 1 run per prompt and model: 10 calls in total                                                                                                                                           |
+| Order         | All Haiku prompts, then all Sonnet prompts, one at a time (no parallel calls)                                                                                                           |
+| Script        | `apps/web/scripts/benchmark.ts`, run with `pnpm benchmark`                                                                                                                              |
 
 **System prompt used (verbatim):**
 

@@ -13,24 +13,27 @@ Day 1 turned an empty folder into a production-shaped, deployed skeleton:
 
 Nothing here uses AI yet. The point of Day 1 is that the AI will later read **trusted, structured facts** instead of guessing.
 
-## 2. What was done in each part
+## 2. Learn, Prepare and Build
 
-| Part                | What was done                                                                                                                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A. Product**      | `docs/PRD.md` (problem, personas, scope, metrics, risks). ADR-0001: keep character state in a stand-alone legacy service, not the app database.                                               |
-| **B. Scaffolding**  | pnpm monorepo; Next.js app (TypeScript strict, ESLint, Prettier, Tailwind); Zod; Vitest; typed env loader that fails at startup; pinned Node and package versions; GitHub Actions CI.         |
-| **C. Legacy layer** | `services/legacy-cms` (PHP/Slim, SQLite, Docker) with API key, rate limit and simulated failures; an OpenAPI contract; a typed client with timeout, retries, circuit breaker; 30+ unit tests. |
-| **D. Cloud**        | "Hello, author" page and `/api/health` on Vercel; the CMS container on Cloud Run; the API key in Secret Manager and Vercel; preview deployments per pull request.                             |
+| Section                   | What was done                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Learn**                 | Product discovery (personas, jobs to be done, scope and non-goals), metric design (North Star, guardrails, p95), walking skeleton, deterministic vs probabilistic systems, legacy integration patterns (anti-corruption layer, timeouts, retries, circuit breaker, idempotency), cloud basics (regions, containers vs serverless, environments, IAM). |
+| **Prepare**               | Git and GitHub (with `gh` and 2FA), Node 24 and pnpm 12 through Corepack, PHP 8.4 and Composer, Docker Desktop, a Vercel account, a Google Cloud project with a budget alert, the Cloud Run, Artifact Registry, Cloud Build and Secret Manager APIs, region `europe-west1`, and Claude Code.                                                          |
+| **Build A: Product**      | `docs/PRD.md` (problem, personas, scope, metrics, risks). ADR-0001: keep character state in a stand-alone legacy service, not the app database.                                                                                                                                                                                                       |
+| **Build B: Scaffolding**  | pnpm monorepo; Next.js app (TypeScript strict, ESLint, Prettier, Tailwind); Zod; Vitest; typed env loader that fails at startup; pinned Node and package versions; GitHub Actions CI.                                                                                                                                                                 |
+| **Build C: Legacy layer** | `services/legacy-cms` (PHP/Slim, SQLite, Docker) with API key, rate limit and simulated failures; an OpenAPI contract; a typed client with timeout, retries, circuit breaker; unit tests.                                                                                                                                                             |
+| **Build D: Cloud**        | "Hello, author" page and `/api/health` on Vercel; the CMS container on Cloud Run; the API key in Secret Manager and Vercel; preview deployments per pull request.                                                                                                                                                                                     |
 
-## 3. Frontend, backend and tooling
+## 3. By area
 
-| Area         | Added or used                                                                                                                                                                             |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Frontend** | Next.js App Router page "Hello, author" (`apps/web/src/app/page.tsx`), layout, Tailwind. Nothing else yet.                                                                                |
-| **Backend**  | In `apps/web`: `/api/health`, `/api/legacy/character-state` (quick fallback), the env loader, the legacy client (`src/lib/legacy/`). Separate service: the legacy CMS (PHP/Slim, SQLite). |
-| **Tooling**  | pnpm workspaces, TypeScript strict, ESLint, Prettier, Vitest, msw (HTTP mocking), Docker and Compose, GitHub Actions.                                                                     |
+| Area            | Most important things added or used                                                                                                                                                                                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Frontend**    | Next.js App Router page "Hello, author" (`apps/web/src/app/page.tsx`), the root layout, Tailwind. Nothing else yet.                                                                                                                                                                                                                                           |
+| **Backend**     | In `apps/web`: `/api/health`, `/api/legacy/character-state` (quick fallback), the env loader, and the **legacy client** (`src/lib/legacy/`): Zod mapping, timeout, retries with backoff and jitter, circuit breaker, typed results. Separate service: the **legacy CMS** (PHP/Slim, SQLite, API key, rate limit, simulated failures), described in section 7. |
+| **Tooling**     | pnpm workspaces, TypeScript strict, ESLint, Prettier, Vitest, msw (HTTP mocking), `tsx`, Docker and Compose, GitHub Actions, the `gcloud` and `gh` CLIs.                                                                                                                                                                                                      |
+| **Documenting** | `docs/PRD.md`, ADR-0001, the OpenAPI contract (`services/legacy-cms/openapi.yaml`), `docs/METRICS.md`, the README, and this report.                                                                                                                                                                                                                           |
 
-## 4. Dev, preview and prod
+## 4. By environment
 
 | Environment | Web app                         | Legacy CMS                                              | Secrets                                                 |
 | ----------- | ------------------------------- | ------------------------------------------------------- | ------------------------------------------------------- |
@@ -40,7 +43,39 @@ Nothing here uses AI yet. The point of Day 1 is that the AI will later read **tr
 
 CI is not an environment: it is the check that runs on every pull request and every push to `main`, before Preview and Prod.
 
-## 5. The legacy CMS
+## 5. Routing
+
+Next.js App Router: the **folder path is the URL**. `page.tsx` makes a screen for browsers, `route.ts` makes an endpoint for code.
+
+| URL                               | File (`apps/web/src/app/`)            | Kind     | Purpose                                |
+| --------------------------------- | ------------------------------------- | -------- | -------------------------------------- |
+| `/`                               | `page.tsx`                            | Page     | "Hello, author"                        |
+| `GET /api/health`                 | `api/health/route.ts`                 | Endpoint | Liveness, environment and git commit   |
+| `GET /api/legacy/character-state` | `api/legacy/character-state/route.ts` | Endpoint | Quick development fallback for the CMS |
+
+Both kinds run on the same Node server (serverless functions on Vercel). The **legacy CMS** is a separate PHP server with its own routes, written as an explicit list in code and not as folders: `GET /health`, `GET /v1/characters/{id}/state` and `GET /v1/characters` (section 7).
+
+## 6. Unit tests and CI
+
+**Unit tests** (Vitest, 42 tests, no network or Docker needed; HTTP is faked with msw):
+
+| Area                | What is checked                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Mapping             | Every legacy field converts correctly; empty inventory; unknown location; contract violations are rejected.                    |
+| Retry logic         | A `503` then success works; backoff values double with jitter and are capped; gives up after 3 retries with a typed error.     |
+| What is not retried | `404` and `401` return after one call; bad JSON or a wrong shape gives `invalid_response`.                                     |
+| Timeout             | A slow response is cut off and reported as `unavailable / timeout`.                                                            |
+| Circuit breaker     | Opens after repeated failures and then fails fast without calling the CMS; half-open trial; `404` does not count as a failure. |
+| Startup and routes  | The env loader names every missing variable; the quick route and `/api/health` return the right status codes.                  |
+
+**CI** (`.github/workflows/ci.yml`) runs on every pull request and every push to `main`, on a clean machine, with the same pinned Node and pnpm as locally:
+
+1. `pnpm install --frozen-lockfile` (fails if the lockfile and `package.json` disagree)
+2. `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`
+
+A pull request can only be merged when this is green.
+
+## 7. The legacy CMS
 
 **What it provides:** the character state the AI must never guess: where a character is, what they carry, their mana and health. It imitates an old system on purpose: snake_case fields, numbers stored as text, odd dates, an API key, a rate limit and random failures.
 
@@ -52,6 +87,38 @@ CI is not an environment: it is the check that runs on every pull request and ev
 | Rate limit | 30 requests per minute per key, otherwise `429` with `Retry-After` (seconds).                   |
 | Flakiness  | Random 200 to 1500 ms delay on every call; about 5% of calls fail with `503` and `Retry-After`. |
 | Errors     | Always JSON: `{"error": {"code": "...", "message": "..."}}`.                                    |
+
+### What is stored
+
+The CMS keeps its data in one **SQLite** file (`/app/data/legacy.sqlite` inside the container, path set by `LEGACY_DB_PATH`) with two tables:
+
+**`characters`** (the system of record), with a legacy-style layout:
+
+| Column      | SQLite type          | Stored as                                |
+| ----------- | -------------------- | ---------------------------------------- |
+| `char_id`   | INTEGER, primary key | Character id                             |
+| `char_name` | TEXT                 | Name                                     |
+| `world_id`  | TEXT (indexed)       | The world it belongs to                  |
+| `loc_code`  | INTEGER              | Numeric location code                    |
+| `mana_pts`  | TEXT                 | Zero-padded number as text, e.g. `"020"` |
+| `hp_pts`    | TEXT                 | Zero-padded number as text               |
+| `cond_flag` | TEXT                 | `OK` or `WND`                            |
+| `inv_str`   | TEXT                 | Inventory as one comma-separated string  |
+| `last_upd`  | TEXT                 | `DD-MON-YY HH:MM`, no time zone          |
+
+**`rate_limit`** (supports the 30 requests per minute rule): `key_id` (the API key), `window` (the minute) and `hits` (calls in that minute), with `(key_id, window)` as the primary key.
+
+**Seed data** (inserted only when the `characters` table is empty):
+
+| id  | Name         | World          | Location (code)   | Mana | HP  | Condition | Inventory                          |
+| --- | ------------ | -------------- | ----------------- | ---- | --- | --------- | ---------------------------------- |
+| 1   | Aria Voss    | `world_aethel` | Ice Citadel (17)  | 020  | 085 | OK        | flint, broken sword, health potion |
+| 2   | Brannoc Hale | `world_aethel` | Ember Keep (4)    | 000  | 100 | OK        | war hammer, iron ration            |
+| 3   | Sera Quill   | `world_aethel` | Glass Library (9) | 075  | 060 | WND       | spellbook, silver key, ink vial    |
+| 4   | Kael Draven  | `world_nox`    | Hollow Mine (22)  | 040  | 090 | OK        | lantern, cracked mask              |
+| 5   | Mira Sol     | `world_nox`    | Salt Harbour (3)  | 100  | 045 | WND       | star chart                         |
+
+The location names are not stored: the CMS only has the numeric code, and the web app's client maps it to a name. The file lives inside the container, so every new container starts from the seed data.
 
 ### Endpoints
 
@@ -110,9 +177,9 @@ CI is not an environment: it is the check that runs on every pull request and ev
 | `total_pages` | integer | Number of pages                             |
 | `data`        | array   | Items of `{ char_id, char_name, world_id }` |
 
-**Seed data:** 5 characters in 2 worlds (`world_aethel`: ids 1 to 3, `world_nox`: ids 4 and 5), so tenant isolation can be tested later. The full contract is `services/legacy-cms/openapi.yaml`.
+The full contract is `services/legacy-cms/openapi.yaml`.
 
-## 6. The anti-corruption layer
+## 8. The anti-corruption layer
 
 The typed client in `apps/web/src/lib/legacy/` is the only code that talks to the CMS. It translates the legacy model into the app's own, so legacy oddities never spread:
 
@@ -132,27 +199,7 @@ It also protects the app from the CMS's bad behaviour:
 - **Circuit breaker:** after 5 failed calls in a row it stops calling the CMS for 30 s, then tries once.
 - **Typed errors, never exceptions:** every call returns `{ ok: true, value }` or `{ ok: false, error }`, with `error.kind` of `not_found`, `unauthorized`, `invalid_response` or `unavailable` (always with `stale: true` and the message "Character service unavailable; state may be stale."). The agent can read this and say so instead of inventing state.
 
-## 7. Most important tests and CI
-
-**Unit tests** (Vitest, 38 tests, no network or Docker needed; HTTP is faked with msw):
-
-| Area                | What is checked                                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Mapping             | Every legacy field converts correctly; empty inventory; unknown location; contract violations are rejected.                    |
-| Retry logic         | A `503` then success works; backoff values double with jitter and are capped; gives up after 3 retries with a typed error.     |
-| What is not retried | `404` and `401` return after one call; bad JSON or a wrong shape gives `invalid_response`.                                     |
-| Timeout             | A slow response is cut off and reported as `unavailable / timeout`.                                                            |
-| Circuit breaker     | Opens after repeated failures and then fails fast without calling the CMS; half-open trial; `404` does not count as a failure. |
-| Startup and routes  | The env loader names every missing variable; the quick route and `/api/health` return the right status codes.                  |
-
-**CI** (`.github/workflows/ci.yml`) runs on every pull request and every push to `main`, on a clean machine, with the same pinned Node and pnpm as locally:
-
-1. `pnpm install --frozen-lockfile` (fails if the lockfile and `package.json` disagree)
-2. `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`
-
-A pull request can only be merged when this is green.
-
-## 8. Roles of Vercel and Google Cloud
+## 9. Roles of Vercel and Google Cloud
 
 | Service                               | Role                                                                                                                                                                              |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -164,7 +211,7 @@ A pull request can only be merged when this is green.
 
 Live: web app `https://loreweaver-nine.vercel.app` (`/api/health` reports `environment: production`); CMS `https://legacy-cms-vq2vvx5lxq-ew.a.run.app` (`/health` returns ok).
 
-## 9. Measure (headline results)
+## 10. Measure (headline results)
 
 Measured on a local CMS with the rate limit raised, 500 requests, 4 at a time (details and the 100-request run in `docs/METRICS.md`):
 
@@ -175,7 +222,7 @@ Measured on a local CMS with the rate limit raised, 500 requests, 4 at a time (d
 | Client success rate after retries  | 100% (500 of 500) |
 | Extra HTTP calls caused by retries | 4%                |
 
-## 10. Additional items
+## 11. Additional items
 
 - `apps/web/AGENTS.md`: generated by Next.js, tells AI coding agents to read the docs for the installed Next version.
 - `pnpm format:check` and `eslint-config-prettier`, added to CI so formatting is enforced.
@@ -186,7 +233,7 @@ Measured on a local CMS with the rate limit raised, 500 requests, 4 at a time (d
 - `pnpm measure:legacy` (script `apps/web/scripts/measure-legacy.ts`, run with `tsx`) and `src/lib/stats.ts` for percentiles, with tests; `LEGACY_RATE_LIMIT_PER_MIN` can be overridden in `docker-compose.yml` for load tests.
 - Generated files `tsconfig.tsbuildinfo` and `next-env.d.ts` were removed from Git and ignored.
 
-## 11. Known limits
+## 12. Known limits
 
 - The CMS uses PHP's built-in server (4 workers): fine for a mock, not for real production.
 - The CMS database is re-seeded each time a container starts, and previews share the production CMS.

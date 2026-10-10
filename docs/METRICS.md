@@ -71,6 +71,8 @@ docker compose down
 
 On Windows PowerShell, set the variable first with `$env:LEGACY_RATE_LIMIT_PER_MIN = "100000"`.
 
+**To reproduce the recorded numbers exactly,** check out commit `b4eedbf` first (`git checkout b4eedbf`). The measured code (the CMS, the legacy client and the script) has not changed since: only a comment in the script did, so the current code behaves the same. The CMS delays and failures are random, so a new run gives close numbers, not identical ones.
+
 ## Day 2: mini model benchmark
 
 **What was measured:** the same five prompts sent to two Claude models through the real `POST /api/chat` route, to choose the model for the agent node (see ADR-0002). The method (scope, full setup, metric definitions, the exact prompts, the scoring rubric and all answers) is in [BENCHMARK.md](BENCHMARK.md). This section has only the numbers, the caveats and the command that reproduces them.
@@ -78,6 +80,8 @@ On Windows PowerShell, set the variable first with `$env:LEGACY_RATE_LIMIT_PER_M
 ### Setup (short)
 
 Date 2026-10-10. Local dev server and the real Anthropic API. Models `claude-haiku-4-5` and `claude-sonnet-5-5`. 5 prompts, 1 run each, one at a time. The legacy CMS is not involved.
+
+**Code version: commit `414cddb`.** It had the original three-line system prompt and no tools. Later commits added the tool and the longer `agent.v1.md` prompt, so running `pnpm benchmark` on the current code measures a different system (see Reproduce).
 
 ### Results
 
@@ -112,7 +116,11 @@ Per prompt (TTFT / total latency / output tokens). Prompt texts and per-prompt q
 - Run on a dev laptop: no Vercel network hop and no cold start, so Preview and Production TTFT will be somewhat higher.
 - The legacy CMS and tools are not part of these numbers, so they describe the model alone, not a full agent answer.
 - Part of the cost and latency gap is answer length (Sonnet wrote about 2.2x the tokens), not only model speed.
-- The answers contain Markdown (`#` titles, `**bold**`) that the chat UI does not render yet.
+- The answers contain Markdown (`#` titles, `**bold**`). The current prompt asks for plain text, because the chat UI does not render Markdown.
+
+### Not measured yet
+
+The guide also asks for **server-side TTFT** (time from the route receiving the request to the first token) and **time to first UI** (when the Character Status Card skeleton appears). Only client-side TTFT is recorded above.
 
 ### Reproduce
 
@@ -122,3 +130,5 @@ pnpm benchmark    # terminal 2 (BENCHMARK_RUNS=3 repeats each prompt for steadie
 ```
 
 A run costs about two cents. The full answers go to `apps/web/scripts/.out/benchmark-latest.json` (git-ignored); the curated copy is in BENCHMARK.md.
+
+**To reproduce the recorded numbers exactly,** check out commit `414cddb` first (`git checkout 414cddb`). On the current code the same command also exercises the `fetch_character_state` tool and the longer prompt, so the answers, token counts and timings will differ.
