@@ -10,6 +10,12 @@
  */
 export const EMBEDDING_DIMENSIONS = 1024;
 
+/**
+ * The chunking configuration the search reads. Ingestion can store several configurations side by
+ * side (see chunking.ts); this is the one the chat uses, until the experiment decides.
+ */
+export const DEFAULT_CHUNKING = "heading-800";
+
 /** The kinds of lore document. The value comes from the `doc_type` line of a file's front matter. */
 export const DOC_TYPES = ["rule", "location", "history", "character"] as const;
 export type DocType = (typeof DOC_TYPES)[number];

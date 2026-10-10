@@ -7,6 +7,7 @@ import { resolveModelId } from "@/lib/ai/models";
 import { createTools } from "@/lib/ai/tools";
 import { getEnv } from "@/lib/env";
 import { getSystemPrompt, PROMPT_VERSION } from "@/lib/prompts";
+import { getSessionWorldId } from "@/lib/session";
 
 // Vercel stops the function after this many seconds, so a stuck model call cannot run forever.
 export const maxDuration = 30;
@@ -21,7 +22,9 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const tools = createTools();
+  // The world comes from the session on the server. The model never chooses it, and cannot see it.
+  const worldId = getSessionWorldId(request);
+  const tools = createTools({ worldId });
 
   let messages;
   try {
@@ -36,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const result = streamText({
     model: anthropic(modelId),
-    instructions: getSystemPrompt(),
+    instructions: getSystemPrompt(worldId),
     messages: await convertToModelMessages(messages),
     tools,
     // One step to call the tool, one to write the answer from its result, one spare.
