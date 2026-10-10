@@ -4,8 +4,11 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIDataTypes, type UIMessage } from "ai";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import type { ChatMetadata } from "@/lib/ai/chat-metadata";
 import type { ChatTools } from "@/lib/ai/tools";
+import { MessageActions } from "./message-actions";
 import {
   CharacterStatusCard,
   CharacterStatusCardError,
@@ -13,10 +16,18 @@ import {
 } from "./character-status-card";
 
 /** Chat messages whose tool parts are typed with our tools (so `part.output` has a real type). */
-type ChatMessage = UIMessage<unknown, UIDataTypes, ChatTools>;
+type ChatMessage = UIMessage<ChatMetadata, UIDataTypes, ChatTools>;
 
 /** How close to the bottom (in px) the user must be for new text to keep scrolling the view. */
 const STICK_TO_BOTTOM_PX = 80;
+
+/** The text parts of a message, joined. Used for the copy button. */
+function messageText(message: ChatMessage): string {
+  return message.parts
+    .flatMap((part) => (part.type === "text" ? [part.text] : []))
+    .join("\n")
+    .trim();
+}
 
 export function ChatPanel() {
   // Without an id, useChat makes a random one while the page is prerendered, which Next.js
@@ -38,6 +49,13 @@ export function ChatPanel() {
   }, [messages, status]);
 
   const busy = status === "submitted" || status === "streaming";
+
+  /** Feedback only makes sense on a finished assistant message that has some text. */
+  function showActions(message: ChatMessage, index: number): boolean {
+    if (message.role !== "assistant") return false;
+    const isStreamingNow = busy && index === messages.length - 1;
+    return !isStreamingNow && messageText(message).length > 0;
+  }
   const canRegenerate = !busy && messages.at(-1)?.role === "assistant";
 
   function submit() {
@@ -50,8 +68,10 @@ export function ChatPanel() {
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-2xl flex-col gap-3 p-4">
-      <header>
+      <header className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">Loreweaver</h1>
+        {/* Always visible: users must know that the suggestions come from a model. */}
+        <Badge variant="outline">AI-generated suggestions</Badge>
       </header>
 
       <div
@@ -70,7 +90,7 @@ export function ChatPanel() {
           </p>
         )}
 
-        {messages.map((message) => (
+        {messages.map((message, index) => (
           <div
             key={message.id}
             className={message.role === "user" ? "flex justify-end" : "flex justify-start"}
@@ -119,6 +139,15 @@ export function ChatPanel() {
                     return null;
                 }
               })}
+              {showActions(message, index) && (
+                <MessageActions
+                  chatId={chatId}
+                  messageId={message.id}
+                  text={messageText(message)}
+                  modelId={message.metadata?.modelId}
+                  promptVersion={message.metadata?.promptVersion}
+                />
+              )}
             </div>
           </div>
         ))}
@@ -159,6 +188,10 @@ export function ChatPanel() {
           aria-label="Your message"
           rows={2}
         />
+        <p className="text-xs text-muted-foreground">
+          Loreweaver&apos;s suggestions are AI-generated and can be wrong. Check them against your
+          own canon.
+        </p>
         <div className="flex justify-end gap-2">
           {canRegenerate && (
             <Button type="button" variant="outline" onClick={() => regenerate()}>

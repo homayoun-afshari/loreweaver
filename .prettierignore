@@ -5,3 +5,5 @@ build
 vendor
 pnpm-lock.yaml
 *.tsbuildinfo
+# The system prompt is read byte for byte by the app: never reformat it.
+apps/web/src/lib/prompts/*.md
