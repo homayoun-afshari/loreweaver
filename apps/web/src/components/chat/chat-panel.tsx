@@ -1,10 +1,19 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIDataTypes, type UIMessage } from "ai";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import type { ChatTools } from "@/lib/ai/tools";
+import {
+  CharacterStatusCard,
+  CharacterStatusCardError,
+  CharacterStatusCardSkeleton,
+} from "./character-status-card";
+
+/** Chat messages whose tool parts are typed with our tools (so `part.output` has a real type). */
+type ChatMessage = UIMessage<unknown, UIDataTypes, ChatTools>;
 
 /** How close to the bottom (in px) the user must be for new text to keep scrolling the view. */
 const STICK_TO_BOTTOM_PX = 80;
@@ -13,7 +22,7 @@ export function ChatPanel() {
   // Without an id, useChat makes a random one while the page is prerendered, which Next.js
   // refuses (the value would be frozen into the static HTML). useId() is stable and safe.
   const chatId = useId();
-  const { messages, sendMessage, status, error, stop, regenerate } = useChat({
+  const { messages, sendMessage, status, error, stop, regenerate } = useChat<ChatMessage>({
     id: chatId,
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
@@ -66,16 +75,50 @@ export function ChatPanel() {
             key={message.id}
             className={message.role === "user" ? "flex justify-end" : "flex justify-start"}
           >
-            <div
-              className={
-                message.role === "user"
-                  ? "max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm whitespace-pre-wrap text-primary-foreground"
-                  : "max-w-[85%] rounded-lg bg-muted px-3 py-2 text-sm whitespace-pre-wrap"
-              }
-            >
-              {message.parts.map((part, index) =>
-                part.type === "text" ? <span key={index}>{part.text}</span> : null,
-              )}
+            {/* Each part is its own block: text goes in a bubble, a tool part becomes a card. */}
+            <div className="flex max-w-[85%] flex-col items-start gap-2">
+              {message.parts.map((part, index) => {
+                switch (part.type) {
+                  case "text":
+                    return (
+                      <div
+                        key={index}
+                        className={
+                          message.role === "user"
+                            ? "rounded-lg bg-primary px-3 py-2 text-sm whitespace-pre-wrap text-primary-foreground"
+                            : "rounded-lg bg-muted px-3 py-2 text-sm whitespace-pre-wrap"
+                        }
+                      >
+                        {part.text}
+                      </div>
+                    );
+                  // Generative UI: a tool part becomes a component, chosen by the part's state.
+                  case "tool-fetch_character_state":
+                    switch (part.state) {
+                      case "input-streaming":
+                      case "input-available":
+                        return <CharacterStatusCardSkeleton key={part.toolCallId} />;
+                      case "output-available":
+                        return part.output.ok ? (
+                          <CharacterStatusCard
+                            key={part.toolCallId}
+                            character={part.output.character}
+                          />
+                        ) : (
+                          <CharacterStatusCardError
+                            key={part.toolCallId}
+                            error={part.output.error}
+                          />
+                        );
+                      case "output-error":
+                        return <CharacterStatusCardError key={part.toolCallId} />;
+                      default:
+                        return null;
+                    }
+                  default:
+                    return null;
+                }
+              })}
             </div>
           </div>
         ))}

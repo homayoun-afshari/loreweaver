@@ -1,8 +1,9 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { convertToModelMessages, streamText, validateUIMessages } from "ai";
+import { convertToModelMessages, isStepCount, streamText, validateUIMessages } from "ai";
 import { parseChatRequest } from "@/lib/ai/chat-request";
 import { resolveModelId } from "@/lib/ai/models";
 import { SYSTEM_PROMPT } from "@/lib/ai/system-prompt";
+import { createTools } from "@/lib/ai/tools";
 import { getEnv } from "@/lib/env";
 
 // Vercel stops the function after this many seconds, so a stuck model call cannot run forever.
@@ -17,9 +18,12 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 
+  const tools = createTools();
+
   let messages;
   try {
-    messages = await validateUIMessages({ messages: body.messages });
+    // Earlier assistant messages in the history contain tool parts: check them against our tools.
+    messages = await validateUIMessages({ messages: body.messages, tools });
   } catch {
     return Response.json({ error: "Invalid messages." }, { status: 400 });
   }
@@ -31,6 +35,9 @@ export async function POST(request: Request): Promise<Response> {
     model: anthropic(modelId),
     instructions: SYSTEM_PROMPT,
     messages: await convertToModelMessages(messages),
+    tools,
+    // One step to call the tool, one to write the answer from its result, one spare.
+    stopWhen: isStepCount(3),
     // Stop the model call when the user presses "Stop" (the browser aborts the request).
     abortSignal: request.signal,
     onError: ({ error }) => console.error("[chat] model error", error),
