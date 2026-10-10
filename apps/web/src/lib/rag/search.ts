@@ -13,10 +13,12 @@ export const DEFAULT_TOP_K = 3;
 /** The most passages one search may return: each one goes into the model's prompt. */
 export const MAX_TOP_K = 8;
 /**
- * Passages less similar than this are dropped, so a question the lore does not cover returns
- * nothing instead of the least-bad passages. PROVISIONAL: picked from eight hand-written
- * questions with the current model (relevant ones scored 0.50 to 0.75, unrelated ones 0.14 to
- * 0.25). It belongs to that embedding model's scale and must be re-checked on the eval set.
+ * Passages less similar than this are dropped, so an OFF-TOPIC question returns nothing instead
+ * of the least-bad passages. It cannot do more than that: on the eval set, questions with an
+ * answer scored 0.37 to 0.72 at best, off-topic ones 0.14 to 0.17, but unanswerable questions
+ * that name real things of the lore scored 0.39 and 0.45, inside the range of real questions, and
+ * a higher floor starts to silence real ones. For those the model is told to say the lore does
+ * not cover it. The value belongs to this embedding model's scale (see docs/METRICS.md).
  */
 export const MIN_SIMILARITY = 0.3;
 /** Characters of the chunk's id used as its citation id. */

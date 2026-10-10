@@ -191,3 +191,140 @@ MEASURE_URL=https://loreweaver-nine.vercel.app MEASURE_REQUESTS=30 pnpm measure:
 ```
 
 `MEASURE_REQUESTS` sets the number of runs (default 10). Each run costs about one cent. Run it on the code of the commit that added `measure-chat.ts` or later.
+
+## Day 3: lore retrieval
+
+**What was measured:** how well the lore search finds the passages that answer a question, **on its own** (no model writes an answer), for three ways of chunking the lore; how long a search takes; and what it costs to build the search index. The method and the scoring rules of the quality figures are in [`evals/README.md`](../evals/README.md); the strategy they support is in [ADR-0003](adr/0003-chunking-and-retrieval.md). This section has the numbers.
+
+### Setup
+
+| Item           | Value                                                                                                                                                                                                                                                                   |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Date           | 2026-10-10                                                                                                                                                                                                                                                              |
+| Code version   | Commit `cb1f815` (the scripts, the eval set and the lore it measured)                                                                                                                                                                                                   |
+| Lore           | 9 files in 2 worlds: `world_aethel` (6 files) and `world_nox` (3 files)                                                                                                                                                                                                 |
+| Eval set       | `evals/retrieval.jsonl`: 36 questions, of which 32 have an answer in the lore (26 Aethel, 6 Nox) and 4 do not. Labels are lore sections, graded 2 (answers) or 1 (related). Written before the scoring code was run, and not changed after the first result             |
+| Embeddings     | Voyage `voyage-4-lite`, 1024 dimensions, the real API (dev key) over the internet from the laptop. Questions are embedded as questions, chunks as documents                                                                                                             |
+| Database       | Postgres 17 with pgvector 0.8.7 in Docker on the same laptop. **A new, empty database for each configuration**, with every migration applied from scratch, so the ingestion cost and the sizes are those of a first run. No vector index: every search is an exact scan |
+| Configurations | `heading-800`: cut at headings, cap 800 tokens (in practice one chunk per section). `heading-80`: cut at headings, cap 80 tokens. `heading-800-plain`: the same chunks as `heading-800`, but the heading path is not put in front of the embedded text                  |
+| Quality        | Top 3 chunks of the question's own world. MRR looks 10 chunks deep                                                                                                                                                                                                      |
+| Latency        | 36 questions asked 5 times each = 180 searches per run, one at a time, after 3 warm-up searches that are discarded. The search is the one the chat uses (top 3). Timing is taken around the embedding request and the database query                                    |
+| Scripts        | `evals/retrieval.ts` (quality), `apps/web/scripts/measure-retrieval.ts` (latency), `apps/web/scripts/ingest.ts` (cost, which also prints the tokens)                                                                                                                    |
+
+**Definitions.** Scored on lore **sections** (a heading of a file), not on chunks: a retrieved chunk counts as the section it came from, rank is counted in chunks, and a section counts once. **hit@3**: share of questions with a relevant section in the top 3. **recall@3**: relevant sections found in the top 3 divided by all relevant sections of the question. **precision@3**: relevant sections found divided by 3. **MRR**: mean of 1 / the rank of the first relevant chunk. **nDCG@3**: ranking quality with graded relevance, 1.0 is the best possible order. Means are over the 32 questions that have an answer. **Retrieval latency** is the time to embed the question plus the time of the database search.
+
+### Results
+
+**Retrieval quality, top 3, 32 questions with an answer**
+
+| Configuration       | Chunks | hit@3 | **recall@3** | precision@3 |   **MRR** | **nDCG@3** |
+| ------------------- | -----: | ----: | -----------: | ----------: | --------: | ---------: |
+| `heading-800`       |     70 | 1.000 |    **0.917** |       0.469 | **0.964** |  **0.910** |
+| `heading-80`        |    109 | 1.000 |    **0.917** |       0.469 | **0.953** |  **0.909** |
+| `heading-800-plain` |     70 | 0.969 |    **0.891** |       0.448 | **0.961** |  **0.890** |
+
+**By kind of question** (nDCG@3; the number of questions of that kind in brackets, a question can have several kinds)
+
+| Kind              | `heading-800` | `heading-80` | `heading-800-plain` |
+| ----------------- | ------------: | -----------: | ------------------: |
+| numeric (6)       |         0.977 |        0.977 |               0.977 |
+| rule (11)         |         0.956 |        0.952 |               0.935 |
+| proper noun (11)  |         0.926 |        0.952 |               0.905 |
+| history (3)       |         0.983 |        0.903 |               0.937 |
+| character (4)     |         0.905 |        0.940 |               0.905 |
+| conflict (4)      |         0.928 |        0.785 |               0.868 |
+| multi-section (6) |         0.878 |        0.889 |               0.833 |
+| paraphrase (8)    |         0.820 |        0.787 |               0.786 |
+
+**The similarity floor** (passages below it are dropped; the app uses 0.30). Top-1 similarity of the 32 questions with an answer: lowest 0.369, median 0.566, highest 0.722. Of the 4 questions without an answer: chocolate cake 0.174, football 0.143, "How many dragons live in the Cinderlands?" 0.445, "Who is the god of the sea?" 0.391. Same result for all three configurations at 0.30.
+
+| Floor    | Questions without an answer silenced (of 4) | Questions with an answer silenced (of 32) |
+| -------- | ------------------------------------------: | ----------------------------------------: |
+| **0.30** |                                       **2** |                                     **0** |
+| 0.35     |                                           2 |                                         0 |
+| 0.40     |                                           3 |                                         2 |
+| 0.45     |                                           4 |                                         3 |
+| 0.50     |                                           4 |                                         9 |
+
+**Retrieval latency, 180 searches per run (milliseconds)**
+
+| Run                                                           | Embedding p50 / p95 | Search p50 / p95 | **Total p50 / p95** | Total mean / max |
+| ------------------------------------------------------------- | ------------------: | ---------------: | ------------------: | ---------------: |
+| `heading-800`, as the app does                                |           300 / 383 |          53 / 58 |       **352 / 431** |        369 / 850 |
+| `heading-80`, as the app does                                 |           289 / 360 |          54 / 62 |           343 / 413 |        360 / 861 |
+| `heading-800`, diagnostic: query vector rounded to 4 decimals |           308 / 476 |           7 / 14 |           318 / 486 |        337 / 658 |
+
+No search failed in any run. The median total by round for `heading-800` was 349, 350, 358, 350 and 363 ms: asking the same questions again is not faster, so no cache is helping.
+
+**Ingestion cost and index size** (first ingest into an empty database; the same Lore Bible)
+
+| Configuration       | Chunks | Tokens billed | Cost at list price | Time to ingest | Table, total |  Heap | Vectors and text (TOAST) | B-tree indexes |
+| ------------------- | -----: | ------------: | -----------------: | -------------: | -----------: | ----: | -----------------------: | -------------: |
+| `heading-800`       |     70 |         6,118 |          $0.000122 |          2.9 s |       536 kB | 48 kB |                   416 kB |          48 kB |
+| `heading-80`        |    109 |         6,851 |          $0.000137 |          3.2 s |       776 kB | 64 kB |                   624 kB |          64 kB |
+| `heading-800-plain` |     70 |         5,283 |          $0.000106 |          2.4 s |       536 kB | 48 kB |                   416 kB |          48 kB |
+
+Each vector has 1024 numbers and takes 4,100 bytes as stored. The list price is USD 0.02 per million tokens, and the provider's free allowance covers it. A second ingest of unchanged lore billed 0 tokens (tested earlier).
+
+### Key findings
+
+- **All three configurations find the right section in the top 3 for almost every question.** With `heading-800`, every one of the 32 answerable questions has a relevant section in the top 3 (hit rate 1.00), recall@3 is 0.92, MRR 0.96 and nDCG@3 0.91.
+- **Chunk size made no measurable difference.** `heading-80` has the same recall@3 (0.917) and nearly the same nDCG@3 (0.909 against 0.910). It moves single questions in both directions: small chunks cut an answer in two for "Can fire magic be cast inside the Ice Citadel?" and "Who founded the Ice Citadel, and when?", and helped for "What does it mean to be mana-blind?", "What is a Tide-key?" and "Who keeps the map of the lower galleries?". It costs 56% more chunks, 12% more tokens and 45% more storage, so `heading-800` stays the default.
+- **The heading prefix helps a little.** Without it, recall@3 falls from 0.917 to 0.891 and nDCG@3 from 0.910 to 0.890, and one question, "What stops me from teleporting into a fortress?", has no relevant section in its top 3. It saves 14% of the tokens. The difference is the size of one or two questions, so it is a suggestion, not a proof.
+- **Paraphrases and questions that need several passages are the weak spots** (nDCG@3 0.82 and 0.88 with `heading-800`). "What stops me from teleporting into a fortress?" finds only 1 of its 3 relevant sections in the top 3 in every configuration. Numbers and named things are easy (nDCG@3 0.93 to 0.98).
+- **The similarity floor only silences off-topic questions.** Chocolate cake and football score 0.14 to 0.17, far below the floor. The two unanswerable questions that name real places or ideas of the lore score 0.39 and 0.45, in the range of real questions (the weakest real question scores 0.37). A higher floor does not fix it: 0.45 silences all four but also 3 of the 32 real questions, and 0.50 silences 9. The floor of 0.30 loses no real question, which is why it stays, but it cannot make the search say "nothing" for an unanswerable question that mentions real names. In a manual check with the real chat (2 questions, the development model), the assistant said that the lore does not cover them, from the weak passages it received.
+- **Retrieval takes about 0.35 s (p50) and 0.43 s (p95).** The embedding request is about 85% of it (300 ms of 352 ms). Against the 8 s budget for a full answer, retrieval uses about 5% at p95.
+- **The database search is cheap, but a large query parameter was not.** As the app sends it, the search takes 53 ms here. The database itself runs the query in about 1 ms. Sending the question's vector as text takes about 20 KB; rounding it to 4 decimals (7.5 KB) cuts the search to 7 ms and the total p50 from 352 to 318 ms. The extra 45 ms looks like a delay in the connection between Windows and Docker, not work done by Postgres, so it may not exist on a hosted database. Not changed in the app, and the effect on ranking of rounding was not evaluated.
+- **Indexing the whole lore costs almost nothing:** about 6,100 tokens (USD 0.00012) and about 0.5 MB per configuration, most of it the vectors. There is no vector index; the 48 kB of indexes are B-trees for the world filter and the primary key.
+- **Repeatable.** Two runs of each quality evaluation gave byte-identical results, and so did the token counts and sizes of two ingests.
+
+### Caveats
+
+- **The eval set is small and was written by one person.** Thirty-two questions with an answer: one question moves a mean by about 3 points, so the differences between configurations (0.917 against 0.891) are within what one or two questions can cause. Labels are whole sections, so scoring cannot see whether only a part of a section answers the question. The set was not blind: eight earlier questions had been tried on the search, and some topics overlap.
+- **The same set was used to compare and to choose,** with only three configurations, so overfitting is unlikely but not excluded.
+- **Latency is for this laptop.** The embedding time includes the internet path from here to Voyage's servers, and the search time includes the Windows to Docker connection. The hosted database and the Vercel region were not measured, so the share of the embedding (85%) and the 45 ms effect may differ there. The first calls (connection set-up) are excluded.
+- **The latency figures leave out the chat route, the tools' other work and the model.** They are the search only.
+- **The sizes are for fresh databases** with 70 to 109 rows. A hosted database may report slightly different totals.
+- **Hybrid search and a reranker were not built,** so they are not measured. A chunking strategy that ignores headings (fixed-size) is not implemented, so it is not compared.
+- **MRR looks 10 chunks deep,** the others look at the top 3. The cost is the list price of the provider, not necessarily what is billed.
+
+### Reproduce
+
+```sh
+# 1. A Postgres with pgvector, and an empty database for each configuration
+docker compose up -d postgres
+docker compose exec postgres psql -U loreweaver -d postgres -c "create database measure_800"
+docker compose exec postgres psql -U loreweaver -d postgres -c "create database measure_80"
+docker compose exec postgres psql -U loreweaver -d postgres -c "create database measure_plain"
+
+# 2. For each configuration: migrate, ingest (prints tokens and cost), score, time
+#    (shown for heading-800; use measure_80 / heading-80 and measure_plain / heading-800-plain)
+export DATABASE_URL=postgresql://loreweaver:loreweaver@localhost:5432/measure_800
+pnpm --filter web db:migrate
+pnpm ingest --config heading-800
+pnpm eval:retrieval --config heading-800            # add --verbose for one line per question
+pnpm measure:retrieval                              # MEASURE_CONFIG=heading-80 for another configuration
+MEASURE_VECTOR_DECIMALS=4 pnpm measure:retrieval    # the diagnostic run
+
+# 3. Table size
+docker compose exec postgres psql -U loreweaver -d measure_800 -c "select pg_total_relation_size('lore_chunks'), pg_relation_size('lore_chunks'), pg_indexes_size('lore_chunks')"
+
+# 4. Clean up
+docker compose exec postgres psql -U loreweaver -d postgres -c "drop database measure_800"
+```
+
+On Windows PowerShell, set the variables first and remove them at the end:
+
+```powershell
+$env:DATABASE_URL = "postgresql://loreweaver:loreweaver@localhost:5432/measure_800"
+pnpm --filter web db:migrate
+pnpm ingest --config heading-800
+pnpm eval:retrieval --config heading-800
+pnpm measure:retrieval
+$env:MEASURE_VECTOR_DECIMALS = "4"; pnpm measure:retrieval; Remove-Item Env:MEASURE_VECTOR_DECIMALS
+Remove-Item Env:DATABASE_URL
+```
+
+The runs need `VOYAGE_API_KEY` and `EMBEDDING_MODEL` in `apps/web/.env.local`. All together they use about 25,000 tokens (a few thousandths of a cent). To time a hosted database instead, set `DATABASE_URL` to its connection string for the `measure:retrieval` command.
+
+**To reproduce the recorded numbers exactly,** check out commit `cb1f815` first (`git checkout cb1f815`). The measured code has not changed since: only a comment in `search.ts` and documentation did. The quality figures, the token counts and the sizes are deterministic: repeated runs gave identical results. The latency depends on the machine and the network, so a new run gives close numbers, not identical ones.

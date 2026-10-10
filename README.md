@@ -142,7 +142,7 @@ The chat has a tool, `search_lore`, that the model calls for questions about how
 
 - **Worlds are separate.** The tool has no world parameter. The server reads the visitor's world from a cookie (a stand-in for a signed-in author's world, set by the World selector in the header, see `apps/web/src/lib/session.ts`) and puts it in the SQL `WHERE` clause, so a chunk of another world can never be a candidate. The model cannot see or change it. A test against a real Postgres proves that a query in one world never returns another world's chunks.
 - **Characters are scoped too.** The character tool answers another world's character exactly like a missing one, and the prompt lists only the characters of the visitor's world.
-- **Not covered means nothing.** Passages below a similarity floor (`MIN_SIMILARITY` in `apps/web/src/lib/rag/search.ts`, provisional) are dropped, so a question the lore does not cover returns no passages and the assistant says so.
+- **Off-topic means nothing.** Passages below a similarity floor (`MIN_SIMILARITY` in `apps/web/src/lib/rag/search.ts`) are dropped, so an off-topic question returns no passages. A question that names real things of the lore but is not answered by it can still return passages: the assistant is told to say that the lore does not cover it.
 - **The cookie is not authentication.** Anyone can pick any known world. The stand-in exists so that the rule "the world comes from the session, never from the model" has one place to live.
 
 ## Environment variables of the web app
