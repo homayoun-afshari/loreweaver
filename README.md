@@ -174,6 +174,7 @@ On Vercel, import the GitHub repository and set the project's **Root Directory**
 | `pnpm ingest`                   | Chunk and embed the lore into Postgres (idempotent; `--dry-run` to preview) |
 | `pnpm eval:retrieval`           | Score the lore search on its own against a labeled set of questions         |
 | `pnpm measure:retrieval`        | Time the lore search: embedding the question, and the vector search         |
+| `pnpm measure:search-tool`      | Time the chat's `search_lore` tool on any running app, deployed or local    |
 | `pnpm --filter web db:generate` | Create a database migration from the schema                                 |
 | `pnpm --filter web db:migrate`  | Apply migrations to the database in `DATABASE_URL`                          |
 | `pnpm measure:legacy`           | Load-test the legacy CMS and its client                                     |
