@@ -99,3 +99,19 @@ Constraints:
 - Add an approximate index only when the number of chunks or the latency requires it, and measure its recall against the exact search first.
 - Replace the world stand-in with the signed-in author's world, and consider Row Level Security policies as a second layer.
 - Add a check that an answer only cites ids that the search returned.
+
+## Update 2026-10-10: measured results
+
+The strategy was measured on the labeled question set (32 questions with an answer, 4 without) with three configurations. Figures, method and caveats are in [METRICS.md](../METRICS.md).
+
+- **Chunking decision confirmed: `heading-800` stays the default.** It finds a relevant section in the top 3 for all 32 answerable questions (recall 0.92, MRR 0.96, nDCG 0.91 at 3). Cutting at 80 tokens gave the same recall and nDCG, moved single questions in both directions, and cost 56% more chunks, 12% more embedding tokens and 45% more storage. Chunk size did not matter at this scale, which matches the earlier observation that every section is already short.
+- **The heading prefix on the embedded text stays.** Without it recall fell from 0.917 to 0.891, nDCG from 0.910 to 0.890, and one question was missed entirely. The difference is within what one or two questions can cause, so it is evidence in favor, not proof.
+- **A correction to the Decision above.** The similarity floor of 0.30 silences off-topic questions, but it does **not** make the search return nothing for every unanswerable question. Two unanswerable questions that name real places or ideas of the lore scored 0.39 and 0.45, inside the range of real questions (the weakest scores 0.37), and raising the floor to 0.45 would silence 3 of the 32 real questions. The floor stays at 0.30 because it loses no real question. For the in-domain gap the system relies on the model reading the passages and saying that the lore does not cover the question, which it did in a manual check of two such questions. Whether a reranker or a rule on the best passage does better is open.
+- **Retrieval is cheap in time and money.** About 0.35 s at p50 and 0.43 s at p95 per search (about 5% of the 8 s budget), of which the embedding request is about 85%. Indexing the whole lore costs about 6,100 tokens (USD 0.00012) and 0.5 MB.
+- **The weak spots are paraphrases and questions that need several passages** (nDCG about 0.82 and 0.88), which is where hybrid search and a reranker would be tried.
+
+Follow-ups added by the measurements:
+
+- Send the question's vector with fewer digits. On the development machine the 20 KB query parameter alone cost about 45 ms of a 53 ms search, and rounding it cut the search to 7 ms. The effect on ranking has to be checked first, and it may not exist on a hosted database.
+- Find out why about one search in ten is slower on Production (0.6 to 0.8 s, against about 0.29 s at p50). The measurement of the deployed search tool (see METRICS.md) did not separate the embedding from the database, and it did not show whether the large-parameter delay exists on the hosted database. A new connection on a cold serverless start is a likely suspect.
+- Grow the question set, especially unanswerable questions that mention real names, before relying on differences smaller than a few points.

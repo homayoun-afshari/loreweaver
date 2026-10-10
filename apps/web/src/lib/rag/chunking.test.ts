@@ -131,6 +131,13 @@ describe("estimateTokens and the named configurations", () => {
     expect(estimateTokens("abcde")).toBe(2);
   });
 
+  it("has a configuration that differs from the default only in the heading prefix", () => {
+    expect(CHUNK_CONFIGS["heading-800-plain"]).toEqual({
+      ...CHUNK_CONFIGS["heading-800"],
+      embedHeadings: false,
+    });
+  });
+
   it("has an overlap smaller than the cap in every configuration", () => {
     for (const config of Object.values(CHUNK_CONFIGS)) {
       expect(config.overlapTokens).toBeLessThan(config.maxTokens);

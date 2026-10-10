@@ -23,6 +23,8 @@
     "benchmark": "pnpm --filter web exec tsx scripts/benchmark.ts",
     "measure:chat": "pnpm --filter web exec tsx scripts/measure-chat.ts",
     "ingest": "pnpm --filter web exec tsx scripts/ingest.ts",
-    "eval:retrieval": "pnpm --filter web exec tsx ../../evals/retrieval.ts"
+    "eval:retrieval": "pnpm --filter web exec tsx ../../evals/retrieval.ts",
+    "measure:retrieval": "pnpm --filter web exec tsx scripts/measure-retrieval.ts",
+    "measure:search-tool": "pnpm --filter web exec tsx scripts/measure-search-tool.ts"
   }
 }

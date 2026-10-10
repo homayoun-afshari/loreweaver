@@ -26,6 +26,9 @@ export type ChunkConfig = {
 export const CHUNK_CONFIGS = {
   "heading-800": { maxTokens: 800, overlapTokens: 80, embedHeadings: true },
   "heading-80": { maxTokens: 80, overlapTokens: 8, embedHeadings: true },
+  // The same chunks as heading-800, but the heading path is not put in front of the embedded text.
+  // It exists to tell whether that prefix helps: the two differ in this one thing only.
+  "heading-800-plain": { maxTokens: 800, overlapTokens: 80, embedHeadings: false },
 } as const satisfies Record<string, ChunkConfig>;
 
 export type ChunkConfigName = keyof typeof CHUNK_CONFIGS;
