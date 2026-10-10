@@ -8,6 +8,7 @@ Loreweaver is built over seven days. Each day ends with a report in [`docs/repor
 
 - **Web app** (`apps/web`): a Next.js chat. The browser talks to API routes; the model is Claude, called through the Vercel AI SDK.
 - **Legacy CMS** (`services/legacy-cms`): a stand-alone service that owns live character state (location, inventory, mana). The chat reads it through a tool and shows the result as a **Character Status Card**.
+- **Lore search**: a second tool, `search_lore`, finds the passages of the author's lore that match a question and the chat shows them as **Lore Citation** cards, which the answer cites by id.
 - **Lore** (`data/lore`): the worlds' lore as Markdown files. `pnpm ingest` cuts them into chunks, turns each chunk into a vector with an embedding model (Voyage AI) and stores them in Postgres, ready for similarity search.
 - **Postgres** (with the pgvector extension): stores user feedback on answers and the lore chunks with their vectors.
 
@@ -135,6 +136,15 @@ pnpm ingest --dry-run               # chunk only: print the sizes, no database, 
 - **Cost.** It prints the tokens the provider billed and the cost at list price. The whole current lore is about 6,000 tokens, a fraction of a cent.
 - **Where it writes.** To the database in `DATABASE_URL`: the local container by default. To fill the hosted database, set the variable for one command (PowerShell: `$env:DATABASE_URL = "<supabase pooled string>"; pnpm ingest`, then close the shell or remove the variable). Vectors have 1024 dimensions and the table has no vector index: at this size an exact scan is fast and always exact.
 
+## Searching the lore
+
+The chat has a tool, `search_lore`, that the model calls for questions about how the world works (rules, places, history, backstories). It embeds the question with the same model as the chunks, asks Postgres for the nearest chunks by cosine distance, and returns the top 3 (at most 8) with a citation id, the file and the heading. The browser draws each one as a collapsible card; the answer cites passages as `[id]`.
+
+- **Worlds are separate.** The tool has no world parameter. The server reads the visitor's world from a cookie (a stand-in for a signed-in author's world, set by the World selector in the header, see `apps/web/src/lib/session.ts`) and puts it in the SQL `WHERE` clause, so a chunk of another world can never be a candidate. The model cannot see or change it. A test against a real Postgres proves that a query in one world never returns another world's chunks.
+- **Characters are scoped too.** The character tool answers another world's character exactly like a missing one, and the prompt lists only the characters of the visitor's world.
+- **Not covered means nothing.** Passages below a similarity floor (`MIN_SIMILARITY` in `apps/web/src/lib/rag/search.ts`, provisional) are dropped, so a question the lore does not cover returns no passages and the assistant says so.
+- **The cookie is not authentication.** Anyone can pick any known world. The stand-in exists so that the rule "the world comes from the session, never from the model" has one place to live.
+
 ## Environment variables of the web app
 
 Set them in `apps/web/.env.local` locally, and in your hosting provider's settings for preview and production. Never commit real values.
@@ -157,7 +167,7 @@ On Vercel, import the GitHub repository and set the project's **Root Directory**
 | Command                         | What it does                                                                |
 | ------------------------------- | --------------------------------------------------------------------------- |
 | `pnpm dev`                      | Start the web app in development mode                                       |
-| `pnpm test`                     | Run unit tests                                                              |
+| `pnpm test`                     | Run unit tests (database tests: see below)                                  |
 | `pnpm lint`                     | Lint with ESLint                                                            |
 | `pnpm typecheck`                | Type-check with TypeScript                                                  |
 | `pnpm format`                   | Format the whole repo with Prettier                                         |
@@ -167,6 +177,8 @@ On Vercel, import the GitHub repository and set the project's **Root Directory**
 | `pnpm measure:legacy`           | Load-test the legacy CMS and its client                                     |
 | `pnpm benchmark`                | Compare two models on the same five prompts through the chat route          |
 | `pnpm measure:chat`             | Time the chat with its tool: time to first UI, card, first token, total     |
+
+**Database tests.** One test file checks the world separation against a real Postgres with pgvector. It runs only when `TEST_DATABASE_URL` points at a migrated database, and is skipped otherwise (CI always sets it, and fails if it is missing). It adds rows for its own test worlds and removes them afterwards. Use the local container, never a shared or hosted database. PowerShell: `$env:TEST_DATABASE_URL = "postgresql://loreweaver:loreweaver@localhost:5432/loreweaver"; pnpm test`.
 
 ## Measurements
 

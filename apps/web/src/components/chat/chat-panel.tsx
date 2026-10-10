@@ -10,6 +10,12 @@ import type { ChatMetadata } from "@/lib/ai/chat-metadata";
 import type { ChatTools } from "@/lib/ai/tools";
 import { MessageActions } from "./message-actions";
 import {
+  LoreCitationCards,
+  LoreCitationCardsError,
+  LoreCitationCardsSkeleton,
+} from "./lore-citation-cards";
+import { WorldSwitcher } from "./world-switcher";
+import {
   CharacterStatusCard,
   CharacterStatusCardError,
   CharacterStatusCardSkeleton,
@@ -43,10 +49,11 @@ export function ChatPanel() {
     sessionIdRef.current ??= crypto.randomUUID();
     return sessionIdRef.current;
   }
-  const { messages, sendMessage, status, error, stop, regenerate } = useChat<ChatMessage>({
-    id: chatId,
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
-  });
+  const { messages, setMessages, sendMessage, status, error, stop, regenerate } =
+    useChat<ChatMessage>({
+      id: chatId,
+      transport: new DefaultChatTransport({ api: "/api/chat" }),
+    });
   const [input, setInput] = useState("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -80,8 +87,12 @@ export function ChatPanel() {
     <div className="mx-auto flex h-dvh w-full max-w-2xl flex-col gap-3 p-4">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">Loreweaver</h1>
-        {/* Always visible: users must know that the suggestions come from a model. */}
-        <Badge variant="outline">AI-generated suggestions</Badge>
+        <div className="flex items-center gap-3">
+          {/* A new world means a new conversation: earlier messages belong to the other world. */}
+          <WorldSwitcher disabled={busy} onChanged={() => setMessages([])} />
+          {/* Always visible: users must know that the suggestions come from a model. */}
+          <Badge variant="outline">AI-generated suggestions</Badge>
+        </div>
       </header>
 
       <div
@@ -96,7 +107,8 @@ export function ChatPanel() {
       >
         {messages.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Ask about your world, for example: “What does Kael have on them?”
+            Ask about your world, for example: “What does Kael have on them?” or “How does
+            teleportation work?”
           </p>
         )}
 
@@ -142,6 +154,22 @@ export function ChatPanel() {
                         );
                       case "output-error":
                         return <CharacterStatusCardError key={part.toolCallId} />;
+                      default:
+                        return null;
+                    }
+                  case "tool-search_lore":
+                    switch (part.state) {
+                      case "input-streaming":
+                      case "input-available":
+                        return <LoreCitationCardsSkeleton key={part.toolCallId} />;
+                      case "output-available":
+                        return part.output.ok ? (
+                          <LoreCitationCards key={part.toolCallId} hits={part.output.hits} />
+                        ) : (
+                          <LoreCitationCardsError key={part.toolCallId} />
+                        );
+                      case "output-error":
+                        return <LoreCitationCardsError key={part.toolCallId} />;
                       default:
                         return null;
                     }

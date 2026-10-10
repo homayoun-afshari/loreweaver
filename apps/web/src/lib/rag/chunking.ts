@@ -2,7 +2,7 @@ import type { Heading, Root } from "mdast";
 import { toString } from "mdast-util-to-string";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
-import { CHARS_PER_TOKEN } from "./constants";
+import { CHARS_PER_TOKEN, DEFAULT_CHUNKING } from "./constants";
 
 /** How to cut a document. Different values are compared in the chunking experiment. */
 export type ChunkConfig = {
@@ -29,7 +29,8 @@ export const CHUNK_CONFIGS = {
 } as const satisfies Record<string, ChunkConfig>;
 
 export type ChunkConfigName = keyof typeof CHUNK_CONFIGS;
-export const DEFAULT_CHUNK_CONFIG: ChunkConfigName = "heading-800";
+/** Same value the search uses (constants.ts). Typed, so a name that is not a configuration fails to compile. */
+export const DEFAULT_CHUNK_CONFIG: ChunkConfigName = DEFAULT_CHUNKING;
 
 export type Chunk = {
   /** The headings above the chunk, joined with " > ". Empty for text before the first heading. */

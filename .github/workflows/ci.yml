@@ -18,6 +18,30 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
+    # A throw-away Postgres with the pgvector extension, for the tenant isolation test. It exists
+    # only for this run. Its credentials are local to the job and protect nothing.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: loreweaver
+          POSTGRES_PASSWORD: loreweaver
+          POSTGRES_DB: loreweaver
+        ports:
+          - 5432:5432
+        # Wait until the database accepts connections before the steps start.
+        options: >-
+          --health-cmd "pg_isready -U loreweaver -d loreweaver"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      # drizzle-kit migrates this database; the tests that need a database read TEST_DATABASE_URL.
+      DATABASE_URL: postgresql://loreweaver:loreweaver@localhost:5432/loreweaver
+      TEST_DATABASE_URL: postgresql://loreweaver:loreweaver@localhost:5432/loreweaver
+
     steps:
       - uses: actions/checkout@v4
 
@@ -36,4 +60,8 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
+      # The same migrations that Dev, Preview and Production get: this also checks that they
+      # apply cleanly to an empty database (including enabling the pgvector extension).
+      - run: pnpm --filter web db:migrate
+
       - run: pnpm test
