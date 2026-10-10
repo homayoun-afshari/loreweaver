@@ -8,3 +8,24 @@ services:
       LEGACY_API_KEY: ${LEGACY_CMS_API_KEY:-dev-local-key}
       # Override only for load tests (see docs/METRICS.md); the real default is 30.
       LEGACY_RATE_LIMIT_PER_MIN: ${LEGACY_RATE_LIMIT_PER_MIN:-30}
+
+  postgres:
+    # Postgres plus the pgvector extension (used for vector search on Day 3).
+    image: pgvector/pgvector:pg17
+    ports:
+      - "5432:5432"
+    environment:
+      # Local-only credentials. Preview and production use the Supabase URL instead.
+      POSTGRES_USER: loreweaver
+      POSTGRES_PASSWORD: loreweaver
+      POSTGRES_DB: loreweaver
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loreweaver -d loreweaver"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
