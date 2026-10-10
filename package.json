@@ -19,6 +19,7 @@
     "format:check": "prettier --check .",
     "measure:legacy": "pnpm --filter web exec tsx scripts/measure-legacy.ts",
     "benchmark": "pnpm --filter web exec tsx scripts/benchmark.ts",
-    "measure:chat": "pnpm --filter web exec tsx scripts/measure-chat.ts"
+    "measure:chat": "pnpm --filter web exec tsx scripts/measure-chat.ts",
+    "ingest": "pnpm --filter web exec tsx scripts/ingest.ts"
   }
 }

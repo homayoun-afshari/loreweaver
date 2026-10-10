@@ -8,7 +8,8 @@ Loreweaver is built over seven days. Each day ends with a report in [`docs/repor
 
 - **Web app** (`apps/web`): a Next.js chat. The browser talks to API routes; the model is Claude, called through the Vercel AI SDK.
 - **Legacy CMS** (`services/legacy-cms`): a stand-alone service that owns live character state (location, inventory, mana). The chat reads it through a tool and shows the result as a **Character Status Card**.
-- **Postgres**: stores user feedback on answers (and, later, vectors for lore search).
+- **Lore** (`data/lore`): the worlds' lore as Markdown files. `pnpm ingest` cuts them into chunks, turns each chunk into a vector with an embedding model (Voyage AI) and stores them in Postgres, ready for similarity search.
+- **Postgres** (with the pgvector extension): stores user feedback on answers and the lore chunks with their vectors.
 
 You can run the whole thing on your machine. Only the model calls need an account.
 
@@ -44,6 +45,7 @@ pnpm install
 cp apps/web/.env.example apps/web/.env.local   # then put your ANTHROPIC_API_KEY and VOYAGE_API_KEY in it
 docker compose up --build -d                   # the legacy CMS (:8080) and Postgres (:5432)
 pnpm --filter web db:migrate                   # create the database tables and enable the pgvector extension
+pnpm ingest                                    # chunk and embed the lore into Postgres
 pnpm dev
 ```
 
@@ -117,6 +119,22 @@ DATABASE_URL="<supabase connection string>" pnpm --filter web db:migrate
 
 On Windows PowerShell, set the variable first with `$env:DATABASE_URL = "..."`. The table has Row Level Security switched on, with no policies, so Supabase's own web API cannot read or write it. The app connects as the database owner, which bypasses it.
 
+## Lore and ingestion
+
+The lore lives in `data/lore/<world_id>/*.md`, one folder per world. The folder name is the world's id and must match the id used by the legacy CMS (`world_aethel`, `world_nox`). Each file starts with a front matter block (`doc_type: rule | location | history | character`), then a `#` title and `##` / `###` sections. The format is described in [`data/lore/README.md`](data/lore/README.md).
+
+```sh
+pnpm ingest                         # default chunking configuration, every world
+pnpm ingest --world world_aethel    # only one world (repeat the flag for more)
+pnpm ingest --config all            # every chunking configuration (see apps/web/src/lib/rag/chunking.ts)
+pnpm ingest --dry-run               # chunk only: print the sizes, no database, no API call
+```
+
+- **What it does.** It reads the files, cuts each one at its headings (and, if a section is longer than the size cap, at paragraphs and sentences, with a little overlap), and embeds every chunk with the model in `EMBEDDING_MODEL`. One row per chunk goes into the `lore_chunks` table: the text, its vector, the world, the file, the heading path and the kind of document. The files are the source of truth; the table is an index that can always be rebuilt.
+- **It is safe to run again.** Each chunk stores a hash of the embedding model and the exact text that was embedded. A second run on unchanged files embeds nothing and costs nothing; after an edit, only the changed chunks are embedded; stored chunks that no longer exist are removed. Changing `EMBEDDING_MODEL` re-embeds everything.
+- **Cost.** It prints the tokens the provider billed and the cost at list price. The whole current lore is about 6,000 tokens, a fraction of a cent.
+- **Where it writes.** To the database in `DATABASE_URL`: the local container by default. To fill the hosted database, set the variable for one command (PowerShell: `$env:DATABASE_URL = "<supabase pooled string>"; pnpm ingest`, then close the shell or remove the variable). Vectors have 1024 dimensions and the table has no vector index: at this size an exact scan is fast and always exact.
+
 ## Environment variables of the web app
 
 Set them in `apps/web/.env.local` locally, and in your hosting provider's settings for preview and production. Never commit real values.
@@ -127,25 +145,28 @@ Set them in `apps/web/.env.local` locally, and in your hosting provider's settin
 | `LEGACY_CMS_API_KEY` | The CMS API key (`dev-local-key` locally)                                              |
 | `ANTHROPIC_API_KEY`  | Your Anthropic API key. Use a separate key for production so each can be rotated alone |
 | `DATABASE_URL`       | Postgres connection string (local Docker, or the Supabase pooled string when hosted)   |
+| `VOYAGE_API_KEY`     | Your Voyage AI API key, for embeddings. Use a separate key for production              |
+| `EMBEDDING_MODEL`    | The embedding model (`voyage-4-lite`). Chunks and queries must use the same one        |
 
 ## Deploying the web app
 
-On Vercel, import the GitHub repository and set the project's **Root Directory** to `apps/web`. Add the four variables above for Preview and Production. `apps/web/vercel.json` pins the function region to Paris (`cdg1`), near the CMS in `europe-west1`. Every pull request gets a preview URL and every merge to `main` updates production.
+On Vercel, import the GitHub repository and set the project's **Root Directory** to `apps/web`. Add the six variables above for Preview and Production. `apps/web/vercel.json` pins the function region to Paris (`cdg1`), near the CMS in `europe-west1`. Every pull request gets a preview URL and every merge to `main` updates production.
 
 ## Scripts
 
-| Command                         | What it does                                                            |
-| ------------------------------- | ----------------------------------------------------------------------- |
-| `pnpm dev`                      | Start the web app in development mode                                   |
-| `pnpm test`                     | Run unit tests                                                          |
-| `pnpm lint`                     | Lint with ESLint                                                        |
-| `pnpm typecheck`                | Type-check with TypeScript                                              |
-| `pnpm format`                   | Format the whole repo with Prettier                                     |
-| `pnpm --filter web db:generate` | Create a database migration from the schema                             |
-| `pnpm --filter web db:migrate`  | Apply migrations to the database in `DATABASE_URL`                      |
-| `pnpm measure:legacy`           | Load-test the legacy CMS and its client                                 |
-| `pnpm benchmark`                | Compare two models on the same five prompts through the chat route      |
-| `pnpm measure:chat`             | Time the chat with its tool: time to first UI, card, first token, total |
+| Command                         | What it does                                                                |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| `pnpm dev`                      | Start the web app in development mode                                       |
+| `pnpm test`                     | Run unit tests                                                              |
+| `pnpm lint`                     | Lint with ESLint                                                            |
+| `pnpm typecheck`                | Type-check with TypeScript                                                  |
+| `pnpm format`                   | Format the whole repo with Prettier                                         |
+| `pnpm ingest`                   | Chunk and embed the lore into Postgres (idempotent; `--dry-run` to preview) |
+| `pnpm --filter web db:generate` | Create a database migration from the schema                                 |
+| `pnpm --filter web db:migrate`  | Apply migrations to the database in `DATABASE_URL`                          |
+| `pnpm measure:legacy`           | Load-test the legacy CMS and its client                                     |
+| `pnpm benchmark`                | Compare two models on the same five prompts through the chat route          |
+| `pnpm measure:chat`             | Time the chat with its tool: time to first UI, card, first token, total     |
 
 ## Measurements
 
@@ -161,7 +182,9 @@ Every number reported about the project is recorded in [`docs/METRICS.md`](docs/
 ## Layout
 
 ```
-apps/web/            Next.js app: chat page, API routes, database schema and migrations
+apps/web/            Next.js app: chat page, API routes, database schema and migrations, ingestion script
+data/lore/           The lore of each world, as Markdown files (the source of the search index)
+evals/               Retrieval evaluation data and code
 services/legacy-cms/ The legacy CMS (PHP, Slim, SQLite) and its OpenAPI contract
 packages/shared/     Reserved for code shared between projects (empty so far)
 docs/                PRD, ADRs, metrics, benchmark and daily reports
