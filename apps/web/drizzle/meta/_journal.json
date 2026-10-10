@@ -15,6 +15,13 @@
       "when": 1791636949332,
       "tag": "0001_white_hemingway",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791642046896,
+      "tag": "0002_enable_pgvector",
+      "breakpoints": true
     }
   ]
 }

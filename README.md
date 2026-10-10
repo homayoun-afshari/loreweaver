@@ -26,13 +26,14 @@ You can run the whole thing on your machine. Only the model calls need an accoun
 
 **Accounts**
 
-| Account                                          | Needed for                                                                | Required?                |
-| ------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------ |
-| [Anthropic Console](https://platform.claude.com) | An API key for the model, with prepaid credits (a few dollars are enough) | Yes, for the chat        |
-| [Vercel](https://vercel.com)                     | Hosting the web app, with a preview URL for each pull request             | Only to deploy           |
-| [Google Cloud](https://cloud.google.com)         | Hosting the legacy CMS container on Cloud Run                             | Only to deploy           |
-| [Supabase](https://supabase.com)                 | Hosted Postgres for preview and production                                | Only to deploy           |
-| GitHub                                           | Hosting the code and running CI                                           | Only for the CI workflow |
+| Account                                          | Needed for                                                                                                        | Required?                |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| [Anthropic Console](https://platform.claude.com) | An API key for the model, with prepaid credits (a few dollars are enough)                                         | Yes, for the chat        |
+| [Voyage AI](https://www.voyageai.com)            | An API key for the embedding model that turns lore text into vectors (the free allowance is far more than needed) | Yes, for lore search     |
+| [Vercel](https://vercel.com)                     | Hosting the web app, with a preview URL for each pull request                                                     | Only to deploy           |
+| [Google Cloud](https://cloud.google.com)         | Hosting the legacy CMS container on Cloud Run                                                                     | Only to deploy           |
+| [Supabase](https://supabase.com)                 | Hosted Postgres for preview and production                                                                        | Only to deploy           |
+| GitHub                                           | Hosting the code and running CI                                                                                   | Only for the CI workflow |
 
 Create the Anthropic API key **inside a workspace** (for example the default one). A key that is not scoped to a workspace is rejected by the API.
 
@@ -40,9 +41,9 @@ Create the Anthropic API key **inside a workspace** (for example the default one
 
 ```sh
 pnpm install
-cp apps/web/.env.example apps/web/.env.local   # then put your ANTHROPIC_API_KEY in it
+cp apps/web/.env.example apps/web/.env.local   # then put your ANTHROPIC_API_KEY and VOYAGE_API_KEY in it
 docker compose up --build -d                   # the legacy CMS (:8080) and Postgres (:5432)
-pnpm --filter web db:migrate                   # create the database tables
+pnpm --filter web db:migrate                   # create the database tables and enable the pgvector extension
 pnpm dev
 ```
 
