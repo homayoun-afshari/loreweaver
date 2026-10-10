@@ -1,23 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { costUsd, DEFAULT_MODEL_ID, resolveModelId } from "./models";
+import { AGENT_MODEL_ID, costUsd, DEV_MODEL_ID, resolveModelId } from "./models";
 
 describe("resolveModelId", () => {
-  it("uses the default when nothing is requested", () => {
-    expect(resolveModelId(undefined, undefined)).toBe(DEFAULT_MODEL_ID);
+  it("uses the cheap model on a developer's machine when nothing is requested", () => {
+    expect(resolveModelId(undefined, undefined)).toBe(DEV_MODEL_ID);
+    expect(resolveModelId(undefined, "development")).toBe(DEV_MODEL_ID);
   });
 
-  it("allows an allowlisted model outside production", () => {
+  it("uses the agent model in Preview and Production", () => {
+    expect(resolveModelId(undefined, "preview")).toBe(AGENT_MODEL_ID);
+    expect(resolveModelId(undefined, "production")).toBe(AGENT_MODEL_ID);
+  });
+
+  it("allows an allowlisted model locally", () => {
     expect(resolveModelId("claude-sonnet-5-5", undefined)).toBe("claude-sonnet-5-5");
-    expect(resolveModelId("claude-sonnet-5-5", "preview")).toBe("claude-sonnet-5-5");
   });
 
   it("ignores a model that is not on the allowlist", () => {
-    expect(resolveModelId("gpt-nonexistent", undefined)).toBe(DEFAULT_MODEL_ID);
-    expect(resolveModelId("toString", undefined)).toBe(DEFAULT_MODEL_ID);
+    expect(resolveModelId("gpt-nonexistent", undefined)).toBe(DEV_MODEL_ID);
+    expect(resolveModelId("toString", undefined)).toBe(DEV_MODEL_ID);
   });
 
-  it("never lets a caller choose the model in production", () => {
-    expect(resolveModelId("claude-sonnet-5-5", "production")).toBe(DEFAULT_MODEL_ID);
+  it("never lets a caller choose the model in Preview or Production", () => {
+    expect(resolveModelId("claude-haiku-4-5", "production")).toBe(AGENT_MODEL_ID);
+    expect(resolveModelId("claude-haiku-4-5", "preview")).toBe(AGENT_MODEL_ID);
   });
 });
 
