@@ -1,10 +1,11 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, isStepCount, streamText, validateUIMessages } from "ai";
+import type { ChatMetadata } from "@/lib/ai/chat-metadata";
 import { parseChatRequest } from "@/lib/ai/chat-request";
 import { resolveModelId } from "@/lib/ai/models";
-import { SYSTEM_PROMPT } from "@/lib/ai/system-prompt";
 import { createTools } from "@/lib/ai/tools";
 import { getEnv } from "@/lib/env";
+import { getSystemPrompt, PROMPT_VERSION } from "@/lib/prompts";
 
 // Vercel stops the function after this many seconds, so a stuck model call cannot run forever.
 export const maxDuration = 30;
@@ -33,7 +34,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const result = streamText({
     model: anthropic(modelId),
-    instructions: SYSTEM_PROMPT,
+    instructions: getSystemPrompt(),
     messages: await convertToModelMessages(messages),
     tools,
     // One step to call the tool, one to write the answer from its result, one spare.
@@ -47,10 +48,11 @@ export async function POST(request: Request): Promise<Response> {
     // Never send raw provider errors (they can contain internals) to the browser.
     onError: () => GENERIC_ERROR,
     // Sent once, when the model finishes. The benchmark script reads it to compute cost.
-    messageMetadata: ({ part }) =>
+    messageMetadata: ({ part }): ChatMetadata | undefined =>
       part.type === "finish"
         ? {
             modelId,
+            promptVersion: PROMPT_VERSION,
             inputTokens: part.totalUsage.inputTokens,
             outputTokens: part.totalUsage.outputTokens,
           }
