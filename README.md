@@ -192,7 +192,7 @@ Every number reported about the project is recorded in [`docs/METRICS.md`](docs/
 - [Architecture decisions](docs/adr/)
 - [Retrieval eval](evals/README.md): the labeled questions and how the lore search is scored
 - [Metrics](docs/METRICS.md) and [model benchmark](docs/BENCHMARK.md)
-- [Daily reports](docs/reports/): [Day 1](docs/reports/day-1.md), [Day 2](docs/reports/day-2.md)
+- [Daily reports](docs/reports/): [Day 1](docs/reports/day-1.md), [Day 2](docs/reports/day-2.md), [Day 3](docs/reports/day-3.md)
 
 ## Layout
 
