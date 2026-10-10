@@ -282,7 +282,7 @@ Each vector has 1024 numbers and takes 4,100 bytes as stored. The list price is 
 
 - **The eval set is small and was written by one person.** Thirty-two questions with an answer: one question moves a mean by about 3 points, so the differences between configurations (0.917 against 0.891) are within what one or two questions can cause. Labels are whole sections, so scoring cannot see whether only a part of a section answers the question. The set was not blind: eight earlier questions had been tried on the search, and some topics overlap.
 - **The same set was used to compare and to choose,** with only three configurations, so overfitting is unlikely but not excluded.
-- **Latency is for this laptop.** The embedding time includes the internet path from here to Voyage's servers, and the search time includes the Windows to Docker connection. The hosted database and the Vercel region were not measured, so the share of the embedding (85%) and the 45 ms effect may differ there. The first calls (connection set-up) are excluded.
+- **Latency is for this laptop.** The embedding time includes the internet path from here to Voyage's servers, and the search time includes the Windows to Docker connection. The hosted app was measured separately in the next subsection, as a whole tool call, so the split between embedding and search (85% and the 45 ms effect) is only known for the laptop. The first calls (connection set-up) are excluded.
 - **The latency figures leave out the chat route, the tools' other work and the model.** They are the search only.
 - **The sizes are for fresh databases** with 70 to 109 rows. A hosted database may report slightly different totals.
 - **Hybrid search and a reranker were not built,** so they are not measured. A chunking strategy that ignores headings (fixed-size) is not implemented, so it is not compared.
@@ -328,3 +328,62 @@ Remove-Item Env:DATABASE_URL
 The runs need `VOYAGE_API_KEY` and `EMBEDDING_MODEL` in `apps/web/.env.local`. All together they use about 25,000 tokens (a few thousandths of a cent). To time a hosted database instead, set `DATABASE_URL` to its connection string for the `measure:retrieval` command.
 
 **To reproduce the recorded numbers exactly,** check out commit `cb1f815` first (`git checkout cb1f815`). The measured code has not changed since: only a comment in `search.ts` and documentation did. The quality figures, the token counts and the sizes are deterministic: repeated runs gave identical results. The latency depends on the machine and the network, so a new run gives close numbers, not identical ones.
+
+### The search tool on Production
+
+**What was measured:** how long the chat's `search_lore` tool takes on the deployed app, with its hosted database and the real embedding service, seen from the outside: the time between the model calling the tool and the tool's result arriving in the stream. This is the whole search as the app runs it. The model is only used to decide to call the tool. Script: `apps/web/scripts/measure-search-tool.ts`.
+
+| Item           | Value                                                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Date           | 2026-10-10                                                                                                                                                                      |
+| Script version | Commit `51a459b`                                                                                                                                                                |
+| Local          | The dev server on the laptop, the Docker Postgres, the dev model (Haiku 4.5). 20 questions                                                                                      |
+| Production     | `https://loreweaver-nine.vercel.app`, which reported commit `05adb54`: Vercel, the hosted Supabase database, Sonnet 5.5. Two batches of 20 questions, asked one after the other |
+| Questions      | The first 20 lore questions of the retrieval eval set (all in the Aethel world), one at a time, each in its world. The model decides whether to search and with which words     |
+| Timing         | By the client. Events that arrive in the same network read share a time, and each of the two events adds a few milliseconds of network, so the tool time is slightly overstated |
+
+**Results (milliseconds)**
+
+| Target              | Tool calls | **Tool time p50** | **Tool time p95** | Mean | Min / max  | Whole question p50 / p95 |
+| ------------------- | ---------: | ----------------: | ----------------: | ---: | ---------- | -----------------------: |
+| Local               |         20 |           **357** |           **948** |  479 | 323 / 1090 |              2869 / 4328 |
+| Production, batch 1 |         20 |           **289** |           **707** |  428 | 215 / 800  |              4232 / 7275 |
+| Production, batch 2 |         20 |           **287** |           **681** |  410 | 225 / 704  |              3994 / 5668 |
+
+On Production all 40 tool calls succeeded and returned passages. The model searched for every question on Production, and for 19 of 20 locally (one question was answered without a search). "Whole question" is the time for the complete answer, with the model included: one search and two model steps.
+
+**Key findings**
+
+- **A search takes about 0.29 s at p50 on Production, and about 0.7 s at p95.** That is a little faster than on the laptop (0.36 s locally through the app, the same as the 0.35 s measured directly in the section above, so the method agrees). The embedding request from the cloud is probably quicker than from the laptop, but this measurement cannot separate the parts.
+- **About one search in ten is slower** (0.6 to 0.8 s, against 0.22 to 0.3 s for the rest). A likely cause is a new connection to the database when a serverless function starts, but this was not checked.
+- **The lore is in the hosted database and works end to end:** no failure and no empty result in 40 calls.
+- **The search is about 7% of a lore answer's time.** A whole question takes about 4.0 to 4.2 s at p50 and 5.7 to 7.3 s at p95, mostly the two model steps. That is inside the 8 s target, but the first batch left under 1 s of margin, with no character lookup and no reflection step yet.
+- **The 50 ms effect of the large query parameter (section above) cannot be seen here.** The whole hosted tool is faster than the laptop's embedding plus search, so the effect does not dominate on Production, but this does not show whether it exists there.
+
+**Caveats**
+
+- 20 questions per batch: the p95 is the second slowest call. The two Production batches agree on the median (289 and 287 ms) and on the p95 within about 4%, but the whole-question p95 differs by 1.6 s between them.
+- The tool time includes the tool's own work (embedding, query, building the result) and two stream events over the network. It is not the database time alone.
+- Cold starts were not isolated. The 10 minutes between batches may or may not have kept the function warm.
+- Questions were all in one world, and the model chose the search words, so they differ from the fixed words of the section above.
+- Production runs Sonnet and local runs Haiku, which only affects the whole-question time, not the tool time.
+- A Production run costs about 1 cent per question (about 40 cents for the 40 questions); the local run costs a fraction of that. The cost was estimated from token prices, not read from the console.
+
+**Reproduce**
+
+```sh
+pnpm dev                                                       # terminal 1 (the CMS is not needed: no character tool is used)
+pnpm measure:search-tool                                       # terminal 2: the local app
+MEASURE_URL=https://loreweaver-nine.vercel.app MEASURE_REQUESTS=20 pnpm measure:search-tool   # a deployed app
+```
+
+On Windows PowerShell:
+
+```powershell
+pnpm measure:search-tool
+$env:MEASURE_URL = "https://loreweaver-nine.vercel.app"; $env:MEASURE_REQUESTS = "20"
+pnpm measure:search-tool
+Remove-Item Env:MEASURE_URL, Env:MEASURE_REQUESTS
+```
+
+`MEASURE_REQUESTS` sets the number of questions (default 20). The target app needs the lore ingested in its database. **To reproduce the recorded numbers exactly,** check out commit `51a459b` for the script; the Production numbers describe the deployed version `05adb54` (as reported by `/api/health`), so a later deploy gives different numbers.

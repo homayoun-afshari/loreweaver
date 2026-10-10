@@ -113,5 +113,5 @@ The strategy was measured on the labeled question set (32 questions with an answ
 Follow-ups added by the measurements:
 
 - Send the question's vector with fewer digits. On the development machine the 20 KB query parameter alone cost about 45 ms of a 53 ms search, and rounding it cut the search to 7 ms. The effect on ranking has to be checked first, and it may not exist on a hosted database.
-- Measure the search against the hosted database from the deployed app, where the network path is different from the laptop's.
+- Find out why about one search in ten is slower on Production (0.6 to 0.8 s, against about 0.29 s at p50). The measurement of the deployed search tool (see METRICS.md) did not separate the embedding from the database, and it did not show whether the large-parameter delay exists on the hosted database. A new connection on a cold serverless start is a likely suspect.
 - Grow the question set, especially unanswerable questions that mention real names, before relying on differences smaller than a few points.
