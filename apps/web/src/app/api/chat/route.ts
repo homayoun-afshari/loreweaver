@@ -2,6 +2,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, isStepCount, streamText, validateUIMessages } from "ai";
 import type { ChatMetadata } from "@/lib/ai/chat-metadata";
 import { parseChatRequest } from "@/lib/ai/chat-request";
+import { createChatTimer } from "@/lib/ai/server-timing";
 import { resolveModelId } from "@/lib/ai/models";
 import { createTools } from "@/lib/ai/tools";
 import { getEnv } from "@/lib/env";
@@ -14,6 +15,7 @@ export const maxDuration = 30;
 const GENERIC_ERROR = "Something went wrong. Please try again.";
 
 export async function POST(request: Request): Promise<Response> {
+  const timer = createChatTimer();
   const body = parseChatRequest(await request.json().catch(() => null));
   if (!body) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
@@ -41,13 +43,14 @@ export async function POST(request: Request): Promise<Response> {
     stopWhen: isStepCount(3),
     // Stop the model call when the user presses "Stop" (the browser aborts the request).
     abortSignal: request.signal,
+    onChunk: ({ chunk }) => timer.markChunk(chunk.type),
     onError: ({ error }) => console.error("[chat] model error", error),
   });
 
   return result.toUIMessageStreamResponse({
     // Never send raw provider errors (they can contain internals) to the browser.
     onError: () => GENERIC_ERROR,
-    // Sent once, when the model finishes. The benchmark script reads it to compute cost.
+    // Sent once, when the model finishes. The measuring scripts read it (cost, server timing).
     messageMetadata: ({ part }): ChatMetadata | undefined =>
       part.type === "finish"
         ? {
@@ -55,6 +58,7 @@ export async function POST(request: Request): Promise<Response> {
             promptVersion: PROMPT_VERSION,
             inputTokens: part.totalUsage.inputTokens,
             outputTokens: part.totalUsage.outputTokens,
+            ...timer.snapshot(),
           }
         : undefined,
   });

@@ -41,13 +41,12 @@ Every figure reported in the README is measured and recorded here, with how it w
 | Latency p95               | 1726 ms              | 1503 ms              |
 | Latency max               | 3115 ms              | 2582 ms              |
 
-### What the numbers say
+### Key findings
 
-- **Latency matches the design.** A uniform delay of 200 to 1500 ms has a median near 850 ms and a 95th percentile near 1430 ms. The measured p50 (about 870 ms) and p95 (about 1470 ms) agree.
-- **Error rate matches the design.** About 5% (4.6% to 5.0%) of raw calls fail. With only 100 samples the rate is noisy (about 5 failures, give or take 2), which is why the 500-request run is also reported.
-- **Retries remove the visible failures.** Success went from about 95% raw to 100% in both runs. In theory, four tries that each fail 5% of the time all fail with probability 0.05^4, so about 99.9994% success is expected; none of the 600 calls failed.
-- **The price of retries is small.** Only 4% to 7% extra HTTP calls, and about 50 to 100 ms more on average. The slowest single calls (2.6 to 3.1 s) are the ones that needed one or more retries.
-- **Budget:** the PRD target is p95 under 8 s for a full answer. The CMS lookup alone uses about 1.5 s of it, so the language-model steps have roughly 6.5 s left. The state lookup is therefore a significant share of the latency budget.
+- **Latency and error rate match the design.** p50 about 870 ms and p95 about 1470 ms (a uniform delay of 200 to 1500 ms); about 5% of raw calls fail.
+- **Retries remove the visible failures.** Success went from about 95% raw to 100% in both runs (none of the 600 calls failed).
+- **The price of retries is small.** 4% to 7% extra HTTP calls and about 50 to 100 ms more on average; the slowest calls (2.6 to 3.1 s) are the ones that needed retries.
+- **Budget:** the CMS lookup alone uses about 1.5 s (p95) of the 8 s target for a full answer.
 
 ### Caveats
 
@@ -75,13 +74,20 @@ On Windows PowerShell, set the variable first with `$env:LEGACY_RATE_LIMIT_PER_M
 
 ## Day 2: mini model benchmark
 
-**What was measured:** the same five prompts sent to two Claude models through the real `POST /api/chat` route, to choose the model for the agent node (see ADR-0002). The method (scope, full setup, metric definitions, the exact prompts, the scoring rubric and all answers) is in [BENCHMARK.md](BENCHMARK.md). This section has only the numbers, the caveats and the command that reproduces them.
+**What was measured:** the same five prompts sent to two Claude models through the real `POST /api/chat` route, to choose the model for the agent node (see ADR-0002). The scope, the prompts, the scoring rubric and all answers are in [BENCHMARK.md](BENCHMARK.md). This section has the numbers.
 
-### Setup (short)
+### Setup
 
-Date 2026-10-10. Local dev server and the real Anthropic API. Models `claude-haiku-4-5` and `claude-sonnet-5-5`. 5 prompts, 1 run each, one at a time. The legacy CMS is not involved.
+| Item         | Value                                                                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Date         | 2026-10-10                                                                                                                             |
+| Code version | Commit `414cddb`: the original three-line system prompt and no tools. Later commits added the tool and the longer `agent.v1.md` prompt |
+| Target       | Local dev server and the real Anthropic API (dev key). The route is included, the legacy CMS is not                                    |
+| Models       | `claude-haiku-4-5` ($1 / $5 per million input / output tokens) and `claude-sonnet-5-5` ($2 / $10)                                      |
+| Load         | 5 prompts, 1 run each per model, one at a time, default sampling                                                                       |
+| Script       | `apps/web/scripts/benchmark.ts`                                                                                                        |
 
-**Code version: commit `414cddb`.** It had the original three-line system prompt and no tools. Later commits added the tool and the longer `agent.v1.md` prompt, so running `pnpm benchmark` on the current code measures a different system (see Reproduce).
+**Definitions** (all measured by the script, client side): **TTFT** is the time from sending the request to the first text token. **Total latency** is the time until the stream ends. **Output tokens** are reported by the provider. **Tokens per second** is output tokens divided by (total latency minus TTFT). **Cost** is input and output tokens times the prices above.
 
 ### Results
 
@@ -100,27 +106,19 @@ Per prompt (TTFT / total latency / output tokens). Prompt texts and per-prompt q
 | P4 structured list | 648 ms / 2177 ms / 143 | 1219 ms / 4142 ms / 362 |
 | P5 prose           | 632 ms / 2063 ms / 125 | 1313 ms / 3550 ms / 273 |
 
-### What the numbers say
+### Key findings
 
-- **Sonnet 5.5 is better here, at a clear price.** Quality 4.6 vs 3.8, but TTFT is about 2x higher (1.35 s vs 0.67 s), total latency about 1.7x higher and cost about 4.2x higher per answer.
-- **Most of the quality gap is instruction following, not facts.** Both models refused to invent the blacksmith's name (P3). Haiku broke the format limits more often (P5), gave generic factions (P4) and explained P2 less clearly.
-- **Sonnet writes more.** About 2.2x the output tokens, even though the system prompt asks for concise answers. That, plus the higher price per token, is why the cost ratio is above the price ratio of 2x.
-- **Decode speed is not the difference.** Sonnet streams at about 133 tokens/s vs 95 for Haiku. The latency gap comes from the longer start (TTFT) and the longer answers.
-- **Budget check:** the PRD target is p95 under 8 s for a full answer, and the legacy CMS lookup already uses about 1.5 s of it (Day 1). A single Sonnet answer took up to 6.3 s (P1), so a multi-step agent on Sonnet will be tight.
-- **Absolute cost is tiny:** about $0.0008 (Haiku) and $0.0036 (Sonnet) per answer at these lengths.
+- **Sonnet scored higher** (4.6 against 3.8), mainly on following instructions. Both models refused to invent the blacksmith's name.
+- **Sonnet costs about 4.2x more per answer** ($0.0036 against $0.0008), **starts about 2x slower** (TTFT 1.35 s against 0.67 s) and writes about 2.2x more tokens.
+- **Streaming speed is similar** (133 against 95 tokens/s): the latency gap is the slower start plus the longer answers.
+- **The slowest answer** was Sonnet on P1 (6.3 s), against the 8 s p95 target; the CMS lookup alone uses about 1.5 s of that budget.
 
 ### Caveats
 
-- Five prompts and one run each: a trend, not a precise measurement. An earlier run (with a script bug that lost the token counts) gave TTFT within about 10% of this one.
-- Quality scores come from one reader, with an AI assistant's help, an informal rubric and no blind scoring. The LLM judge arrives on Day 6.
-- Run on a dev laptop: no Vercel network hop and no cold start, so Preview and Production TTFT will be somewhat higher.
-- The legacy CMS and tools are not part of these numbers, so they describe the model alone, not a full agent answer.
-- Part of the cost and latency gap is answer length (Sonnet wrote about 2.2x the tokens), not only model speed.
-- The answers contain Markdown (`#` titles, `**bold**`). The current prompt asks for plain text, because the chat UI does not render Markdown.
-
-### Not measured yet
-
-The guide also asks for **server-side TTFT** (time from the route receiving the request to the first token) and **time to first UI** (when the Character Status Card skeleton appears). Only client-side TTFT is recorded above.
+- Five prompts, one run each: a trend, not a precise number. An earlier run, with a script bug that lost the token counts, gave TTFT within about 10% of this one.
+- One reader scored quality with an informal rubric, not blind. The LLM judge arrives on Day 6.
+- A dev laptop: no Vercel network hop and no cold start. No CMS and no tools, so these numbers describe the model alone, not a full agent answer.
+- The answers contain Markdown; the current prompt asks for plain text because the chat UI does not render Markdown.
 
 ### Reproduce
 
@@ -132,3 +130,64 @@ pnpm benchmark    # terminal 2 (BENCHMARK_RUNS=3 repeats each prompt for steadie
 A run costs about two cents. The full answers go to `apps/web/scripts/.out/benchmark-latest.json` (git-ignored); the curated copy is in BENCHMARK.md.
 
 **To reproduce the recorded numbers exactly,** check out commit `414cddb` first (`git checkout 414cddb`). On the current code the same command also exercises the `fetch_character_state` tool and the longer prompt, so the answers, token counts and timings will differ.
+
+## Day 2: chat with the tool (time to first UI)
+
+**What was measured:** the question "What does Kael have on them?" sent through `POST /api/chat` with the `fetch_character_state` tool, timed the way a browser experiences the stream, plus the route's own timing. This is the full path: the model decides to call the tool, the CMS answers, the model writes one sentence. Script: `apps/web/scripts/measure-chat.ts`.
+
+### Setup (chat)
+
+| Item  | Value                                                                                                                                                                                           |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Date  | 2026-10-10                                                                                                                                                                                      |
+| Model | `claude-sonnet-5-5` in both targets (the Preview and Production model, ADR-0002)                                                                                                                |
+| Local | Dev server and the Docker CMS on the same laptop. Sonnet is chosen with the local-only model override. 10 runs                                                                                  |
+| Prod  | `https://loreweaver-nine.vercel.app` with the CMS on Cloud Run, deployed from the working tree with the Vercel CLI (the same code as the final-touch commit). 30 runs, client and server timing |
+| Load  | One run at a time                                                                                                                                                                               |
+
+| Metric               | Meaning                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| **Time to first UI** | Until the model starts the tool call: the browser can draw the **card skeleton** from this moment |
+| **Time to card**     | Until the tool result arrives: the browser can draw the **Character Status Card**                 |
+| **TTFT**             | Until the first text token of the answer                                                          |
+| **Total**            | Until the stream ends                                                                             |
+| **Server** vs client | Server time starts when the route starts. Client time starts when the request is sent             |
+
+### Results (chat)
+
+| Metric                   | Local p50 | Local p95 | Prod p50 | Prod p95 |
+| ------------------------ | --------: | --------: | -------: | -------: |
+| Time to first UI, client |    761 ms |   1608 ms |   801 ms |   933 ms |
+| Time to first UI, server |    749 ms |   1252 ms |   660 ms |   711 ms |
+| Time to card, client     |   2092 ms |   2673 ms |  2192 ms |  2794 ms |
+| TTFT, client             |   3219 ms |   3751 ms |  3070 ms |  4364 ms |
+| TTFT, server             |   3038 ms |   3740 ms |  2915 ms |  4196 ms |
+| Total, client            |   3225 ms |   3758 ms |  3071 ms |  4365 ms |
+| Total, server            |   3054 ms |   3746 ms |  2926 ms |  4206 ms |
+
+All 40 runs in the table succeeded and every card loaded (no error card), although the CMS fails about 5% of calls on its own: the client's retries hid it.
+
+### Key findings (chat)
+
+- **The skeleton can appear after about 0.8 s.** That is only the model deciding to call the tool, so a slow CMS does not delay it.
+- **The card can appear at about 2.2 s** (the CMS and the tool add about 1.4 s), and **the first text token at about 3.1 s** (a second model step writes the answer).
+- **Production is close to local.** On Production the client sees each moment 140 to 160 ms after the server does: the network and Vercel overhead.
+- **A one-tool question has a p95 of 4.4 s** on Production (30 runs), inside the 8 s target. A full agent will add model steps.
+- **The tail comes from the CMS.** Across three Production batches (50 runs), one run took 10.7 s: the card arrived at 9.8 s, so the tool call alone took about 8.6 s. The other 49 runs finished within 5.4 s.
+
+### Caveats (chat)
+
+- Local has 10 runs, so its p95 is the slowest run. Production has 30, which is steadier but small. The 10.7 s run shows that p95 depends on whether a slow CMS call lands in the sample; a p99 would need hundreds of runs.
+- Production was deployed from the working tree with the Vercel CLI, so `/api/health` reports the commit of `HEAD` and not the unpushed changes.
+- Output tokens per second is not reported: the answer is one sentence that arrives in a burst. Decode speed is in the benchmark section above.
+
+### Reproduce (chat)
+
+```sh
+docker compose up -d legacy-cms                             # the CMS the tool calls
+pnpm dev                                                    # terminal 1
+MEASURE_MODEL=claude-sonnet-5-5 pnpm measure:chat           # terminal 2: local, client and server timing
+MEASURE_URL=https://loreweaver-nine.vercel.app MEASURE_REQUESTS=30 pnpm measure:chat   # against Production
+```
+
+`MEASURE_REQUESTS` sets the number of runs (default 10). Each run costs about one cent. Run it on the code of the commit that added `measure-chat.ts` or later.

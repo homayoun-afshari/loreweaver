@@ -7,6 +7,10 @@ export const feedbackKind = pgEnum("feedback_kind", ["up", "down", "copy"]);
  * One row per click: an append-only event log, not a "current rating" per message.
  * If someone clicks up and then down, both events are kept, and the order tells the story.
  * Only ids are stored, never the message text.
+ *
+ * Row Level Security is switched on with no policies. Supabase exposes tables in the public
+ * schema through its own web API, and RLS closes that door. The app is not affected: it connects
+ * with the database owner role, which bypasses RLS.
  */
 export const feedbackEvents = pgTable(
   "feedback_events",
@@ -23,6 +27,6 @@ export const feedbackEvents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("feedback_events_message_idx").on(table.messageId)],
-);
+).enableRLS();
 
 export type NewFeedbackEvent = typeof feedbackEvents.$inferInsert;

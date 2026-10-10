@@ -11,7 +11,7 @@ Constraints:
 - The PRD guardrails: **p95 latency under 8 s** from question to complete answer, and **cost per query under $0.05**.
 - Answers must follow instructions (length, format) and must not invent facts about the author's world. A made-up fact is the continuity error the product exists to prevent.
 - Users feel the time to the first token, not the total time, so the start of the stream matters most.
-- The whole challenge has a small API budget, so day-to-day development must use a cheap model.
+- The project has a small API budget (about USD 15 to 20 in total), so day-to-day development must use a cheap model.
 - Public leaderboards test other tasks. The choice should rest on our own prompts.
 
 Evidence: a [mini model benchmark](../BENCHMARK.md) of 5 Loreweaver-style prompts on two models, through the real chat route. Numbers and caveats are in [METRICS.md](../METRICS.md).
@@ -69,5 +69,9 @@ The decision rests mainly on quality: 4.6 against 3.8, with the gap in instructi
 
 - Measure the p95 latency and cost per query of the full agent on Day 4 and Day 5. **Revisit this ADR if p95 exceeds 8 s, or if cost per query exceeds $0.05.**
 - Re-score quality with an LLM judge (Opus 5.5) and a larger set of prompts on Day 6, and compare Haiku again with a better prompt.
-- Add a fallback model for when the primary fails or times out (a Day 2 stretch step): Haiku is the natural candidate.
+- Add a fallback model for when the primary fails or times out (not built on Day 2): Haiku is the natural candidate.
 - Check the provider's data-handling terms before any real user data is sent (the PRD rules out training on user data).
+
+## Update (2026-10-10)
+
+After the tool was added, a chat with one tool call on Production (Sonnet, 30 runs) took a median of 3.1 s and a p95 of 4.4 s from question to complete answer (see [METRICS.md](../METRICS.md)). That is inside the 8 s budget and eases the latency risk for a one-tool question. The decision stands. One run in 50 across three Production batches took 10.7 s, because the legacy CMS call took about 8.6 s: the tail comes from the CMS, not the model. The full agent, with several tool calls and a reflection step, still has to be measured, and the CMS tail needs attention (see Day 5).

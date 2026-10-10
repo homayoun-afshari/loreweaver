@@ -29,3 +29,9 @@ next-env.d.ts
 
 # Raw output of local scripts
 scripts/.out/
+
+# Vercel CLI link (project and org ids)
+.vercel/
+
+.vercel
+.env*

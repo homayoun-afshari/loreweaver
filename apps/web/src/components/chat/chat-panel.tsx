@@ -33,6 +33,16 @@ export function ChatPanel() {
   // Without an id, useChat makes a random one while the page is prerendered, which Next.js
   // refuses (the value would be frozen into the static HTML). useId() is stable and safe.
   const chatId = useId();
+
+  // The id that groups feedback events by chat session. useId() is NOT unique per visitor (it is
+  // the same text for everyone, because it only depends on the position in the component tree),
+  // so a random id is made the first time it is needed. That happens in a click handler, never
+  // while the page is prerendered.
+  const sessionIdRef = useRef<string | undefined>(undefined);
+  function getSessionId(): string {
+    sessionIdRef.current ??= crypto.randomUUID();
+    return sessionIdRef.current;
+  }
   const { messages, sendMessage, status, error, stop, regenerate } = useChat<ChatMessage>({
     id: chatId,
     transport: new DefaultChatTransport({ api: "/api/chat" }),
@@ -141,7 +151,7 @@ export function ChatPanel() {
               })}
               {showActions(message, index) && (
                 <MessageActions
-                  chatId={chatId}
+                  getChatId={getSessionId}
                   messageId={message.id}
                   text={messageText(message)}
                   modelId={message.metadata?.modelId}

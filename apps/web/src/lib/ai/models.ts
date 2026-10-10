@@ -1,6 +1,6 @@
 /**
  * The models the app may call, with their prices. One place to change a model.
- * Prices are USD per million tokens (input / output), from the Day 2 guide.
+ * Prices are USD per million tokens (input / output), as published by Anthropic at the time.
  */
 export const MODELS = {
   "claude-haiku-4-5": { label: "Claude Haiku 4.5", inputPerMTok: 1, outputPerMTok: 5 },

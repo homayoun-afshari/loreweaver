@@ -7,4 +7,8 @@ export type ChatMetadata = {
   promptVersion?: string;
   inputTokens?: number;
   outputTokens?: number;
+  /** Server-side timing in milliseconds, from the route starting (see server-timing.ts). */
+  serverTtftMs?: number;
+  serverFirstUiMs?: number;
+  serverTotalMs?: number;
 };

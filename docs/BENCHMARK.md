@@ -28,7 +28,7 @@ A full agent answer will be slower than these numbers: it adds the CMS call (abo
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Date          | 2026-10-10                                                                                                                                                                              |
 | Where it ran  | Local dev server (`pnpm dev`) on my laptop. The script calls `http://localhost:3000/api/chat`, so the route is included. The model call goes to the real Anthropic API                  |
-| Models        | `claude-haiku-4-5` ($1 / $5 per million input / output tokens) and `claude-sonnet-5-5` ($2 / $10). Prices from the Day 2 guide                                                          |
+| Models        | `claude-haiku-4-5` ($1 / $5 per million input / output tokens) and `claude-sonnet-5-5` ($2 / $10). Prices as published by Anthropic at the time                                         |
 | Credentials   | Dev API key, scoped to a workspace                                                                                                                                                      |
 | System prompt | The original three-line prompt (at commit `414cddb`, in `apps/web/src/lib/ai/system-prompt.ts`, since replaced by `src/lib/prompts/agent.v1.md`), identical for both models (see below) |
 | Sampling      | Provider defaults. Temperature, top-p and max tokens were **not** set                                                                                                                   |
@@ -44,13 +44,7 @@ A full agent answer will be slower than these numbers: it adds the CMS call (abo
 
 If this prompt changes, the results are no longer comparable: re-run both models.
 
-**How each number is measured** (all client side, inside the script):
-
-- **TTFT:** from sending the request to the first `text-delta` event in the stream.
-- **Total latency:** from sending the request until the stream ends.
-- **Output tokens:** reported by the provider and forwarded by the route in the final `finish` event.
-- **Output tokens per second:** `output tokens / (total latency - TTFT)`.
-- **Cost:** `input tokens x input price + output tokens x output price`.
+The timing, token and cost figures, with their definitions, are in [METRICS.md](METRICS.md#day-2-mini-model-benchmark).
 
 ## 4. Prompts (verbatim)
 
@@ -180,4 +174,4 @@ Answers are quoted as received. The models used Markdown (`#` titles, `**bold**`
 
 ## 7. Results, caveats and how to re-run
 
-The numbers, the caveats and the reproduce command are in [METRICS.md](METRICS.md#day-2-mini-model-benchmark). They are kept there only, so they are not written twice.
+The numbers, the caveats and the command to re-run are in [METRICS.md](METRICS.md#day-2-mini-model-benchmark). They are kept there only, so they are not written twice.

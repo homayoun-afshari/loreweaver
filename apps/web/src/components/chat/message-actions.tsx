@@ -11,7 +11,8 @@ type Rating = "up" | "down";
 const COPIED_MS = 1500;
 
 type Props = {
-  chatId: string;
+  /** Returns the id of this chat session (the same value for every message of one chat). */
+  getChatId: () => string;
   messageId: string;
   /** The plain text of the message, for the copy button. */
   text: string;
@@ -20,7 +21,7 @@ type Props = {
 };
 
 /** Thumbs up, thumbs down and copy for one finished assistant message. Each click is stored. */
-export function MessageActions({ chatId, messageId, text, modelId, promptVersion }: Props) {
+export function MessageActions({ getChatId, messageId, text, modelId, promptVersion }: Props) {
   const [rating, setRating] = useState<Rating | null>(null);
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -30,7 +31,7 @@ export function MessageActions({ chatId, messageId, text, modelId, promptVersion
       const response = await fetch("/api/feedback", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ chatId, messageId, kind, modelId, promptVersion }),
+        body: JSON.stringify({ chatId: getChatId(), messageId, kind, modelId, promptVersion }),
       });
       return response.ok;
     } catch {

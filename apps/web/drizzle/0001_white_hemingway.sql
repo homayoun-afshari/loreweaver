@@ -1,0 +1,1 @@
+ALTER TABLE "feedback_events" ENABLE ROW LEVEL SECURITY;
