@@ -11,6 +11,8 @@ const envSchema = z.object({
   LEGACY_CMS_API_KEY: z.string().min(1),
   /** Anthropic API key for model calls (dev key locally and in Preview, prod key in Production). */
   ANTHROPIC_API_KEY: z.string().min(1),
+  /** Postgres connection string: local Docker in development, Supabase (pooled) in Preview and Production. */
+  DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, "must be a postgres:// URL"),
 });
 
 export type Env = z.infer<typeof envSchema>;
