@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -10,7 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 const STICK_TO_BOTTOM_PX = 80;
 
 export function ChatPanel() {
+  // Without an id, useChat makes a random one while the page is prerendered, which Next.js
+  // refuses (the value would be frozen into the static HTML). useId() is stable and safe.
+  const chatId = useId();
   const { messages, sendMessage, status, error, stop, regenerate } = useChat({
+    id: chatId,
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
   const [input, setInput] = useState("");
