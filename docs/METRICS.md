@@ -70,3 +70,55 @@ docker compose down
 ```
 
 On Windows PowerShell, set the variable first with `$env:LEGACY_RATE_LIMIT_PER_MIN = "100000"`.
+
+## Day 2: mini model benchmark
+
+**What was measured:** the same five prompts sent to two Claude models through the real `POST /api/chat` route, to choose the model for the agent node (see ADR-0002). The method (scope, full setup, metric definitions, the exact prompts, the scoring rubric and all answers) is in [BENCHMARK.md](BENCHMARK.md). This section has only the numbers, the caveats and the command that reproduces them.
+
+### Setup (short)
+
+Date 2026-10-10. Local dev server and the real Anthropic API. Models `claude-haiku-4-5` and `claude-sonnet-5-5`. 5 prompts, 1 run each, one at a time. The legacy CMS is not involved.
+
+### Results
+
+| Model             | Avg TTFT | Avg total latency | Avg output tokens | Output tokens/s | Cost, 5 prompts | Avg quality (1 to 5) |
+| ----------------- | -------: | ----------------: | ----------------: | --------------: | --------------: | -------------------: |
+| Claude Haiku 4.5  |   669 ms |           2355 ms |               148 |              95 |         $0.0042 |                  3.8 |
+| Claude Sonnet 5.5 |  1346 ms |           3998 ms |               330 |             133 |         $0.0178 |                  4.6 |
+
+Per prompt (TTFT / total latency / output tokens). Prompt texts and per-prompt quality scores are in BENCHMARK.md.
+
+| Prompt             | Haiku 4.5              | Sonnet 5.5              |
+| ------------------ | ---------------------- | ----------------------- |
+| P1 plot ideas      | 832 ms / 4721 ms / 315 | 1391 ms / 6321 ms / 563 |
+| P2 rule check      | 626 ms / 1012 ms / 47  | 1514 ms / 2630 ms / 200 |
+| P3 honesty         | 606 ms / 1801 ms / 111 | 1293 ms / 3348 ms / 254 |
+| P4 structured list | 648 ms / 2177 ms / 143 | 1219 ms / 4142 ms / 362 |
+| P5 prose           | 632 ms / 2063 ms / 125 | 1313 ms / 3550 ms / 273 |
+
+### What the numbers say
+
+- **Sonnet 5.5 is better here, at a clear price.** Quality 4.6 vs 3.8, but TTFT is about 2x higher (1.35 s vs 0.67 s), total latency about 1.7x higher and cost about 4.2x higher per answer.
+- **Most of the quality gap is instruction following, not facts.** Both models refused to invent the blacksmith's name (P3). Haiku broke the format limits more often (P5), gave generic factions (P4) and explained P2 less clearly.
+- **Sonnet writes more.** About 2.2x the output tokens, even though the system prompt asks for concise answers. That, plus the higher price per token, is why the cost ratio is above the price ratio of 2x.
+- **Decode speed is not the difference.** Sonnet streams at about 133 tokens/s vs 95 for Haiku. The latency gap comes from the longer start (TTFT) and the longer answers.
+- **Budget check:** the PRD target is p95 under 8 s for a full answer, and the legacy CMS lookup already uses about 1.5 s of it (Day 1). A single Sonnet answer took up to 6.3 s (P1), so a multi-step agent on Sonnet will be tight.
+- **Absolute cost is tiny:** about $0.0008 (Haiku) and $0.0036 (Sonnet) per answer at these lengths.
+
+### Caveats
+
+- Five prompts and one run each: a trend, not a precise measurement. An earlier run (with a script bug that lost the token counts) gave TTFT within about 10% of this one.
+- Quality scores come from one reader, with an AI assistant's help, an informal rubric and no blind scoring. The LLM judge arrives on Day 6.
+- Run on a dev laptop: no Vercel network hop and no cold start, so Preview and Production TTFT will be somewhat higher.
+- The legacy CMS and tools are not part of these numbers, so they describe the model alone, not a full agent answer.
+- Part of the cost and latency gap is answer length (Sonnet wrote about 2.2x the tokens), not only model speed.
+- The answers contain Markdown (`#` titles, `**bold**`) that the chat UI does not render yet.
+
+### Reproduce
+
+```sh
+pnpm dev          # terminal 1 (needs ANTHROPIC_API_KEY in apps/web/.env.local)
+pnpm benchmark    # terminal 2 (BENCHMARK_RUNS=3 repeats each prompt for steadier averages)
+```
+
+A run costs about two cents. The full answers go to `apps/web/scripts/.out/benchmark-latest.json` (git-ignored); the curated copy is in BENCHMARK.md.

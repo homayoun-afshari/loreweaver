@@ -9,6 +9,8 @@ const envSchema = z.object({
   LEGACY_CMS_URL: z.url(),
   /** API key sent to the legacy CMS in the X-API-Key header. */
   LEGACY_CMS_API_KEY: z.string().min(1),
+  /** Anthropic API key for model calls (dev key locally and in Preview, prod key in Production). */
+  ANTHROPIC_API_KEY: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;
