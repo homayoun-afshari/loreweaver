@@ -28,6 +28,7 @@ Novelists who build large fictional worlds lose consistency as the world grows. 
 - Image generation.
 - Training or fine-tuning models on user data.
 - Editing the lore or the CMS from the chat (read-only in v1).
+- Storing or searching the author's manuscript. The prose of the book stays in the author's own writing tool. The assistant knows the world's lore (searchable, with citations) and each character's current state (from the CMS), and sees a scene only if the author pastes it into the chat, in which case it is used for that answer and not stored.
 
 ## Success metrics
 
