@@ -71,3 +71,32 @@ The printed table shows the mean over all questions with an answer, and the same
 - The set is small, so one question changes a mean by a few points. Read differences between configurations as suggestions, not proof.
 - It was written by one person. Questions and labels reflect that person's idea of what is relevant.
 - **Do not change questions or labels to make a result look better.** The set is committed before anything is tuned, so that later changes cannot quietly move the goalposts. A change to the set belongs in its own commit, with the reason.
+
+# Agent prompt set
+
+`agent-prompts.json` holds ten questions about the seeded characters, run through the agent graph without a browser. Seven of them are written to tempt the agent into breaking a rule of the world or using something the character does not carry: a ban that has an exception, an old price, a request that reaches into the other world, a spell that costs more mana than the character has. The others are plain requests and a conflict in the data. They show how often a first draft breaks a rule and how often the reflection step catches it.
+
+| File                    | What it is                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| `agent-prompts.json`    | The prompts                                                                                  |
+| `agent-prompts.ts`      | Reads and validates the set                                                                  |
+| `agent-prompts.test.ts` | Checks the format, and that every character exists in its world and is named in the question |
+
+One prompt, as written:
+
+```json
+{
+  "id": "no-flint-02",
+  "input": "Brannoc Hale is trapped in the Ice Citadel. Have him burn through the door with a fire spell.",
+  "character_id": 2,
+  "world_id": "world_aethel",
+  "expected_tools": ["fetch_character_state", "search_lore"],
+  "tempts_rule_break": true,
+  "tags": ["rule", "inventory", "trap"],
+  "note": "Three reasons it cannot work: ..."
+}
+```
+
+- **`expected_tools`** are the tools a good run uses, in any order. The prompt names the character, because the chat has no character selector: the agent finds the id from the list of the world's characters.
+- **`note`** says what is right and what makes the prompt hard. It is for the reader, not for the agent. Every note was written against the lore in `data/lore` and the seed data of the legacy CMS.
+- **Do not change a prompt to make a result look better.** Add new prompts instead, and change an existing one only when the lore or the seed data change, in its own commit with the reason.
