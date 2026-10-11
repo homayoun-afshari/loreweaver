@@ -391,3 +391,100 @@ Remove-Item Env:MEASURE_URL, Env:MEASURE_REQUESTS
 ```
 
 `MEASURE_REQUESTS` sets the number of questions (default 20). The target app needs the lore ingested in its database. **To reproduce the recorded numbers exactly,** check out commit `51a459b` for the script; the Production numbers describe the deployed version `05adb54` (as reported by `/api/health`), so a later deploy gives different numbers.
+
+## Day 4: the reflection loop
+
+**What was measured:** what the reflection step does to the agent's answers, and what it costs. Ten questions about the seeded characters ([`evals/agent-prompts.json`](../evals/agent-prompts.json), seven of them written to tempt the agent into breaking a rule) were run through the agent graph, without a browser. The checker's verdicts say how often a **first draft** breaks a rule and how often the **final answer** still does, how many revisions that takes and how often a loop ends at a limit, and what checking and revising add to a query in time, tokens and money. The design is in [ADR-0004](adr/0004-orchestration-vs-ui-streaming.md) and [AGENT_DESIGN.md](AGENT_DESIGN.md).
+
+### Setup
+
+| Item         | Value                                                                                                                                                                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code version | Commit `2e56f88` (the graph, the stream, the measuring script, and the fix for empty drafts described in the findings)                                                                                                                                              |
+| Target       | A laptop. The legacy CMS in Docker (its simulated delay of 200 to 1500 ms and 5% failures are part of the times), Postgres with the lore ingested (Day 3), the real Anthropic and Voyage APIs over the internet. No Vercel, no browser                              |
+| Models       | Drafting `claude-sonnet-5-5` ($2 / $10 per million input / output tokens), the model of Preview and Production (ADR-0002). Checking `claude-haiku-4-5` ($1 / $5), temperature 0. Prompts `agent.v3` and `reflection.v2`                                             |
+| Limits       | Up to 2 revisions (`AGENT_MAX_ITERATIONS`), 3 model calls per draft, no new revision after 12 s                                                                                                                                                                     |
+| Load         | 10 prompts, 1 run each, one at a time. Seven tempt a rule break; three do not (`fire-escape-01`, a plain request; `restricted-stacks-04`, a conflict between the CMS and the lore; `what-carries-09`, state only)                                                   |
+| Script       | `apps/web/scripts/measure-agent.ts`, run with `pnpm measure:agent`. The arithmetic is in `apps/web/src/lib/agent-metrics.ts`, which has unit tests. The raw record of every run (verdicts, answers, times, tokens) goes to `apps/web/scripts/.out/` (not committed) |
+
+**Definitions.** A **violation** is a verdict of the reflection model with at least one reported rule. It is the checker's finding: the checker grades the pipeline it belongs to, so it is not proof of correctness, and it can be wrong in both directions. An **empty draft** (the model returned no text) and an **unavailable check** are not rule violations and are counted apart. The **first draft** is the first one that was checked; the **final answer** is what the author gets, and it counts as having a violation when the last check still reported one (the answer then carries a caveat). **Reflection overhead** is what checking and revising add: every reflection node run, plus the agent and tool work after the first check. Times are taken between the node updates of the graph, and each interval is given to the node that finished. **Cost** is tokens (as reported by the provider, thinking tokens included) times the list prices above; Voyage embeddings are not counted (a fraction of a cent).
+
+### Results
+
+**Rule violations found by the checker**
+
+| Prompts           | First drafts | Final answers |
+| ----------------- | -----------: | ------------: |
+| All 10            |   20% (2/10) |    10% (1/10) |
+| The 7 that tempt  |    14% (1/7) |      0% (0/7) |
+| The 3 that do not |    33% (1/3) |     33% (1/3) |
+
+**The loop**
+
+| Metric                                   |    Value |
+| ---------------------------------------- | -------: |
+| Revisions per run, mean                  |     0.20 |
+| Runs with a revision                     |  2 of 10 |
+| Ended valid                              |        9 |
+| Ended at the revision limit              |        0 |
+| Ended at the time limit (12 s)           |        1 |
+| Ended with the check unavailable         |        0 |
+| Answers with a caveat                    |        1 |
+| Empty first drafts / empty final answers |    0 / 0 |
+| Runs that called every expected tool     | 10 of 10 |
+
+**Per query**
+
+| Metric                       |    mean |     p50 |     p95 |
+| ---------------------------- | ------: | ------: | ------: |
+| Total latency                |  10.6 s |   9.4 s |  20.0 s |
+| Reflection overhead, latency |   2.7 s |   1.0 s |  10.5 s |
+| of which checks              |   1.3 s |   1.0 s |   2.9 s |
+| of which revisions           |   1.4 s |   0.0 s |   7.6 s |
+| Cost of the run              | $0.0253 | $0.0201 | $0.0518 |
+| Reflection overhead, cost    | $0.0076 | $0.0023 | $0.0314 |
+| Answer length (words)        |     130 |     132 |     210 |
+
+Overhead is 21% of the latency and 21% of the cost of a query (mean of the per-run shares). A check alone is about 1 s and about 2,500 input and 75 output tokens; a revision adds about 1,700 input and 120 output tokens of drafting. The first draft stage alone (the agent and the tools, before any check) took 7.9 s on average and cost $0.0177. The total spend of the run was $0.2528.
+
+**Three full runs** (the same ten prompts, one after the other, to see how much the numbers move). Runs 1 and 2 are on commit `e2987d7`, before the fix for empty drafts; run 3 is the one above.
+
+| Run |               Rule violations, first drafts | Final answers | Empty first drafts | Revisions, mean | Ended at the time limit | Latency mean / p95 | Cost, mean |
+| --- | ------------------------------------------: | ------------: | -----------------: | --------------: | ----------------------: | -----------------: | ---------: |
+| 1   | 4/10, empty drafts included (not separable) |          2/10 |      not separable |            0.30 |                       2 |      11.0 / 16.5 s |    $0.0257 |
+| 2   |                                        3/10 |          1/10 |                  2 |            0.40 |                       1 |      11.6 / 17.6 s |    $0.0274 |
+| 3   |                                        2/10 |          1/10 |                  0 |            0.20 |                       1 |      10.6 / 20.0 s |    $0.0253 |
+
+### Key findings
+
+- **The check catches real violations, and the revision usually fixes them.** The prompts that tempt had a rule violation in 1 to 2 of 7 first drafts (run 1: 3 of 7, with empty drafts counted in), and none or one in the final answers. Examples from the raw records: a draft that lit Kael's lantern inside the mine and used a rope and a pickaxe he does not carry (caught in all three runs); a draft that had Brannoc burn the door although he is mana-blind, has no mana and no flint (run 2). In all three runs the final answers to the tempting prompts had at most one violation left (0 of 7 in runs 2 and 3).
+- **The value is in a few answers.** Two of ten queries needed a revision in the last run. The rest cost one check, about 1 s and $0.002 to $0.003. A revision adds about 5 to 8 s and, with it, the tail of the latency and the cost.
+- **The checker also rejects good answers, always the same one.** `restricted-stacks-04` (the CMS says Sera holds a silver key, the lore says her records say she does not) was rejected on its first draft in all three runs, and ended with a caveat in all three, once after a revision. The draft was reporting the conflict honestly, which is what the prompt asks for; the checker called it a violation ("contradicting her current inventory") and once added "does not explain how" (an omission). That is the 33% (1/3) of plain prompts with a violation in the final answer: a **false rejection**, which `reflection.v2`'s instruction to ignore admitted limits and omissions did not prevent. It is a known limit; an independent judge and a larger set come later.
+- **A defect was found and fixed by this measurement.** In runs 1 and 2, two prompts (`teleport-ward-03` and `old-price-08`) got an **empty first draft** from Sonnet 5.5: on the last model call of a draft, which has no tools, the model returned only a thinking block and ended its turn. Run 2's raw record shows it; run 1's was overwritten, so that it was the same cause is likely but not verified. The reflection step caught it ("the answer is empty") and the revision gave an answer, so the author never saw an empty reply, but it cost a revision each time. The last call now tells the model that no tools are left and to answer from what it has, and an empty draft is counted apart from rule violations. Run 3 had none.
+- **Reflection is not what makes the answer slow.** Drafting alone (the agent and the tools, before any check) took 7.9 s on average, which is already at the PRD's 8 s budget (a p95 target) before reflection adds anything. **8 of 10 runs took longer than 8 s, and the slowest took 20.0 s**; the slowest and most expensive run is the one with a revision. Reflection adds 21% on average.
+- **The guardrails of ADR-0002 are crossed.** Its revisit trigger is a p95 above 8 s or a cost per query above $0.05. The p95 latency was 16.5 to 20.0 s in the three runs, and one run in the last pass cost $0.0518. The mean cost per query ($0.0253) is half the budget. ADR-0002 should be revisited, and the levers (prompt caching, drafting time, the revision policy) are the next day's work.
+- **Loops are bounded as designed.** No run reached the revision limit; 1 to 2 of 10 ended at the 12 s time limit, which kept the longest run at 20.0 s, below the host's 30 s limit. Every expected tool was called in every run.
+
+### Caveats
+
+- **Ten prompts, one run each.** The p95 of 10 runs is the slowest run, and one prompt moves a rate by 10 points (14 points for the seven that tempt). The three runs differ by more than the effect of the fix for empty drafts, so read the rates as a range, not a point: first drafts with a rule violation 2 to 3 of 10, final answers 1 to 2 of 10.
+- **The checker grades its own pipeline.** A violation is what the reflection model reported. A draft it accepts may still break a rule, and a draft it rejects may be fine (as the false rejection shows). The independent check is the judge of the next days.
+- **The set was written before the runs and was not changed to improve a result,** but the prompt of the checker (`reflection.v2`) was tightened on Day 4 after live runs of a similar question (an escape from the Ice Citadel, which is not one of the ten), so the numbers are not from a fully blind check. The fix for empty drafts was made after runs 1 and 2 and measured in run 3.
+- **A laptop, not the deployed app.** The CMS and the database are local (the CMS adds its simulated delay and failures), the model and embedding APIs are over the internet, and there is no Vercel hop or cold start. The times are the graph's, not the browser's, and the answer is not streamed token by token: it arrives in one piece after the check.
+- **No prompt caching,** so every model call pays for the whole system prompt again; it is the first lever of the next day.
+- **Not covered:** a run that fails, the check being unavailable (it did not happen), a second turn of a conversation, and the other drafting model.
+- Drafting tokens are as reported by the provider and include thinking tokens, which Sonnet 5.5 produces on some calls.
+
+### Reproduce
+
+```sh
+docker compose up -d                                     # the CMS and Postgres, lore ingested (pnpm ingest)
+pnpm measure:agent                                       # the ten prompts, one run each
+MEASURE_RUNS=2 pnpm measure:agent                        # each prompt twice
+MEASURE_ONLY=what-carries-09 pnpm measure:agent          # one prompt, to try it
+MEASURE_MODEL=claude-haiku-4-5 pnpm measure:agent        # another drafting model
+```
+
+It needs `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY` and the other settings in `apps/web/.env.local`. **A run of the ten prompts costs about $0.25 to $0.30** at list prices (the three runs above cost $0.2528 to $0.2738 each), and takes about 2 minutes.
+
+**To reproduce the recorded numbers exactly,** check out commit `2e56f88` first (`git checkout 2e56f88`). The numbers are **not deterministic**: the models, the network and the CMS's random delay and failures change from run to run, as the three runs above show, so a new run gives close numbers, not identical ones. Runs 1 and 2 were made on commit `e2987d7`, which differs from `2e56f88` only by the empty-draft fix (a note added to the last model call of a draft) and by counting empty drafts apart; the script in `e2987d7` had no final `process.exit`, which does not affect the numbers.

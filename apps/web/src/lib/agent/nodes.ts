@@ -2,7 +2,7 @@ import { AIMessage, SystemMessage, ToolMessage, type BaseMessage } from "@langch
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { ToolInputParsingException } from "@langchain/core/tools";
 import { END } from "@langchain/langgraph";
-import { MAX_AGENT_CALLS_PER_DRAFT, REVISION_CUTOFF_MS } from "./config";
+import { MAX_AGENT_CALLS_PER_DRAFT, NO_MORE_TOOLS_NOTE, REVISION_CUTOFF_MS } from "./config";
 import {
   callsForCurrentDraft,
   feedbackMessage,
@@ -64,9 +64,12 @@ export function createAgentNode(deps: {
   systemPromptFor: (worldId: string) => string;
 }) {
   return async (state: AgentStateType, config: RunnableConfig): Promise<AgentStateUpdate> => {
-    const systemPrompt = deps.systemPromptFor(worldIdOf(config));
     // The last call of a draft has no tools, so the model has to answer instead of asking again.
+    // It is told so: a model that still wants a tool and finds none may end its turn with no
+    // text at all (seen with Claude Sonnet 5.5, which then thinks and stops).
     const allowTools = callsForCurrentDraft(state.messages) < MAX_AGENT_CALLS_PER_DRAFT - 1;
+    const systemPrompt =
+      deps.systemPromptFor(worldIdOf(config)) + (allowTools ? "" : `\n\n${NO_MORE_TOOLS_NOTE}`);
     let reply = await deps.model(
       [new SystemMessage(systemPrompt), ...state.messages],
       { allowTools },
