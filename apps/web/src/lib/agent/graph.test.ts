@@ -46,7 +46,12 @@ const fireRule = {
 type Script = Parameters<typeof fakeAgentModel>[0];
 
 /** The graph with fake models and fake tool back ends. */
-function setup(args: { agent: Script; reflection: unknown[]; maxIterations?: number }) {
+function setup(args: {
+  agent: Script;
+  reflection: unknown[];
+  maxIterations?: number;
+  now?: () => number;
+}) {
   const agent = fakeAgentModel(args.agent);
   const reflection = fakeReflectionModel(args.reflection);
   const getCharacterState = vi.fn().mockResolvedValue({ ok: true, value: aria });
@@ -62,6 +67,7 @@ function setup(args: { agent: Script; reflection: unknown[]; maxIterations?: num
         searchLore,
       }),
     maxIterations: args.maxIterations,
+    now: args.now,
   });
   return { graph, agent, reflection, getCharacterState, searchLore };
 }
@@ -129,6 +135,25 @@ describe("the agent graph", () => {
     expect(agent.calls[2].allowTools).toBe(true);
   });
 
+  it("adds up the tokens of every model call, split into drafting and checking", async () => {
+    const withUsage = (message: AIMessage, input: number, output: number) => {
+      message.usage_metadata = {
+        input_tokens: input,
+        output_tokens: output,
+        total_tokens: input + output,
+      };
+      return message;
+    };
+    const { graph } = setup({
+      agent: [withUsage(lookups, 1000, 40), withUsage(draft("Light the flint."), 1500, 60)],
+      reflection: [valid],
+    });
+    const result = await graph.invoke(ask(), config);
+    expect(result.usage.agent).toEqual({ input: 2500, output: 100 });
+    // The fake reports 100 in and 10 out for each check.
+    expect(result.usage.reflection).toEqual({ input: 100, output: 10 });
+  });
+
   it("is bounded: after the revision limit it keeps the best draft with a caveat", async () => {
     const violation = { rule_id: "inventory", explanation: "Aria has no rope." };
     const n = { drafts: 0 };
@@ -145,6 +170,20 @@ describe("the agent graph", () => {
     expect(result.iterations).toBe(2);
     expect(result.draftAnswer).toMatch(/^Draft 3\n\nNote: this answer may still conflict/);
     expect(result.draftAnswer).toContain("- Aria has no rope. (inventory)");
+  });
+
+  it("keeps the first draft with a caveat when the run is already too old for a revision", async () => {
+    const startedAt = Date.now() - 60_000;
+    const { graph, agent, reflection } = setup({
+      agent: [draft("A slow draft.")],
+      reflection: [invalid({ rule_id: "inventory", explanation: "No rope." })],
+      now: () => Date.now(),
+    });
+    const result = await graph.invoke(ask(), agentRunConfig("world_aethel", startedAt));
+    expect(agent.calls).toHaveLength(1);
+    expect(reflection.calls).toHaveLength(1);
+    expect(result.draftAnswer).toContain("A slow draft.");
+    expect(result.draftAnswer).toContain("Note: ");
   });
 
   it("with no revisions allowed, caveats an invalid first draft at once", async () => {

@@ -2,7 +2,7 @@ import { AIMessage, SystemMessage, ToolMessage, type BaseMessage } from "@langch
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { ToolInputParsingException } from "@langchain/core/tools";
 import { END } from "@langchain/langgraph";
-import { MAX_AGENT_CALLS_PER_DRAFT } from "./config";
+import { MAX_AGENT_CALLS_PER_DRAFT, REVISION_CUTOFF_MS } from "./config";
 import {
   callsForCurrentDraft,
   feedbackMessage,
@@ -20,7 +20,7 @@ import {
   RULE_EMPTY_ANSWER,
   toVerdict,
 } from "./reflection";
-import type { AgentStateType, AgentStateUpdate } from "./state";
+import { noUsage, type AgentStateType, type AgentStateUpdate, type TokenUsage } from "./state";
 import type { AgentTool } from "./tools";
 
 /**
@@ -33,11 +33,14 @@ export type AgentModel = (
   config?: RunnableConfig,
 ) => Promise<AIMessage>;
 
-/** The reflection model, as a function: it returns the structured verdict, not yet validated. */
+/**
+ * The reflection model, as a function: it returns the structured verdict, not yet validated, and
+ * the tokens the call used when the provider reports them.
+ */
 export type ReflectionModel = (
   messages: BaseMessage[],
   config?: RunnableConfig,
-) => Promise<unknown>;
+) => Promise<{ verdict: unknown; usage?: TokenUsage }>;
 
 /** The world of this run. It is set by the server, so a run without one is a bug, not an input. */
 export function worldIdOf(config?: RunnableConfig): string {
@@ -82,6 +85,13 @@ export function createAgentNode(deps: {
       messages: [reply],
       // Text that comes with a tool call is not a draft.
       draftAnswer: asksForTools ? state.draftAnswer : textOf(reply),
+      usage: {
+        ...noUsage(),
+        agent: {
+          input: reply.usage_metadata?.input_tokens ?? 0,
+          output: reply.usage_metadata?.output_tokens ?? 0,
+        },
+      },
     };
   };
 }
@@ -140,14 +150,25 @@ export function createToolsNode(deps: { toolsFor: (worldId: string) => AgentTool
  * The reflection node: a cheaper model checks the draft against the evidence of this run and
  * returns a verdict. A valid draft ends the run. An invalid one goes back to the agent with the
  * violations, until the revision limit is reached: then the best draft is kept and a caveat that
- * lists what is unresolved is added to it. A check that cannot run ends the run with a caveat.
+ * lists what is unresolved is added to it. The same happens when the run has already taken too
+ * long to start another revision. A check that cannot run ends the run with a caveat.
  */
-export function createReflectionNode(deps: { model: ReflectionModel; maxIterations: number }) {
+export function createReflectionNode(deps: {
+  model: ReflectionModel;
+  maxIterations: number;
+  /** Milliseconds a run may last before it stops asking for revisions. */
+  revisionCutoffMs?: number;
+  /** The clock, so tests can move it. */
+  now?: () => number;
+}) {
+  const cutoffMs = deps.revisionCutoffMs ?? REVISION_CUTOFF_MS;
+  const now = deps.now ?? Date.now;
   return async (state: AgentStateType, config: RunnableConfig): Promise<AgentStateUpdate> => {
     const draft = state.draftAnswer;
     const { question, run } = splitCurrentRun(state.messages);
 
     let verdict;
+    let spent: TokenUsage = { input: 0, output: 0 };
     if (draft.trim() === "") {
       // Nothing to check: no model call.
       verdict = invalidVerdict([
@@ -155,27 +176,32 @@ export function createReflectionNode(deps: { model: ReflectionModel; maxIteratio
       ]);
     } else {
       try {
-        verdict = toVerdict(
-          await deps.model(buildReflectionMessages({ question, run, draft }), config),
-        );
+        const result = await deps.model(buildReflectionMessages({ question, run, draft }), config);
+        verdict = toVerdict(result.verdict);
+        spent = result.usage ?? spent;
       } catch (error) {
         console.error("[agent] reflection failed", error);
         verdict = checkUnavailable();
       }
     }
+    const usage = { ...noUsage(), reflection: spent };
+    // A run that has taken too long keeps its best draft instead of starting another revision.
+    const startedAt = config?.configurable?.startedAt;
+    const tooLate = typeof startedAt === "number" && now() - startedAt > cutoffMs;
 
-    if (verdict.valid) return { reflection: verdict };
+    if (verdict.valid) return { reflection: verdict, usage };
     if (isCheckUnavailable(verdict)) {
-      return { reflection: verdict, draftAnswer: draft + caveatFor(verdict) };
+      return { reflection: verdict, draftAnswer: draft + caveatFor(verdict), usage };
     }
-    if (state.iterations < deps.maxIterations) {
+    if (state.iterations < deps.maxIterations && !tooLate) {
       return {
         reflection: verdict,
         iterations: state.iterations + 1,
         messages: [feedbackMessage(revisionRequest(verdict.violations))],
+        usage,
       };
     }
-    return { reflection: verdict, draftAnswer: draft + caveatFor(verdict) };
+    return { reflection: verdict, draftAnswer: draft + caveatFor(verdict), usage };
   };
 }
 

@@ -13,7 +13,7 @@ import {
   routeAfterReflection,
   worldIdOf,
 } from "./nodes";
-import type { AgentStateType } from "./state";
+import { noUsage, type AgentStateType } from "./state";
 import { createAgentTools } from "./tools";
 import {
   asksFor,
@@ -33,6 +33,7 @@ function state(over: Partial<AgentStateType> = {}): AgentStateType {
     draftAnswer: "",
     reflection: null,
     iterations: 0,
+    usage: noUsage(),
     ...over,
   };
 }
@@ -236,6 +237,26 @@ describe("reflection node", () => {
     expect(update.iterations).toBeUndefined();
     expect(update.draftAnswer).toMatch(/^A draft\.\n\nNote: /);
     expect(update.draftAnswer).toContain("Unresolved:\n- She has no rope. (inventory)");
+  });
+
+  it("stops asking for revisions once the run has taken too long, and keeps the draft", async () => {
+    const { model } = fakeReflectionModel([broken]);
+    const startedAt = 1_000_000;
+    const node = (elapsedMs: number) =>
+      createReflectionNode({
+        model,
+        maxIterations: 2,
+        revisionCutoffMs: 12_000,
+        now: () => startedAt + elapsedMs,
+      })(withDraft(), agentRunConfig("world_aethel", startedAt));
+
+    const early = await node(12_000);
+    expect(early.iterations).toBe(1);
+
+    const late = await node(12_001);
+    expect(late.messages).toBeUndefined();
+    expect(late.iterations).toBeUndefined();
+    expect(late.draftAnswer).toContain("Note:");
   });
 
   it("with a limit of 0, caveats the first invalid draft at once", async () => {

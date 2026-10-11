@@ -32,24 +32,28 @@ Constraints: TypeScript end to end, an agent that can be tested without a networ
    - Pros: no framework to learn; full control; every line is ours.
    - Cons: we would write and test the state handling, the cycle and the bounds ourselves, and add tracing by hand. The result is a private, smaller version of a graph library, with no shared vocabulary for the people who read it.
 
-3. **LangGraph for orchestration, the AI SDK for transport and UI, joined by a small bridge.** The graph has named nodes (agent, tools, reflection), a typed state and explicit edges. It runs on its own; the route turns its stream into the AI SDK's message stream with `@ai-sdk/langchain`.
-   - Pros: every step is a function that can be tested with a fake model; the cycle and its bounds are written down as edges and checked by a test; the graph runs headlessly; its steps show up in traces; the UI stays as it is, so the cards keep working.
-   - Cons: a new library family and a bridge to maintain (30 more packages in the lockfile); the loop, and some things `streamText` gave for free, have to be rebuilt around it.
+3. **LangGraph for orchestration, the AI SDK for transport and UI, joined by `@ai-sdk/langchain`.** The graph has named nodes (agent, tools, reflection), a typed state and explicit edges. It runs on its own, and the library's bridge turns the graph's stream into the AI SDK's message stream.
+   - Pros: every step is a function that can be tested with a fake model; the cycle and its bounds are written down as edges and checked by a test; the graph runs headlessly; the UI stays as it is. No stream code to write.
+   - Cons: tried on a real run, it did not fit. It streams the draft text as it is written, which must be held back, and shows the reflection model's structured reply as a tool call. Its tool parts are untyped and their results are serialized messages, so the cards that read typed tool parts would not match. With the graph streaming model tokens, the reflection model's structured reply also failed to parse.
 
-4. **LangGraph end to end, including its own client for the browser.**
-   - Pros: one vendor's model for state, streaming and UI; no bridge.
+4. **LangGraph for orchestration, the AI SDK for transport and UI, joined by a translator in the route.** Same graph. The route streams only the graph's node updates, which describe what each node returned, and a small function writes the AI SDK's own message chunks from them.
+   - Pros: the same testing and bounds as option 3; typed tool parts, so the cards keep working; the route chooses exactly what is sent, so draft text cannot leak; no dependency on the bridge's stream handling.
+   - Cons: a new library family (30 more packages in the lockfile) and a small translator to maintain; the loop, and some things `streamText` gave for free, have to be rebuilt around it; tool calls and results arrive when a node finishes, not token by token.
+
+5. **LangGraph end to end, including its own client for the browser.**
+   - Pros: one vendor's model for state, streaming and UI; no translator.
    - Cons: it replaces `useChat`, the stream format and the typed tool parts that the cards already use, for no gain in v1. It ties the interface to the same library as the agent, which is the coupling this decision is meant to avoid.
 
 ### Decision
 
-Option 3: **LangGraph owns state and control flow; the AI SDK owns transport and UI.** The boundary is a dependency rule:
+Option 4: **LangGraph owns state and control flow; the AI SDK owns transport and UI.** The boundary is a dependency rule:
 
 - The agent code (`apps/web/src/lib/agent/`) knows nothing about HTTP, `Request` and `Response`, React or the AI SDK's UI types. Its input is a list of messages and a configuration (the world id, taken from the session); its output is a stream of graph events. It can be called from a test or a script.
-- The chat route is the only place that knows both sides. It keeps what it does today: validates the request, reads the world from the session, builds the tools, hides provider errors and returns the stream. It runs the graph and converts the events with the bridge.
+- The chat route is the only place that knows both sides. It keeps what it does today: validates the request, reads the world from the session, builds the tools, hides provider errors and returns the stream. It runs the graph and writes the chat's message chunks from its node updates (`apps/web/src/lib/ai/agent-stream.ts`). The bridge package is used only in the other direction, to turn the browser's conversation into messages for the graph.
 - The existing tools (`search_lore`, `fetch_character_state`) are wrapped as graph tools. Their Zod schemas carry over, so the arguments are still validated, and the world stays inside the tool, out of the model's reach (see [ADR-0003](0003-chunking-and-retrieval.md)).
-- **Text is held back, tool progress is not.** The tool parts reach the browser as they happen, so the cards appear while the graph works. Draft text and the reflection verdict are never sent; the answer is sent once, after reflection accepts it or the revision limit is reached. [Agent design](../AGENT_DESIGN.md) has the rules.
+- **Text is held back, tool progress is not.** The tool parts reach the browser as nodes finish, as typed parts, so the cards appear while the graph works. Draft text and the reflection verdict are never sent; the answer is sent once, after reflection accepts it or a limit is reached. Two layers keep it so: only node updates are streamed, and the models run with streaming switched off, so no stream mode can emit draft tokens. [Agent design](../AGENT_DESIGN.md) has the rules.
 
-The reason is the new step. A check that must finish before the answer is sent, a loop that must be bounded and a run that must work without a browser fit a graph. Keeping the stream and the UI parts in the AI SDK means the cards, `useChat` and the typed tool parts do not change.
+The reason is the new step. A check that must finish before the answer is sent, a loop that must be bounded and a run that must work without a browser fit a graph. Keeping the stream format and the UI parts in the AI SDK means the cards, `useChat` and the typed tool parts do not change.
 
 ### Consequences
 
@@ -62,18 +66,17 @@ The reason is the new step. A check that must finish before the answer is sent, 
 
 **Negative / costs**
 
-- **The first answer token comes later.** The answer cannot start before the check ends, so the time to the first token of a chat is longer than before. The tool progress and a short status line ("Checking against world rules…") soften it. How much it grows is measured.
-- **A worst case that can multiply latency and cost.** A question can go through several drafts and reflections before it ends. The bounds in [Agent design](../AGENT_DESIGN.md) keep it finite, but the worst case has to fit in the route's 30 s function limit, and that is not yet shown.
+- **The first answer token comes later, and in one piece.** The answer cannot start before the check ends, so the time to the first text is the whole run. The tool cards and a short status line ("Checking against world rules…") soften the wait. The first live runs were above the 8 s budget for a full answer, so the measurement decides whether ADR-0002 is revisited.
+- **A worst case that can multiply latency and cost.** A question can go through several drafts and reflections before it ends. The bounds in [Agent design](../AGENT_DESIGN.md) keep it finite, and a time bound keeps it inside the route's 30 s function limit: a run that is older than 12 s does not start another revision, it returns its best draft with a caveat.
 - **Things `streamText` gave for free are rebuilt:** the step limit, the abort when the user presses Stop, the timing metadata that the measuring scripts read, and the masking of provider errors.
-- **A version coupling:** the bridge depends on one exact `ai` version. The AI SDK packages and the bridge must be upgraded together.
+- **A version coupling:** the bridge package depends on one exact `ai` version, and the app still uses it to convert the conversation. The AI SDK packages and the bridge must be upgraded together.
 - **Two vocabularies** (graph and stream) for a reader to learn. If the product only ever needed one tool loop, the AI SDK alone would be simpler.
-- **Unverified in the installed libraries:** how the graph's stream mode treats model calls inside nodes (to hold the text back), and the bridge's handling of tool parts for the existing cards.
+- **Tool calls arrive whole.** A card skeleton appears when the agent node has finished writing the call, not while it is being written.
 
 ### Follow-ups
 
-- Prove with a test that a rejected draft and the verdict never reach the stream, and that the cards still render from the bridged tool parts.
-- Measure the time to the first token, the cost and the latency of the new loop against the old route (`docs/METRICS.md`).
-- Check the worst case against the 30 s function limit, and change either the limit or the bounds if it does not fit.
+- Measure the time to the first text, the cost and the latency of the new loop against the old route (`docs/METRICS.md`), and revisit ADR-0002 if the budget is not met.
+- Reduce the latency of a run: the drafting call is the longest step, so shorter drafts, prompt caching and the choice of drafting model are the levers.
 - Move the guards that are not specific to the AI SDK (abort, error masking, timing) into code that both the route and the scripts can use.
 
 ## 2. No checkpointer: the graph keeps nothing between requests

@@ -39,21 +39,22 @@ The **configuration** of a run is set by the server and is not part of the state
 
 - **The limit counts revisions.** `AGENT_MAX_ITERATIONS` (default 2) is the most times a draft may be sent back. A run therefore has at most 3 drafts and 3 reflections. The common case is one draft and one reflection.
 - **The agent and tools cycle is bounded too:** at most 3 model calls for one draft, as the chat route's step limit does today. A cycle that only waits for the model to stop calling tools is not a bound.
+- **A run that has taken more than 12 seconds does not start another revision.** The function that runs the chat is stopped by the host at 30 seconds, which would cut the stream and leave the author with nothing. Past the cutoff the run behaves as if the revision limit were reached: the best draft goes out with its caveat.
 - **The framework's recursion limit is a safety net, not the exit.** It is set explicitly from the worst case above, so a legitimate run never reaches it, and a test proves the revision limit ends the run first.
 - **At the limit the answer still goes out, with a caveat.** The caveat lists the unresolved violations. It is built by code from the verdict, so a model cannot soften it. The run never ends in an error and never in a silent rule break.
 
 ### What reflection checks, and against what
 
 - Reflection receives the draft and **the tool results produced in this run**: the retrieved passages and the character's state. It never trusts earlier messages for facts, because the browser sends the history and can forge it.
-- A claim about a rule, an item or a location that the evidence does not support is a violation (`unsupported`), as is an item the character does not carry and a suggestion that breaks a retrieved rule.
+- A claim about a rule, an item or a location that the evidence does not support is a violation (`unsupported`), as is an item the character does not carry and a suggestion that breaks a retrieved rule. An omission (something the draft could have mentioned) is not a violation, and each explanation is one short sentence.
 - When the run has **no tool results**, reflection still runs. A draft that makes such claims is sent back, and the feedback tells the agent to call the tools first. A draft that makes none (for example, a question outside the product's scope) passes.
 - The verdict is structured and validated with the same schema library as the tool inputs. A verdict that fails validation counts as invalid, so a malformed reply cannot end the loop early.
 
 ### What reaches the author, and when
 
-- **Tool progress streams as it happens.** The tool call parts reach the browser immediately, so the character card and the lore citations appear while the graph keeps working.
-- **Text is held back until it is accepted.** Draft text and verdicts are never sent. The answer is sent once, after reflection accepts it or the limit is reached. A rejected draft never reaches the stream, and a test proves it.
-- **The cost is a later first token.** The answer cannot start before the check ends. A short status line, "Checking against world rules…", makes the wait visible.
+- **Tool progress streams as it happens.** A tool call reaches the browser when the agent node has finished writing it, and its result when the tool is done, so the character card and the lore citations appear while the graph keeps working. The calls are typed tool parts, so the cards that read them keep working.
+- **Text is held back until it is accepted.** Draft text and verdicts are never sent. The answer is sent once, after reflection accepts it or the limit is reached. A rejected draft never reaches the stream, and a test proves it. Two things make this structural: the route streams only node updates, and the models run with streaming switched off.
+- **The cost is a later first token.** The answer cannot start before the check ends, and it arrives in one piece. A short status line, "Checking against world rules…", makes the wait visible.
 
 ### Where the character comes from
 

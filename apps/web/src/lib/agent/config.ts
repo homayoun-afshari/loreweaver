@@ -27,13 +27,25 @@ export function recursionLimitFor(maxIterations: number): number {
   return (maxIterations + 1) * MAX_STEPS_PER_DRAFT + 1;
 }
 
+/**
+ * A run that is older than this does not start another revision: it keeps the best draft and adds
+ * the caveat. A revision takes several model calls, and the function that runs the chat is stopped
+ * by the host at 30 seconds, which would cut the stream and leave the author with nothing.
+ */
+export const REVISION_CUTOFF_MS = 12_000;
+
 /** What the server decides for each run. The model can neither read nor change it. */
 export type AgentConfigurable = {
   /** The world of the session, as for every other request (see session.ts). */
   worldId: string;
+  /** When the request started, in milliseconds since 1970, for the revision cutoff. */
+  startedAt?: number;
 };
 
 /** The run configuration for one question. */
-export function agentRunConfig(worldId: string): { configurable: AgentConfigurable } {
-  return { configurable: { worldId } };
+export function agentRunConfig(
+  worldId: string,
+  startedAt: number = Date.now(),
+): { configurable: AgentConfigurable } {
+  return { configurable: { worldId, startedAt } };
 }

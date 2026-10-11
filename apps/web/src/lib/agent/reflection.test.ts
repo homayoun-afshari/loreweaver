@@ -82,6 +82,13 @@ describe("buildReflectionMessages", () => {
     expect(text).toContain("passage 3fa9c1d2 (Magic > Fire): Fire needs flint.");
   });
 
+  it("tells the checker to ignore omissions and to keep explanations short", () => {
+    const [system] = buildReflectionMessages({ question: "q", draft: "d", run: [] });
+    const text = textOf(system);
+    expect(text).toMatch(/do not report omissions/i);
+    expect(text).toMatch(/at most 25 words/i);
+  });
+
   it("says so when there is no evidence, and reports failed tools as failures", () => {
     expect(textOf(buildReflectionMessages({ question: "q", draft: "d", run: [] })[1])).toContain(
       "(none)",
