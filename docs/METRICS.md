@@ -488,3 +488,269 @@ MEASURE_MODEL=claude-haiku-4-5 pnpm measure:agent        # another drafting mode
 It needs `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY` and the other settings in `apps/web/.env.local`. **A run of the ten prompts costs about $0.25 to $0.30** at list prices (the three runs above cost $0.2528 to $0.2738 each), and takes about 2 minutes.
 
 **To reproduce the recorded numbers exactly,** check out commit `2e56f88` first (`git checkout 2e56f88`). The numbers are **not deterministic**: the models, the network and the CMS's random delay and failures change from run to run, as the three runs above show, so a new run gives close numbers, not identical ones. The measured code has not changed since: later commits changed only documents. Runs 1 and 2 were made on commit `e2987d7`, which differs from `2e56f88` only by the empty-draft fix (a note added to the last model call of a draft) and by counting empty drafts apart; the script in `e2987d7` had no final `process.exit`, which does not affect the numbers.
+
+## Day 5: cost per query and monthly projection
+
+**What was measured:** what one question costs the agent in tokens and dollars, by kind of token and by step, and what that means per month. The ten questions of [`evals/agent-prompts.json`](../evals/agent-prompts.json) were run through the agent graph without a browser, every run was traced in LangSmith, and the cost was worked out from the traces. This is the state **before prompt caching**, so that the optimization of the entry "prompt caching, before and after" has a "before". The cost and the latency per query are the PRD's guardrails ($0.05 and 8 s).
+
+### Setup (cost)
+
+| Item         | Value                                                                                                                                                                                                                                                                 |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code version | The agent of tag `baseline-day5` (commit `5faa00f`). The runs were made one commit earlier, on `f39405b` (tracing), which has the same agent, prompts and models: the commit between the two only adds the cost report and the cache prices                           |
+| Target       | A laptop. The legacy CMS in Docker (its simulated delay and failures are part of the times), Postgres with the lore ingested, the real Anthropic and Voyage APIs over the internet, traces sent to the LangSmith project `loreweaver-dev` (EU). No Vercel, no browser |
+| Models       | Drafting `claude-sonnet-5-5`, checking `claude-haiku-4-5` at temperature 0. Prompts `agent.v3` and `reflection.v2`. Up to 2 revisions, 3 model calls per draft, no new revision after 12 s                                                                            |
+| Load         | 10 prompts, 1 run each, one at a time, on 2026-10-11 between 17:58 and 18:01 UTC (the traces of that period)                                                                                                                                                          |
+| Scripts      | `apps/web/scripts/measure-agent.ts` (`pnpm measure:agent`) runs the prompts. `evals/cost-report.ts` (`pnpm cost:report`) reads the traces back and works out the cost. The arithmetic is in `apps/web/src/lib/cost-metrics.ts`, with unit tests                       |
+
+**Prices** (USD per million tokens, from the providers' pricing pages on 2026-10-11, kept in `apps/web/src/lib/ai/models.ts`):
+
+| Model             | Input | Cache write (5 min) | Cache read | Output |
+| ----------------- | ----: | ------------------: | ---------: | -----: |
+| Claude Sonnet 5.5 |    $2 |               $2.50 |      $0.10 |    $10 |
+| Claude Haiku 4.5  |    $1 |               $1.25 |      $0.10 |     $5 |
+
+Embeddings (`voyage-4-lite`, $0.02 per million tokens, the first 200 million free) are not in the traces, and a search question of a few tokens costs far less than a millionth of a dollar, so they are left out.
+
+**Definitions.** The **cost of a query** is the sum over its model calls of: input tokens that were not cached × the input price, tokens read from the cache × the cache-read price, tokens written to the cache × the cache-write price, and output tokens × the output price. Each call is priced by the model that made it. The provider counts every input token, cached ones included; the report takes the cached ones out and prices them apart. A **query** is one root trace: one question, from the start of the graph to the answer. The **monthly cost** is the cost per query × queries per author per day × 30 × active authors. **20 queries per author per day is an assumption**, not a measurement. The p95 of 10 runs is the slowest run.
+
+### Results (cost)
+
+**Per query**
+
+| Metric |    mean |     p50 |     p95 |
+| ------ | ------: | ------: | ------: |
+| Cost   | $0.0241 | $0.0223 | $0.0384 |
+
+**Tokens per query** (mean): 9,563 input (none cached), 780 output, in 4.3 model calls (the drafting calls and the checks; a query has one check, and one more for each revision).
+
+**Where the money goes**
+
+| By kind of token | Share of the cost |
+| ---------------- | ----------------: |
+| Input            |               69% |
+| Output           |               31% |
+
+| By step                          | Share of the cost |
+| -------------------------------- | ----------------: |
+| Agent (drafting, with revisions) |               88% |
+| Reflect (the check)              |               12% |
+
+**The queries** (in prompt order, with their number of model calls)
+
+| Prompt                 | Calls |  Input | Output |    Cost |
+| ---------------------- | ----: | -----: | -----: | ------: |
+| `fire-escape-01`       |     4 |  9,180 |    882 | $0.0246 |
+| `no-flint-02`          |     4 |  9,203 |    810 | $0.0240 |
+| `teleport-ward-03`     |     4 |  8,953 |    681 | $0.0223 |
+| `restricted-stacks-04` |     6 | 15,223 |  1,338 | $0.0384 |
+| `mine-gear-05`         |     6 | 14,072 |  1,363 | $0.0367 |
+| `heal-and-teleport-06` |     4 |  8,306 |    843 | $0.0228 |
+| `other-world-07`       |     4 |  7,453 |    781 | $0.0210 |
+| `old-price-08`         |     4 |  8,632 |    534 | $0.0203 |
+| `what-carries-09`      |     3 |  5,347 |    138 | $0.0105 |
+| `strike-flint-10`      |     4 |  9,264 |    426 | $0.0202 |
+
+**Monthly cost** at 20 queries per author per day, 30 days:
+
+| Active authors | At the mean cost ($0.0241) | At the p95 cost ($0.0384) |
+| -------------: | -------------------------: | ------------------------: |
+|            100 |                     $1,445 |                    $2,303 |
+|          1,000 |                    $14,447 |                   $23,026 |
+|         10,000 |                   $144,474 |                  $230,256 |
+
+One author at the mean cost is about $14.45 a month. The total of the ten queries was $0.2408; the cost report and LangSmith's own cost for the same calls agree to the cent ($0.2408 and $0.2408).
+
+### Key findings (cost)
+
+- **A query costs $0.0241 on average, and the slowest, most expensive one $0.0384.** Both are inside the PRD's guardrail of $0.05 per query. (Day 4's measurement had one run above it, $0.0518; this run of the same prompts has none.)
+- **Input, not output, is most of the cost.** 69% of the money is input tokens: a query makes about 4 model calls, and each one sends the whole conversation again (the tool definitions, the system prompt, the question and the tool results), 9,563 input tokens in all for 780 of output. This is why caching is the first lever to try.
+- **The cost is in the drafting model.** The agent node is 88% of the cost and the check 12%.
+- **The tail is the queries with a revision or an extra round.** The two queries with six model calls cost $0.0367 and $0.0384; the other eight cost between $0.0105 and $0.0246.
+- **At 20 queries a day, one author costs about $14.45 a month, and 1,000 authors about $14,400.** The projection moves with the assumed use. It says that the price of a seat has to be set against a cost of that size, and that the levers (caching, a cheaper drafting model, fewer rounds) matter.
+
+### Caveats (cost)
+
+- **Ten prompts, one run each.** One prompt moves the mean by a tenth. The runs are not repeatable: the same prompt had a different path in Day 4's runs, and two of the ten needed a revision here.
+- **20 queries per author per day is assumed.** No real use was measured.
+- **List prices, not the bill.** The cost is tokens times the prices above. It was checked against LangSmith, which uses the same prices, so this checks the token counts and the arithmetic, not the invoice. It was not reconciled with the Anthropic Console.
+- **A laptop with the CMS beside it.** The CMS adds its simulated delay and failures, which are in the times but not in the cost.
+- **Traces are kept for 14 days** on the plan in use, so these traces can be read again only until 2026-10-25. After that, reproduce by running the prompts again.
+- Embeddings are left out (see above).
+
+### Reproduce (cost)
+
+```sh
+docker compose up -d                                  # the CMS and Postgres, lore ingested (pnpm ingest)
+git checkout baseline-day5                            # the agent of the recorded runs
+pnpm measure:agent                                    # the ten prompts, traced to LangSmith if the LANGSMITH_* variables are set
+git checkout main                                     # the report reads any traces
+pnpm cost:report --from <start UTC> --to <end UTC> --env development --model claude-sonnet-5-5 --prompt-version agent.v3 --verbose
+```
+
+For the recorded run the period is `--from 2026-10-11T17:58:00Z --to 2026-10-11T18:01:00Z`, for as long as the traces exist. `pnpm measure:agent` also prints the cost and the latency per query itself (at the commit of the baseline it prices tokens at list prices, which is the same for a run without caching). `pnpm cost:report` reads `apps/web/.env.local` (the LangSmith key, the EU address and the workspace id) and sends nothing to a model. **A run of the ten prompts costs about $0.24** at list prices and takes about 2 minutes.
+
+**To reproduce the recorded numbers exactly,** check out `baseline-day5` first. The numbers are **not deterministic**: the models, the network and the CMS's random delay and failures change from run to run, so a new run gives close numbers, not identical ones. The code that produced them has not changed in what the agent does; later commits add caching and the limits.
+
+## Day 5: latency and time to first token through the graph
+
+**What was measured:** how long a question takes from the start of the graph to its answer, and how long the author waits for the first word, now that every answer is checked before it is sent. The time to first token (TTFT) is compared with Day 2's, which was measured with the same script and setup before the agent had a check. Two measurements: the ten prompts (the latency of each trace) and the one-tool question "What does Kael have on them?" sent through `POST /api/chat` and timed the way a browser sees the stream.
+
+### Setup (latency)
+
+| Item         | Value                                                                                                                                                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code version | The same agent as in the cost entry. The ten prompts: the runs of that entry. The chat question: commit `a78fb5f`, which has the agent of `baseline-day5` and the timing script that sends the world cookie of its question              |
+| Target       | A laptop. Dev server and the Docker CMS on the same machine, Postgres with the lore, the real APIs. Drafting `claude-sonnet-5-5` chosen with the local-only model override, as on Day 2                                                  |
+| Load         | The ten prompts: 1 run each. The chat question: 10 runs, one at a time, on 2026-10-11 around 18:53 UTC                                                                                                                                   |
+| Scripts      | The latency of a trace comes from `pnpm cost:report`. TTFT, time to first UI and to the card come from `apps/web/scripts/measure-chat.ts` (`pnpm measure:chat`), which reads the response stream and also reports the route's own timing |
+
+**Definitions.** The **latency of a query** is the time of its root trace, from the start of the graph to the answer (the route's validation and the network to a browser are not in it). **TTFT** is the time until the first text token reaches the client. Since the answer is held back until the check has passed, it is sent in one piece, so TTFT and the total time are almost the same. **Time to first UI** is when the browser can draw the card skeleton (the first tool call), and **time to card** when the tool result arrives. Client time starts when the request is sent; server time starts when the route starts.
+
+### Results (latency)
+
+**The ten prompts, latency per query** (mean 11.3 s)
+
+| Metric             |   mean |    p50 |    p95 |
+| ------------------ | -----: | -----: | -----: |
+| End-to-end latency | 11.3 s | 10.4 s | 18.6 s |
+
+**The chat question, Day 2 and Day 5** (client side, local)
+
+| Metric                      | Day 2 p50 | Day 5 p50 | Day 2 p95 | Day 5 p95 |
+| --------------------------- | --------: | --------: | --------: | --------: |
+| Time to first UI (skeleton) |    761 ms |   1413 ms |   1608 ms |   3041 ms |
+| Time to card                |   2092 ms |   2311 ms |   2673 ms |   3780 ms |
+| TTFT                        |   3219 ms |   4302 ms |   3751 ms |   5715 ms |
+| Total                       |   3225 ms |   4302 ms |   3758 ms |   5717 ms |
+
+Day 5 mean TTFT 4325 ms. On the server side, TTFT was 4281 ms at the median and 4656 ms at the p95 (Day 2: 3038 ms and 3740 ms). All ten runs found the character and drew the card.
+
+### Key findings (latency)
+
+- **The first word comes about 1.1 s later than on Day 2** (TTFT p50 3.2 s to 4.3 s, p95 3.8 s to 5.7 s). The check takes about 1 s (Day 4's measurement: 1.0 s at the median), so the check explains almost all of it: the answer cannot start before it is verified. This is the cost of reflection that Day 4 predicted.
+- **Streaming no longer shortens the wait.** TTFT and the total are within a few milliseconds of each other, because the text arrives once, after the check.
+- **The skeleton and the card come later too** (first UI 0.76 s to 1.4 s, card 2.1 s to 2.3 s). The graph's nodes return when a whole model call has finished, so the first sign of a tool call arrives after the first model call and not as soon as the model starts it.
+- **The PRD's p95 of 8 s is not met.** The ten prompts have a p95 of 18.6 s and a median of 10.4 s. Drafting is most of the time: in the traces, the drafting calls take about 2 to 3 s each and a query makes about three, the check about 1 s. A revision adds a whole drafting round (this is the 16.4 s and the 18.6 s of the two queries with six calls). The simple one-tool question is inside the target (p95 5.7 s).
+- **The route and the network add little.** The latency of the trace (3.6 to 4.6 s for these ten runs) is close to the TTFT seen by the client.
+
+### Caveats (latency)
+
+- **Ten runs of one question, and ten prompts once.** The p95 of 10 runs is the slowest run. The p95 of the ten prompts depends on whether a revision lands in the sample (two of ten did).
+- **One question that needs one tool.** The ten prompts need two tools and sometimes a revision; they were not timed through the route.
+- **A laptop with the CMS beside it,** so the numbers have no Vercel hop, no cold start and no network to a browser. The CMS's simulated delay is part of the times.
+- **An earlier attempt was discarded.** The first run of the timing script, with no world cookie, asked for a character of another world, got a refusal with no tool call and measured the refusal (about 2.6 s). The script now sends the cookie, and the run above is the second.
+- The comparison with Day 2 is of the same script and question, but on different days, so the model's own speed may differ a little.
+
+### Reproduce (latency)
+
+```sh
+docker compose up -d legacy-cms postgres
+pnpm dev                                                          # terminal 1
+MEASURE_MODEL=claude-sonnet-5-5 pnpm measure:chat                 # terminal 2: local, client and server timing
+MEASURE_REQUESTS=30 pnpm measure:chat                             # more runs
+```
+
+For the ten prompts, see the cost entry. **A run of `pnpm measure:chat` costs about $0.10 at the prices of that commit.** **To reproduce the recorded numbers exactly,** check out `a78fb5f`. The numbers are not deterministic; a new run gives close numbers.
+
+## Day 5: prompt caching, before and after
+
+**What was measured:** what caching the system prompt and the tool definitions of the drafting model changes. The same ten prompts and the same chat question were run again with caching on, and compared with the runs before it (the two entries above): cost per query, cache hit rate, time to first token and latency. Caching is the one optimization of the day.
+
+### Setup (caching)
+
+| Item         | Value                                                                                                                                                                                                                                                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code version | **Before:** as in the two entries above (`baseline-day5`, `a78fb5f`). **After:** commit `5187c84`, which adds a cache marker on the system prompt of the drafting calls that offer the tools, and the usage limits (the route also records each request in the database, a small write that was not timed apart)                         |
+| Target       | The same laptop and setup as the entries above. Sonnet 5.5 is used because its minimum cacheable prompt is 512 tokens; the dev model, Haiku 4.5, needs 4,096 and the prefix is below it, so nothing would be cached                                                                                                                      |
+| Load         | **After, ten prompts:** 1 run each, one at a time, on 2026-10-11 between 20:11 and 20:14 UTC. **After, chat question:** 10 runs, one at a time, 20:13:58 to 20:14:45 UTC, started straight after the prompts. The cache lives 5 minutes and the runs were seconds apart, so after the first query of a world nearly every call is a read |
+| Scripts      | As above: `pnpm measure:agent`, `pnpm measure:chat` and `pnpm cost:report`                                                                                                                                                                                                                                                               |
+
+**Definitions.** The **cache hit rate** is the share of all input tokens that were read from the cache (a write is not a hit). The **prefix** is the tool definitions and the system prompt, 1,843 tokens in the Aethel world and 1,830 in Nox (the system prompt lists the world's characters, so each world has its own cache entry). The last call of a draft has no tools and a note added to its prompt, so it does not start like the others and is not cached.
+
+### Results (caching)
+
+**The ten prompts, per query**
+
+| Metric                                   |               Before |                After | Change |
+| ---------------------------------------- | -------------------: | -------------------: | -----: |
+| Cost, mean                               |              $0.0241 |              $0.0178 |   −26% |
+| Cost, p50                                |              $0.0223 |              $0.0139 |   −38% |
+| Cost, p95                                |              $0.0384 |              $0.0389 |    +1% |
+| Input tokens, not cached (mean)          |                9,563 |                5,901 |        |
+| Input tokens read from the cache (mean)  |                    0 |                3,865 |        |
+| Input tokens written to the cache (mean) |                    0 |                  367 |        |
+| Output tokens (mean)                     |                  780 |                  764 |        |
+| Model calls (mean)                       |                  4.3 |                  4.4 |        |
+| **Cache hit rate**                       |               **0%** |              **38%** |        |
+| Latency, mean / p50 / p95                | 11.3 / 10.4 / 18.6 s | 12.2 / 10.8 / 22.5 s |        |
+
+The total cost of the ten queries went from $0.2408 to $0.1778.
+
+**Per prompt** (cost, with the number of model calls)
+
+| Prompt                 |      Before |       After | Change |
+| ---------------------- | ----------: | ----------: | -----: |
+| `fire-escape-01`       | $0.0246 (4) | $0.0215 (4) |   −13% |
+| `no-flint-02`          | $0.0240 (4) | $0.0176 (4) |   −27% |
+| `teleport-ward-03`     | $0.0223 (4) | $0.0139 (4) |   −38% |
+| `restricted-stacks-04` | $0.0384 (6) | $0.0389 (7) |    +1% |
+| `mine-gear-05`         | $0.0367 (6) | $0.0286 (6) |   −22% |
+| `heal-and-teleport-06` | $0.0228 (4) | $0.0149 (4) |   −35% |
+| `other-world-07`       | $0.0210 (4) | $0.0135 (4) |   −36% |
+| `old-price-08`         | $0.0203 (4) | $0.0124 (4) |   −39% |
+| `what-carries-09`      | $0.0105 (3) | $0.0035 (3) |   −67% |
+| `strike-flint-10`      | $0.0202 (4) | $0.0130 (4) |   −36% |
+
+The first query (`fire-escape-01`) found the cache cold and wrote the prefix (1,843 tokens); `mine-gear-05` is in the world Nox and wrote that world's prefix (1,830 tokens).
+
+**The chat question "What does Kael have on them?"** (10 runs, 3 model calls each)
+
+| Metric                        |         Before |          After |    Change |
+| ----------------------------- | -------------: | -------------: | --------: |
+| Cost per query                |        $0.0103 |        $0.0033 |      −68% |
+| Input tokens, not cached      |          5,279 |          1,620 |           |
+| Input tokens read from cache  |              0 |          3,660 |           |
+| **Cache hit rate**            |         **0%** |        **69%** |           |
+| TTFT, client, p50 / p95       | 4302 / 5715 ms | 4067 / 5960 ms | −5% / +4% |
+| TTFT, client, mean            |        4325 ms |        4461 ms |       +3% |
+| Time to first UI, client, p50 |        1413 ms |        1444 ms |       +2% |
+| Time to card, client, p50     |        2311 ms |        2136 ms |       −8% |
+| Latency of the trace, p50     |          4.3 s |          4.0 s |           |
+
+**Monthly cost** at 20 queries per author per day (the projection of the cost entry, with the new mean of $0.0178): 100 authors $1,067, 1,000 authors $10,670, 10,000 authors $106,696 (a quarter lower than before: $1,445, $14,447, $144,474). At the p95 cost ($0.0389) it is $2,335, $23,346 and $233,455.
+
+**Where the money goes after caching:** input tokens 52%, output 40%, cache reads 2%, cache writes 5%; the agent node 83% and the check 17%.
+
+### Key findings (caching)
+
+- **Caching lowers the cost of a query by a quarter to a third.** The mean cost fell 26% ($0.0241 to $0.0178) and the median 38% ($0.0223 to $0.0139). On the nine prompts that made the same number of model calls in both runs, the mean fell 31% ($0.0225 to $0.0154). The saving is the cached prefix: about 3,865 tokens a query read at $0.10 instead of $2.00 per million, less the small cost of writes.
+- **The p95 did not move** ($0.0384 to $0.0389). It is the same prompt in both runs (`restricted-stacks-04`), which had a revision, and this time one more model call (7 against 6). Caching cannot remove a round of drafting, so the tail of the cost is the revisions, not the repeated prefix.
+- **The cache hit rate is 38% of the input tokens on the ten prompts and 69% on the one-tool question.** The rest of the input is what changes (the question, the tool results) and the last call of a draft, which has no tools and cannot read the cache. On a simple lookup, the cost fell by two thirds ($0.0103 to $0.0033).
+- **Writes are rare and small.** A write happens once per world per five minutes, and costs the prefix at $2.50 per million instead of $2.00, about $0.0009 more than a plain query. Under sparse traffic (a question every few minutes) most queries would pay it and none would save.
+- **The speed did not change in a way that can be measured.** TTFT p50 moved from 4302 ms to 4067 ms (−5%) and p95 from 5715 ms to 5960 ms (+4%); the ten prompts' latency went from 11.3 s to 12.2 s on average and from 18.6 s to 22.5 s at the p95, because two queries had more rounds. All of this is inside the spread that repeated runs of the same prompts show (Day 4: p95 from 16.5 s to 20.0 s). Caching mostly lowers the price, not the wait, here.
+- **The check is not cached and its share of the cost grew** (12% to 17%). Its prompt, about 2,400 tokens, is below the 4,096 tokens that Haiku 4.5 needs.
+- **After caching, input is still half of the cost** (52%), so the next levers are fewer rounds, a cheaper drafting model or smaller tool results, not more caching.
+
+### Caveats (caching)
+
+- **One run of each, ten prompts.** The before and after runs have different paths: the number of model calls differs for one prompt, and the two runs were made at different times of day. The mean saving (−26%) includes that noise; the per-prompt table shows the effect on prompts with the same path (−13% to −67%, −31% on the nine).
+- **The cache was warm by design.** The runs were seconds apart. With sparse traffic the saving shrinks and a cold query costs a little more than before. The measurement does not cover a day of real use.
+- **Sonnet 5.5 only, and only on a laptop and in one world at a time.** The dev model Haiku 4.5 is below its minimum and caches nothing. Vercel was checked for a write and a read on two queries, not measured.
+- **The TTFT comparison is within noise.** Ten runs, the p95 is the slowest.
+- **After the check of Day 4 the output is the same:** output tokens (780 and 764) did not change, so the caching did not change what the model writes. The answers were not compared one by one.
+
+### Reproduce (caching)
+
+```sh
+docker compose up -d                                      # the CMS and Postgres, lore ingested
+git checkout 5187c84                                      # the code with caching
+pnpm measure:agent                                        # the ten prompts, traced
+pnpm cost:report --from <start UTC> --to <end UTC> --env development --model claude-sonnet-5-5 --prompt-version agent.v3 --verbose
+pnpm dev                                                  # terminal 1
+MEASURE_MODEL=claude-sonnet-5-5 pnpm measure:chat         # terminal 2, straight after the prompts so that the cache is warm
+```
+
+For the recorded run the period of the ten prompts is `--from 2026-10-11T20:11:00Z --to 2026-10-11T20:14:00Z`, and of the chat question `--from 2026-10-11T20:13:50Z --to 2026-10-11T20:15:00Z`, for as long as the traces exist (until 2026-10-25). **The ten prompts cost $0.18 and the chat question about $0.03**, at the prices above. The measured code has not changed since: later commits change only documents.
+
+**To reproduce the recorded numbers exactly,** check out `5187c84`. The numbers are **not deterministic** (the models, the network and the CMS's random delay and failures vary, and the cache state depends on the minutes between the runs), so a new run gives close numbers, not identical ones.

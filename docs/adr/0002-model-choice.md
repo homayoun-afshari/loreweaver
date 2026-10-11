@@ -69,7 +69,7 @@ The decision rests mainly on quality: 4.6 against 3.8, with the gap in instructi
 
 ### Follow-ups
 
-- The p95 latency and cost per query of the full agent were measured on Day 4 (see [METRICS.md](../METRICS.md)). **The p95 exceeded 8 s, so this ADR is to be revisited** once the latency levers (prompt caching, shorter drafts, the drafting model) have been tried on Day 5.
+- The p95 latency and cost per query of the full agent were measured on Day 4 and again on Day 5 (see [METRICS.md](../METRICS.md)). **The p95 exceeded 8 s, so this ADR is to be revisited.** One of the levers, prompt caching, was tried on Day 5: it lowered the cost per query and did not change the latency in a way that the measurement can tell from run-to-run noise, so the p95 is still above the budget. The other levers (shorter drafts, a faster or cheaper drafting model, fewer drafting rounds) have not been tried. The cost per query is inside the $0.05 budget.
 - Re-score quality with an LLM judge (Opus 5.5) and a larger set of prompts on Day 6, and compare Haiku again with a better prompt.
 - Add a fallback model for when the primary fails or times out (not built on Day 2): Haiku is the natural candidate.
 - Check the provider's data-handling terms before any real user data is sent (the PRD rules out training on user data).
