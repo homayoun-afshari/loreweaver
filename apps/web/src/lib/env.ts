@@ -25,6 +25,15 @@ const envSchema = z.object({
   LEGACY_CMS_API_KEY: z.string().min(1),
   /** Anthropic API key for model calls (dev key locally and in Preview, prod key in Production). */
   ANTHROPIC_API_KEY: z.string().min(1),
+  /**
+   * How many times the reflection step may send a draft back for a revision before the agent
+   * answers with a caveat. Optional: 2 when unset. A set value must be a digit from 0 to 5.
+   */
+  AGENT_MAX_ITERATIONS: z
+    .string()
+    .regex(/^[0-5]$/, "must be a whole number from 0 to 5")
+    .default("2")
+    .transform(Number),
   ...databaseShape,
   ...embeddingShape,
 });
