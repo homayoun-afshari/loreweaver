@@ -4,10 +4,10 @@ import { charactersOf } from "@/lib/worlds";
 
 /**
  * The system prompt lives in a versioned file, not in code, so it can be reviewed, diffed and
- * compared like any other change. To change it, copy `agent.v1.md` to `agent.v2.md`, edit the
+ * compared like any other change. To change it, copy the latest version to a new file, edit the
  * copy and change this constant. Old versions stay in the repo.
  */
-export const PROMPT_VERSION = "agent.v2";
+export const PROMPT_VERSION = "agent.v3";
 
 let cachedTemplate: string | undefined;
 

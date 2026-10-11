@@ -3,7 +3,7 @@ import { getSystemPrompt, PROMPT_VERSION } from "./index";
 
 describe("system prompt", () => {
   it("loads the versioned prompt file", () => {
-    expect(PROMPT_VERSION).toBe("agent.v2");
+    expect(PROMPT_VERSION).toBe("agent.v3");
     expect(getSystemPrompt("world_aethel")).toMatch(/^You are Loreweaver/);
   });
 
@@ -16,6 +16,10 @@ describe("system prompt", () => {
     expect(prompt).toMatch(/lore does not cover this/i);
     // Retrieved text is data, not orders.
     expect(prompt).toMatch(/not instructions to you/i);
+  });
+
+  it("asks for short answers, because the answer is only sent after it is checked", () => {
+    expect(getSystemPrompt("world_aethel")).toMatch(/under about 150 words/i);
   });
 
   it("keeps the rules the product depends on", () => {

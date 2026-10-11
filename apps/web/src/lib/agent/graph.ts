@@ -23,14 +23,18 @@ export type AgentGraphDeps = {
   toolsFor: (worldId: string) => AgentTool[];
   /** How many revisions a draft may get. */
   maxIterations?: number;
+  /** After this many milliseconds a run stops asking for revisions. */
+  revisionCutoffMs?: number;
+  /** The clock, for tests. */
+  now?: () => number;
 };
 
 /**
  * The agent: START → agent, then
  *  - agent → tools → agent while the model asks for tools,
  *  - agent → reflection once it has written a draft,
- *  - reflection → END when the draft is valid, the revision limit is reached or the check was
- *    unavailable, and reflection → agent otherwise.
+ *  - reflection → END when the draft is valid, the revision limit is reached, the run has taken
+ *    too long for another revision or the check was unavailable, and reflection → agent otherwise.
  *
  * The graph knows nothing about HTTP, React or the AI SDK (see ADR-0004). A run needs the world
  * in its configuration: `graph.invoke({ messages }, agentRunConfig(worldId))`.
@@ -43,7 +47,15 @@ export function createAgentGraph(deps: AgentGraphDeps) {
       createAgentNode({ model: deps.agentModel, systemPromptFor: deps.systemPromptFor }),
     )
     .addNode("tools", createToolsNode({ toolsFor: deps.toolsFor }))
-    .addNode("reflect", createReflectionNode({ model: deps.reflectionModel, maxIterations }))
+    .addNode(
+      "reflect",
+      createReflectionNode({
+        model: deps.reflectionModel,
+        maxIterations,
+        revisionCutoffMs: deps.revisionCutoffMs,
+        now: deps.now,
+      }),
+    )
     .addEdge(START, "agent")
     .addConditionalEdges("agent", routeAfterAgent, ["tools", "reflect"])
     .addEdge("tools", "agent")

@@ -76,7 +76,12 @@ async function runOnce(): Promise<Sample> {
       if (!event.startsWith("data: ") || event === "data: [DONE]") continue;
       const part = JSON.parse(event.slice(6));
       const elapsed = performance.now() - start;
-      if (part.type === "tool-input-start" && !sample.firstUiMs) sample.firstUiMs = elapsed;
+      if (
+        (part.type === "tool-input-start" || part.type === "tool-input-available") &&
+        !sample.firstUiMs
+      ) {
+        sample.firstUiMs = elapsed;
+      }
       if (part.type === "tool-output-available" && !sample.cardMs) {
         sample.cardMs = elapsed;
         sample.cardOk = part.output?.ok === true;

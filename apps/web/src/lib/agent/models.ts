@@ -15,6 +15,9 @@ export function createAgentModel(args: { apiKey: string; modelId: ModelId }): Ag
     model: args.modelId,
     apiKey: args.apiKey,
     maxTokens: AGENT_MAX_TOKENS,
+    // The author never sees a draft: the answer is sent once, after the check. A model that
+    // streams its tokens would let a stream mode of the graph emit them, so it is switched off.
+    disableStreaming: true,
   });
   const withTools = chat.bindTools([...TOOL_SPECS]);
   return async (messages, { allowTools }, config) =>
@@ -28,7 +31,22 @@ export function createReflectionModel(args: { apiKey: string }): ReflectionModel
     apiKey: args.apiKey,
     temperature: 0,
     maxTokens: REFLECTION_MAX_TOKENS,
+    // Also needed for the verdict to be read: when the model streams inside a graph that streams
+    // messages, the structured reply came back unparsed (found in a live run).
+    disableStreaming: true,
   });
-  const structured = chat.withStructuredOutput(verdictSchema, { name: "verdict" });
-  return (messages, config) => structured.invoke(messages, config);
+  const structured = chat.withStructuredOutput(verdictSchema, {
+    name: "verdict",
+    includeRaw: true,
+  });
+  return async (messages, config) => {
+    const { raw, parsed } = await structured.invoke(messages, config);
+    return {
+      verdict: parsed,
+      usage: {
+        input: (raw as AIMessage).usage_metadata?.input_tokens ?? 0,
+        output: (raw as AIMessage).usage_metadata?.output_tokens ?? 0,
+      },
+    };
+  };
 }

@@ -25,6 +25,18 @@ describe("createChatTimer", () => {
     });
   });
 
+  it("counts a tool call that arrives whole as the first UI, like one that streams in", () => {
+    const clock = fakeClock();
+    const timer = createChatTimer(clock.now);
+
+    clock.advance(1200);
+    timer.markChunk("tool-input-available");
+    clock.advance(800);
+    timer.markChunk("tool-input-available");
+
+    expect(timer.snapshot().serverFirstUiMs).toBe(1200);
+  });
+
   it("keeps the first moment, not the last", () => {
     const clock = fakeClock();
     const timer = createChatTimer(clock.now);

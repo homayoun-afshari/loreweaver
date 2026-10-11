@@ -1,13 +1,13 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIDataTypes, type UIMessage } from "ai";
+import { DefaultChatTransport } from "ai";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import type { ChatMetadata } from "@/lib/ai/chat-metadata";
-import type { ChatTools } from "@/lib/ai/tools";
+import type { ChatMessage } from "@/lib/ai/chat-message";
+import { canRegenerate } from "./chat-controls";
 import { MessageActions } from "./message-actions";
 import {
   LoreCitationCards,
@@ -21,9 +21,6 @@ import {
   CharacterStatusCardError,
   CharacterStatusCardSkeleton,
 } from "./character-status-card";
-
-/** Chat messages whose tool parts are typed with our tools (so `part.output` has a real type). */
-type ChatMessage = UIMessage<ChatMetadata, UIDataTypes, ChatTools>;
 
 /** How close to the bottom (in px) the user must be for new text to keep scrolling the view. */
 const STICK_TO_BOTTOM_PX = 80;
@@ -50,10 +47,17 @@ export function ChatPanel() {
     sessionIdRef.current ??= crypto.randomUUID();
     return sessionIdRef.current;
   }
+  // What the agent says it is doing between tool results and the answer ("Checking against world
+  // rules…"). The route sends it as a transient part, so it is never kept in the messages.
+  const [agentStatus, setAgentStatus] = useState<string | null>(null);
   const { messages, setMessages, sendMessage, status, error, stop, regenerate } =
     useChat<ChatMessage>({
       id: chatId,
       transport: new DefaultChatTransport({ api: "/api/chat" }),
+      onData: (part) => {
+        if (part.type === "data-status") setAgentStatus(part.data.text);
+      },
+      onFinish: () => setAgentStatus(null),
     });
   const [input, setInput] = useState("");
   // The world of this visitor, so the example questions fit it. The default until the page knows.
@@ -76,12 +80,19 @@ export function ChatPanel() {
     const isStreamingNow = busy && index === messages.length - 1;
     return !isStreamingNow && messageText(message).length > 0;
   }
-  const canRegenerate = !busy && messages.at(-1)?.role === "assistant";
+  const regenerateVisible = canRegenerate({ busy, lastRole: messages.at(-1)?.role });
+
+  // The answer arrives in one piece, after the agent has checked it, so until it does the author
+  // sees what the agent is doing: the cards fill in, and a note says where it is.
+  const last = messages.at(-1);
+  const answerStarted = last?.role === "assistant" && messageText(last).length > 0;
+  const waitingNote = busy && !answerStarted ? (agentStatus ?? "Thinking…") : null;
 
   function submit() {
     const text = input.trim();
     if (!text || busy) return;
     stickToBottom.current = true;
+    setAgentStatus(null);
     sendMessage({ text });
     setInput("");
   }
@@ -142,7 +153,9 @@ export function ChatPanel() {
                     switch (part.state) {
                       case "input-streaming":
                       case "input-available":
-                        return <CharacterStatusCardSkeleton key={part.toolCallId} />;
+                        // A call that never got its result (the user pressed Stop) is not a
+                        // loading card any more.
+                        return busy ? <CharacterStatusCardSkeleton key={part.toolCallId} /> : null;
                       case "output-available":
                         return part.output.ok ? (
                           <CharacterStatusCard
@@ -164,7 +177,7 @@ export function ChatPanel() {
                     switch (part.state) {
                       case "input-streaming":
                       case "input-available":
-                        return <LoreCitationCardsSkeleton key={part.toolCallId} />;
+                        return busy ? <LoreCitationCardsSkeleton key={part.toolCallId} /> : null;
                       case "output-available":
                         return part.output.ok ? (
                           <LoreCitationCards key={part.toolCallId} hits={part.output.hits} />
@@ -193,7 +206,7 @@ export function ChatPanel() {
           </div>
         ))}
 
-        {status === "submitted" && <p className="text-sm text-muted-foreground">Thinking…</p>}
+        {waitingNote && <p className="text-sm text-muted-foreground">{waitingNote}</p>}
       </div>
 
       {error && (
@@ -234,7 +247,7 @@ export function ChatPanel() {
           own canon.
         </p>
         <div className="flex justify-end gap-2">
-          {canRegenerate && (
+          {regenerateVisible && (
             <Button type="button" variant="outline" onClick={() => regenerate()}>
               Regenerate
             </Button>
