@@ -12,6 +12,9 @@ import {
 import type { CharacterState } from "@/lib/legacy";
 import type { LegacyClient } from "@/lib/legacy/client";
 import { WORLD_COOKIE } from "@/lib/session";
+import { createUsageGuard, type UsageGuard } from "@/lib/usage/guard";
+import { finishedWith, memoryUsageStore, type MemoryRow } from "@/lib/usage/testing";
+import { VISITOR_COOKIE } from "@/lib/visitor";
 
 /**
  * The chat route with fake models and fake tool back ends: the real request checks, the real
@@ -30,6 +33,11 @@ vi.mock("@/lib/ai/agent-runtime", () => ({
 
 // `after()` only works inside a real Next.js request.
 vi.mock("@/lib/ai/tracing", () => ({ flushTracesAfterResponse: vi.fn() }));
+
+// The usage guard on an in-memory store, with small limits, instead of the database.
+let usageGuard: UsageGuard;
+let usageRows: MemoryRow[];
+vi.mock("@/lib/usage/runtime", () => ({ getUsageGuard: () => usageGuard }));
 
 const { POST } = await import("./route");
 
@@ -101,6 +109,12 @@ beforeEach(() => {
   requested.modelId = undefined;
   requested.worldIds = [];
   scriptedGraph({ agent: [draft("An answer.")], reflection: [valid] });
+  const memory = memoryUsageStore();
+  usageRows = memory.rows;
+  usageGuard = createUsageGuard({
+    store: memory.store,
+    limits: { requestsPerMinute: 3, dailyTokenBudget: 1000 },
+  });
 });
 
 afterEach(() => {
@@ -221,5 +235,107 @@ describe("POST /api/chat", () => {
     expect(text).not.toContain("sk-ant-secret");
     expect(text).not.toContain("api.anthropic.com");
     expect(logged).toHaveBeenCalled();
+  });
+});
+
+const visitorA = "3f2b8c1e-9a4d-4e57-8c3b-1d2e3f4a5b6c";
+const visitorB = "7a1c9e2d-5b3f-4d68-9e4c-2a3b4c5d6e7f";
+const as = (visitor: string) => ({ cookie: `${VISITOR_COOKIE}=${visitor}` });
+const ask = (visitor: string) => post({ messages: [userMessage("Hi")] }, as(visitor));
+
+describe("the consumption limits", () => {
+  it("records each request of a visitor with what it used", async () => {
+    await (await ask(visitorA)).text();
+
+    expect(usageRows).toHaveLength(1);
+    expect(usageRows[0]).toMatchObject({
+      visitorId: visitorA,
+      worldId: "world_aethel",
+      modelId: "claude-haiku-4-5",
+      promptVersion: "agent.v3",
+    });
+    // The fake check reports 100 input and 10 output tokens.
+    expect(usageRows[0].finished).toMatchObject({
+      status: "completed",
+      inputTokens: 100,
+      outputTokens: 10,
+    });
+  });
+
+  it("refuses a request over the rate limit with a friendly message, before any model is called", async () => {
+    const { agent } = scriptedGraph({ agent: [draft("An answer.")], reflection: [valid] });
+    for (let i = 0; i < 3; i++) await (await ask(visitorA)).text();
+    const callsBefore = agent.calls.length;
+
+    const response = await ask(visitorA);
+
+    expect(response.status).toBe(429);
+    const body = await response.json();
+    expect(body).toMatchObject({ error: "rate_limited" });
+    expect(body.message).toContain("seconds");
+    expect(body.retryAfterSeconds).toBeGreaterThanOrEqual(1);
+    expect(response.headers.get("Retry-After")).toBe(String(body.retryAfterSeconds));
+    expect(agent.calls.length).toBe(callsBefore);
+    // The refused request was not recorded: asking again does not extend the wait.
+    expect(usageRows).toHaveLength(3);
+  });
+
+  it("refuses a visitor whose daily token budget is spent, and says that waiting a minute will not help", async () => {
+    usageRows.push({
+      id: "earlier",
+      visitorId: visitorA,
+      worldId: "world_aethel",
+      modelId: "claude-sonnet-5-5",
+      promptVersion: "agent.v3",
+      createdAt: new Date(Date.now() - 1000),
+      finished: finishedWith(1000),
+    });
+    // Seen through the guard's own store: the budget is 1000 tokens and 1000 are spent.
+    const response = await ask(visitorA);
+
+    expect(response.status).toBe(429);
+    const body = await response.json();
+    expect(body).toMatchObject({ error: "daily_budget" });
+    expect(body.message).toContain("midnight UTC");
+  });
+
+  it("keeps the visitors apart", async () => {
+    for (let i = 0; i < 3; i++) await (await ask(visitorA)).text();
+    expect((await ask(visitorA)).status).toBe(429);
+    expect((await ask(visitorB)).status).toBe(200);
+  });
+
+  it("gives a new visitor a cookie that only the server can read, and an old one none", async () => {
+    const first = await post({ messages: [userMessage("Hi")] });
+    await first.text();
+    const cookie = first.headers.get("Set-Cookie") ?? "";
+    expect(cookie).toContain(`${VISITOR_COOKIE}=`);
+    expect(cookie).toContain("HttpOnly");
+
+    const again = await ask(visitorA);
+    await again.text();
+    expect(again.headers.get("Set-Cookie")).toBeNull();
+  });
+
+  it("records a run that failed, with what it had used", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    makeGraph = () =>
+      createAgentGraph({
+        agentModel: async () => {
+          throw new Error("provider down");
+        },
+        reflectionModel: fakeReflectionModel([valid]).model,
+        systemPromptFor: () => "system",
+        toolsFor: () => [],
+      });
+    await (await ask(visitorA)).text();
+
+    expect(usageRows).toHaveLength(1);
+    expect(usageRows[0].finished?.status).toBe("failed");
+  });
+
+  it("does not record a request that is not valid", async () => {
+    await post({ messages: [] }, as(visitorA));
+    expect(usageRows).toHaveLength(0);
   });
 });

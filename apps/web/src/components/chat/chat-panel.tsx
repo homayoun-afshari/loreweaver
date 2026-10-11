@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import type { ChatMessage } from "@/lib/ai/chat-message";
+import { parseLimitError } from "@/lib/usage/limit-error";
 import { canRegenerate } from "./chat-controls";
 import { MessageActions } from "./message-actions";
 import {
@@ -73,6 +74,8 @@ export function ChatPanel() {
   }, [messages, status]);
 
   const busy = status === "submitted" || status === "streaming";
+  // Over the rate limit or the daily budget: the route says so in plain words, and they are shown.
+  const limit = parseLimitError(error?.message);
 
   /** Feedback only makes sense on a finished assistant message that has some text. */
   function showActions(message: ChatMessage, index: number): boolean {
@@ -80,7 +83,11 @@ export function ChatPanel() {
     const isStreamingNow = busy && index === messages.length - 1;
     return !isStreamingNow && messageText(message).length > 0;
   }
-  const regenerateVisible = canRegenerate({ busy, lastRole: messages.at(-1)?.role });
+  const regenerateVisible = canRegenerate({
+    busy,
+    lastRole: messages.at(-1)?.role,
+    dailyBudgetSpent: limit?.error === "daily_budget",
+  });
 
   // The answer arrives in one piece, after the agent has checked it, so until it does the author
   // sees what the agent is doing: the cards fill in, and a note says where it is.
@@ -214,10 +221,13 @@ export function ChatPanel() {
           role="alert"
           className="flex items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
-          <span>Something went wrong. Please try again.</span>
-          <Button type="button" variant="outline" size="sm" onClick={() => regenerate()}>
-            Retry
-          </Button>
+          <span>{limit ? limit.message : "Something went wrong. Please try again."}</span>
+          {/* A spent daily allowance does not come back by retrying, so there is no button. */}
+          {limit?.error !== "daily_budget" && (
+            <Button type="button" variant="outline" size="sm" onClick={() => regenerate()}>
+              Retry
+            </Button>
+          )}
         </div>
       )}
 

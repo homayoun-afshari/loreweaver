@@ -6,8 +6,8 @@ import { summarizeRun, summarizeRuns, type RunEvent, type RunRecord } from "./ag
 
 const usage = (agent: [number, number], check: [number, number] = [0, 0]): Usage => ({
   ...noUsage(),
-  agent: { input: agent[0], output: agent[1] },
-  reflection: { input: check[0], output: check[1] },
+  agent: { input: agent[0], output: agent[1], cacheRead: 0, cacheWrite: 0 },
+  reflection: { input: check[0], output: check[1], cacheRead: 0, cacheWrite: 0 },
 });
 const valid: Verdict = { valid: true, violations: [] };
 const broken: Verdict = {
@@ -76,9 +76,14 @@ describe("summarizeRun", () => {
     expect(record.checkMs).toBe(2000);
     expect(record.revisionMs).toBe(3000);
     expect(record.overheadMs).toBe(5000);
-    expect(record.tokens.draft).toEqual({ input: 3700, output: 390 });
-    expect(record.tokens.revision).toEqual({ input: 1700, output: 250 });
-    expect(record.tokens.check).toEqual({ input: 1250, output: 50 });
+    expect(record.tokens.draft).toEqual({ input: 3700, output: 390, cacheRead: 0, cacheWrite: 0 });
+    expect(record.tokens.revision).toEqual({
+      input: 1700,
+      output: 250,
+      cacheRead: 0,
+      cacheWrite: 0,
+    });
+    expect(record.tokens.check).toEqual({ input: 1250, output: 50, cacheRead: 0, cacheWrite: 0 });
     expect(record.drafts).toBe(2);
     expect(record.checks).toBe(2);
     expect(record.iterations).toBe(1);

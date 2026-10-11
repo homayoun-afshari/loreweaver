@@ -1,7 +1,7 @@
 import type { BaseMessage } from "@langchain/core/messages";
-import { costUsd, type ModelId } from "@/lib/ai/models";
+import { tokensCostUsd, type ModelId } from "@/lib/ai/models";
 import { RULE_CHECK_UNAVAILABLE, RULE_EMPTY_ANSWER } from "@/lib/agent/reflection";
-import type { Usage, Verdict } from "@/lib/agent/state";
+import { addTokens, noTokens, type TokenUsage, type Usage, type Verdict } from "@/lib/agent/state";
 import { mean, percentile } from "./stats";
 
 /**
@@ -57,11 +57,7 @@ export type RunRecord = {
   endedBy: EndedBy;
   toolsUsed: string[];
   expectedToolsCalled: boolean;
-  tokens: {
-    draft: { input: number; output: number };
-    revision: { input: number; output: number };
-    check: { input: number; output: number };
-  };
+  tokens: { draft: TokenUsage; revision: TokenUsage; check: TokenUsage };
   /** Cost of the whole run, in USD, by the list prices of the two models. */
   costUsd: number;
   /** What the checking and the revisions added to the run: time and money. */
@@ -96,11 +92,7 @@ export function summarizeRun(args: {
   agentModel: ModelId;
   reflectionModel: ModelId;
 }): RunRecord {
-  const tokens = {
-    draft: { input: 0, output: 0 },
-    revision: { input: 0, output: 0 },
-    check: { input: 0, output: 0 },
-  };
+  const tokens = { draft: noTokens(), revision: noTokens(), check: noTokens() };
   let draftMs = 0;
   let checkMs = 0;
   let revisionMs = 0;
@@ -125,20 +117,14 @@ export function summarizeRun(args: {
       checks++;
       checkMs += took;
       if (update.reflection) verdicts.push(update.reflection);
-      if (usage) {
-        tokens.check.input += usage.reflection.input;
-        tokens.check.output += usage.reflection.output;
-      }
+      if (usage) tokens.check = addTokens(tokens.check, usage.reflection);
       continue;
     }
 
     const stage = sawCheck ? "revision" : "draft";
     if (stage === "draft") draftMs += took;
     else revisionMs += took;
-    if (usage) {
-      tokens[stage].input += usage.agent.input;
-      tokens[stage].output += usage.agent.output;
-    }
+    if (usage) tokens[stage] = addTokens(tokens[stage], usage.agent);
     if (node === "agent") {
       const calls = toolCallsOf(update.messages);
       calls.forEach((name) => tools.add(name));
@@ -156,16 +142,12 @@ export function summarizeRun(args: {
     endedBy = iterations >= args.maxIterations ? "revision-limit" : "time-limit";
   }
 
-  const agentTokens = {
-    input: tokens.draft.input + tokens.revision.input,
-    output: tokens.draft.output + tokens.revision.output,
-  };
   const cost =
-    costUsd(args.agentModel, agentTokens.input, agentTokens.output) +
-    costUsd(args.reflectionModel, tokens.check.input, tokens.check.output);
+    tokensCostUsd(args.agentModel, addTokens(tokens.draft, tokens.revision)) +
+    tokensCostUsd(args.reflectionModel, tokens.check);
   const overheadCost =
-    costUsd(args.agentModel, tokens.revision.input, tokens.revision.output) +
-    costUsd(args.reflectionModel, tokens.check.input, tokens.check.output);
+    tokensCostUsd(args.agentModel, tokens.revision) +
+    tokensCostUsd(args.reflectionModel, tokens.check);
 
   return {
     promptId: args.promptId,

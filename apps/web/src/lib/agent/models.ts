@@ -2,6 +2,7 @@ import { ChatAnthropic } from "@langchain/anthropic";
 import { SystemMessage, type AIMessage, type BaseMessage } from "@langchain/core/messages";
 import { REFLECTION_MODEL_ID, type ModelId } from "@/lib/ai/models";
 import type { AgentModel, ReflectionModel } from "./nodes";
+import { tokensOfReply } from "./state";
 import { verdictSchema } from "./reflection";
 import { TOOL_SPECS } from "./tools";
 
@@ -69,10 +70,7 @@ export function createReflectionModel(args: { apiKey: string }): ReflectionModel
     const { raw, parsed } = await structured.invoke(messages, config);
     return {
       verdict: parsed,
-      usage: {
-        input: (raw as AIMessage).usage_metadata?.input_tokens ?? 0,
-        output: (raw as AIMessage).usage_metadata?.output_tokens ?? 0,
-      },
+      usage: tokensOfReply((raw as AIMessage).usage_metadata),
     };
   };
 }

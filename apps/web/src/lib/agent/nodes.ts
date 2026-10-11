@@ -20,7 +20,14 @@ import {
   RULE_EMPTY_ANSWER,
   toVerdict,
 } from "./reflection";
-import { noUsage, type AgentStateType, type AgentStateUpdate, type TokenUsage } from "./state";
+import {
+  noTokens,
+  noUsage,
+  tokensOfReply,
+  type AgentStateType,
+  type AgentStateUpdate,
+  type TokenUsage,
+} from "./state";
 import type { AgentTool } from "./tools";
 
 /**
@@ -90,10 +97,7 @@ export function createAgentNode(deps: {
       draftAnswer: asksForTools ? state.draftAnswer : textOf(reply),
       usage: {
         ...noUsage(),
-        agent: {
-          input: reply.usage_metadata?.input_tokens ?? 0,
-          output: reply.usage_metadata?.output_tokens ?? 0,
-        },
+        agent: tokensOfReply(reply.usage_metadata),
       },
     };
   };
@@ -171,7 +175,7 @@ export function createReflectionNode(deps: {
     const { question, run } = splitCurrentRun(state.messages);
 
     let verdict;
-    let spent: TokenUsage = { input: 0, output: 0 };
+    let spent: TokenUsage = noTokens();
     if (draft.trim() === "") {
       // Nothing to check: no model call.
       verdict = invalidVerdict([

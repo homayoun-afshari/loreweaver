@@ -6,24 +6,49 @@ export type Violation = { rule_id: string; explanation: string };
 /** What the reflection step decided about a draft. */
 export type Verdict = { valid: boolean; violations: Violation[] };
 
-/** Tokens of the model calls of one kind. */
-export type TokenUsage = { input: number; output: number };
+/**
+ * Tokens of the model calls of one kind. `input` is every input token, as the provider counts
+ * them: it includes the tokens read from or written to the prompt cache, which are listed apart
+ * too. What is neither is `input - cacheRead - cacheWrite`.
+ */
+export type TokenUsage = { input: number; output: number; cacheRead: number; cacheWrite: number };
 
 /** Tokens spent in a run, split by what spent them: drafting (with its revisions) and checking. */
 export type Usage = { agent: TokenUsage; reflection: TokenUsage };
 
-export const noUsage = (): Usage => ({
-  agent: { input: 0, output: 0 },
-  reflection: { input: 0, output: 0 },
+export const noTokens = (): TokenUsage => ({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
+
+export const addTokens = (a: TokenUsage, b: TokenUsage): TokenUsage => ({
+  input: a.input + b.input,
+  output: a.output + b.output,
+  cacheRead: a.cacheRead + b.cacheRead,
+  cacheWrite: a.cacheWrite + b.cacheWrite,
 });
+
+export const noUsage = (): Usage => ({ agent: noTokens(), reflection: noTokens() });
 
 export function addUsage(a: Usage, b: Usage): Usage {
   return {
-    agent: { input: a.agent.input + b.agent.input, output: a.agent.output + b.agent.output },
-    reflection: {
-      input: a.reflection.input + b.reflection.input,
-      output: a.reflection.output + b.reflection.output,
-    },
+    agent: addTokens(a.agent, b.agent),
+    reflection: addTokens(a.reflection, b.reflection),
+  };
+}
+
+/** The tokens of one model reply, from the usage record that LangChain puts on it. */
+export function tokensOfReply(
+  usage:
+    | {
+        input_tokens?: number;
+        output_tokens?: number;
+        input_token_details?: { cache_read?: number; cache_creation?: number };
+      }
+    | undefined,
+): TokenUsage {
+  return {
+    input: usage?.input_tokens ?? 0,
+    output: usage?.output_tokens ?? 0,
+    cacheRead: usage?.input_token_details?.cache_read ?? 0,
+    cacheWrite: usage?.input_token_details?.cache_creation ?? 0,
   };
 }
 

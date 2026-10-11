@@ -78,6 +78,22 @@ export function usageCostUsd(modelId: ModelId, usage: TokenUsage): number {
   );
 }
 
+/**
+ * Cost in USD of tokens as the provider reports them: `input` counts every input token, the cached
+ * ones included, so the cache reads and writes are taken out of it and priced at their own price.
+ */
+export function tokensCostUsd(
+  modelId: ModelId,
+  tokens: { input: number; output: number; cacheRead: number; cacheWrite: number },
+): number {
+  return usageCostUsd(modelId, {
+    input: Math.max(0, tokens.input - tokens.cacheRead - tokens.cacheWrite),
+    cacheRead: tokens.cacheRead,
+    cacheWrite: tokens.cacheWrite,
+    output: tokens.output,
+  });
+}
+
 /** Cost in USD of one call without caching. */
 export function costUsd(modelId: ModelId, inputTokens: number, outputTokens: number): number {
   const m = MODELS[modelId];

@@ -158,6 +158,8 @@ Set them in `apps/web/.env.local` locally, and in your hosting provider's settin
 | `VOYAGE_API_KEY`         | Your Voyage AI API key, for embeddings. Use a separate key for production              |
 | `EMBEDDING_MODEL`        | The embedding model (`voyage-4-lite`). Chunks and queries must use the same one        |
 | `AGENT_MAX_ITERATIONS`   | Optional. How many times a draft may be sent back for a revision (0 to 5, default 2)   |
+| `RATE_LIMIT_PER_MINUTE`  | Optional. The most chat requests one visitor may start in a minute (default 10)        |
+| `DAILY_TOKEN_BUDGET`     | Optional. The most tokens one visitor may spend in a UTC day (default 200000)          |
 | `LANGSMITH_TRACING`      | Optional. `true` sends a trace of every agent run to LangSmith; unset sends nothing    |
 | `LANGSMITH_API_KEY`      | A LangSmith service key. Use a separate key for production                             |
 | `LANGSMITH_PROJECT`      | The project the traces go to (`loreweaver-dev`, or `loreweaver-prod` in production)    |
@@ -166,7 +168,7 @@ Set them in `apps/web/.env.local` locally, and in your hosting provider's settin
 
 ## Deploying the web app
 
-On Vercel, import the GitHub repository and set the project's **Root Directory** to `apps/web`. Add the six required variables above for Preview and Production (`AGENT_MAX_ITERATIONS` is optional). To trace the agent, also add the four `LANGSMITH_*` variables: Preview uses the `loreweaver-dev` key and project, Production the `loreweaver-prod` ones. `apps/web/vercel.json` pins the function region to Paris (`cdg1`), near the CMS in `europe-west1`. Every pull request gets a preview URL and every merge to `main` updates production.
+On Vercel, import the GitHub repository and set the project's **Root Directory** to `apps/web`. Add the six required variables above for Preview and Production (`AGENT_MAX_ITERATIONS`, `RATE_LIMIT_PER_MINUTE` and `DAILY_TOKEN_BUDGET` are optional). To trace the agent, also add the four `LANGSMITH_*` variables: Preview uses the `loreweaver-dev` key and project, Production the `loreweaver-prod` ones. `apps/web/vercel.json` pins the function region to Paris (`cdg1`), near the CMS in `europe-west1`. Every pull request gets a preview URL and every merge to `main` updates production.
 
 ## Scripts
 
