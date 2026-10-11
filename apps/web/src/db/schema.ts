@@ -1,4 +1,5 @@
 import {
+  doublePrecision,
   index,
   integer,
   pgEnum,
@@ -41,6 +42,45 @@ export const feedbackEvents = pgTable(
 ).enableRLS();
 
 export type NewFeedbackEvent = typeof feedbackEvents.$inferInsert;
+
+/** How far a chat request got: it is recorded when it starts, so a running request counts too. */
+export const usageStatus = pgEnum("usage_status", ["started", "completed", "failed"]);
+
+/**
+ * One row per chat request: who asked, what it used and what it cost. It feeds two limits (a rate
+ * limit and a daily token budget) and the reading of the cost. A row is inserted when the request
+ * starts, with no tokens, and updated when it ends. Only ids and counts are stored, never text.
+ *
+ * `visitor_id` is a random id kept in a cookie (see lib/visitor.ts), not an account. The tokens are
+ * those of all the model calls of the request (drafting and checking). `input_tokens` leaves out
+ * the cached ones, which are listed apart, so the four token columns do not overlap.
+ *
+ * Same Row Level Security reasoning as `feedback_events`.
+ */
+export const usageEvents = pgTable(
+  "usage_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    visitorId: text("visitor_id").notNull(),
+    worldId: text("world_id").notNull(),
+    /** The drafting model of the request. */
+    modelId: text("model_id").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    status: usageStatus("status").notNull().default("started"),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    cacheReadTokens: integer("cache_read_tokens").notNull().default(0),
+    cacheWriteTokens: integer("cache_write_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    /** List-price cost in USD, from the prices in lib/ai/models.ts at the time. */
+    costUsd: doublePrecision("cost_usd").notNull().default(0),
+    /** From the start of the request to the end of the run. Empty while it runs. */
+    latencyMs: integer("latency_ms"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("usage_events_visitor_idx").on(table.visitorId, table.createdAt)],
+).enableRLS();
+
+export type NewUsageEvent = typeof usageEvents.$inferInsert;
 
 /** The kind of a lore document, set in the front matter of its Markdown file. */
 export const loreDocType = pgEnum("lore_doc_type", DOC_TYPES);

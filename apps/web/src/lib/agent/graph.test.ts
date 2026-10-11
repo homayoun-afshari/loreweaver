@@ -150,9 +150,14 @@ describe("the agent graph", () => {
       reflection: [valid],
     });
     const result = await graph.invoke(ask(), config);
-    expect(result.usage.agent).toEqual({ input: 2500, output: 100 });
+    expect(result.usage.agent).toEqual({ input: 2500, output: 100, cacheRead: 0, cacheWrite: 0 });
     // The fake reports 100 in and 10 out for each check.
-    expect(result.usage.reflection).toEqual({ input: 100, output: 10 });
+    expect(result.usage.reflection).toEqual({
+      input: 100,
+      output: 10,
+      cacheRead: 0,
+      cacheWrite: 0,
+    });
   });
 
   it("is bounded: after the revision limit it keeps the best draft with a caveat", async () => {

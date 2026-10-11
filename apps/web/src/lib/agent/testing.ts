@@ -43,7 +43,7 @@ export function fakeReflectionModel(script: unknown[]) {
     calls.push(messages);
     const entry = script[Math.min(calls.length - 1, script.length - 1)];
     if (entry instanceof Error) throw entry;
-    return { verdict: entry, usage: { input: 100, output: 10 } };
+    return { verdict: entry, usage: { input: 100, output: 10, cacheRead: 0, cacheWrite: 0 } };
   };
   return { model, calls };
 }

@@ -14,6 +14,15 @@ const embeddingShape = {
   EMBEDDING_MODEL: z.string().min(1),
 };
 
+/** A positive whole number in a variable, with a default for when it is not set. */
+function wholeNumber(fallback: string) {
+  return z
+    .string()
+    .regex(/^[1-9]\d{0,8}$/, "must be a positive whole number")
+    .default(fallback)
+    .transform(Number);
+}
+
 /**
  * Every environment variable the server needs, with its expected shape.
  * Add new variables here (and to .env.example) on the day that needs them.
@@ -34,6 +43,10 @@ const envSchema = z.object({
     .regex(/^[0-5]$/, "must be a whole number from 0 to 5")
     .default("2")
     .transform(Number),
+  /** The most chat requests one visitor may start per minute. Optional: 10 when unset. */
+  RATE_LIMIT_PER_MINUTE: wholeNumber("10"),
+  /** The most tokens one visitor may spend per UTC day. Optional: 200000 when unset. */
+  DAILY_TOKEN_BUDGET: wholeNumber("200000"),
   ...databaseShape,
   ...embeddingShape,
 });

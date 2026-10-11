@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { AGENT_MODEL_ID, costUsd, DEV_MODEL_ID, resolveModelId, usageCostUsd } from "./models";
+import {
+  AGENT_MODEL_ID,
+  costUsd,
+  DEV_MODEL_ID,
+  resolveModelId,
+  tokensCostUsd,
+  usageCostUsd,
+} from "./models";
 
 describe("resolveModelId", () => {
   it("uses the cheap model on a developer's machine when nothing is requested", () => {
@@ -59,6 +66,26 @@ describe("usageCostUsd", () => {
       output: 0,
     });
     expect(read).toBeLessThan(plain);
+  });
+});
+
+describe("tokensCostUsd", () => {
+  it("takes the cached tokens out of the input, which includes them, and prices them apart", () => {
+    // 5,000 input tokens of which 1,843 were read from the cache and 200 written to it.
+    const cost = tokensCostUsd("claude-sonnet-5-5", {
+      input: 5000,
+      output: 100,
+      cacheRead: 1843,
+      cacheWrite: 200,
+    });
+    expect(cost).toBeCloseTo((2957 * 2 + 1843 * 0.1 + 200 * 2.5 + 100 * 10) / 1e6, 10);
+  });
+
+  it("is the plain price when nothing is cached", () => {
+    const tokens = { input: 2114, output: 32, cacheRead: 0, cacheWrite: 0 };
+    expect(tokensCostUsd("claude-sonnet-5-5", tokens)).toBeCloseTo(
+      costUsd("claude-sonnet-5-5", 2114, 32),
+    );
   });
 });
 

@@ -157,7 +157,7 @@ async function main() {
   row("Reflection overhead, latency", s.overheadMs, sec);
   row("  of which checks", s.checkMs, sec);
   row("  of which revisions", s.revisionMs, sec);
-  row("Cost of the run (list prices, no cache discount)", s.costUsd, usd);
+  row("Cost of the run", s.costUsd, usd);
   row("Reflection overhead, cost", s.overheadCostUsd, usd);
   row("Answer length (words)", s.answerWords, (n) => n.toFixed(0));
   console.log(
@@ -167,7 +167,7 @@ async function main() {
     `Check tokens per run: ${s.checkTokens.input.toFixed(0)} in, ${s.checkTokens.output.toFixed(0)} out. Revision tokens per run: ${s.revisionTokens.input.toFixed(0)} in, ${s.revisionTokens.output.toFixed(0)} out.`,
   );
   console.log(
-    `Expected tools all called: ${s.expectedToolsCalled} of ${s.runs} runs. Total at list prices without the cache discount: ${usd(records.reduce((t, r) => t + r.costUsd, 0))} (pnpm cost:report has the real cost).`,
+    `Expected tools all called: ${s.expectedToolsCalled} of ${s.runs} runs. Total spend: ${usd(records.reduce((t, r) => t + r.costUsd, 0))}.`,
   );
 
   await mkdir(OUT_DIR, { recursive: true });

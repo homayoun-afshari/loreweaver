@@ -29,6 +29,13 @@
       "when": 1791647755047,
       "tag": "0003_lore_chunks",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791747059695,
+      "tag": "0004_glossy_praxagora",
+      "breakpoints": true
     }
   ]
 }

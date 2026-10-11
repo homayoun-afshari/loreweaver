@@ -63,6 +63,8 @@ export async function writeAgentRun(args: {
   updates: AsyncIterable<unknown>;
   timer: StreamTimer;
   meta: Pick<ChatMetadata, "modelId" | "promptVersion">;
+  /** Called with the tokens spent so far each time they grow, also when the run fails later. */
+  onUsage?: (usage: Usage) => void;
 }): Promise<void> {
   const { sink, timer } = args;
   let stepOpen = false;
@@ -83,7 +85,10 @@ export async function writeAgentRun(args: {
   for await (const chunk of args.updates) {
     for (const [node, update] of Object.entries(chunk as Record<string, NodeUpdate | undefined>)) {
       if (!update) continue;
-      if (update.usage) usage = addUsage(usage, update.usage);
+      if (update.usage) {
+        usage = addUsage(usage, update.usage);
+        args.onUsage?.(usage);
+      }
       // The agent's drafts and the reflection node's caveat both set it; the last one wins.
       if (typeof update.draftAnswer === "string") answer = update.draftAnswer;
 

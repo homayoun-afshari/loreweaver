@@ -12,4 +12,11 @@ describe("canRegenerate", () => {
     expect(canRegenerate({ busy: true, lastRole: "user" })).toBe(false);
     expect(canRegenerate({ busy: false, lastRole: undefined })).toBe(false);
   });
+
+  it("is not offered when the day's allowance is spent, since asking again cannot work", () => {
+    expect(canRegenerate({ busy: false, lastRole: "user", dailyBudgetSpent: true })).toBe(false);
+    expect(canRegenerate({ busy: false, lastRole: "assistant", dailyBudgetSpent: false })).toBe(
+      true,
+    );
+  });
 });

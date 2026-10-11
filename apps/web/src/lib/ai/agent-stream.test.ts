@@ -34,10 +34,10 @@ async function run(updates: AsyncIterable<unknown>, now: () => number = () => 0)
 }
 
 const types = (chunks: Chunk[]) => chunks.map((c) => c.type);
-const noTokens = { input: 0, output: 0 };
+const noTokens = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
 const usage = (agent: [number, number], reflection: [number, number]) => ({
-  agent: { input: agent[0], output: agent[1] },
-  reflection: { input: reflection[0], output: reflection[1] },
+  agent: { input: agent[0], output: agent[1], cacheRead: 0, cacheWrite: 0 },
+  reflection: { input: reflection[0], output: reflection[1], cacheRead: 0, cacheWrite: 0 },
 });
 const result = (
   id: string,
@@ -242,7 +242,7 @@ describe("writeAgentRun", () => {
     expect(meta.serverFirstUiMs).toBeGreaterThan(0);
     expect(meta.serverTtftMs).toBeGreaterThan(meta.serverFirstUiMs);
     expect(meta.serverTotalMs).toBeGreaterThanOrEqual(meta.serverTtftMs);
-    expect(noTokens).toEqual({ input: 0, output: 0 });
+    expect(noTokens).toEqual({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
   });
 
   it("lets a failing run fail, after the message has started", async () => {
@@ -321,5 +321,27 @@ describe("the real graph through the translator", () => {
     expect(chunks.at(-1)).toMatchObject({
       messageMetadata: { reflectionInputTokens: 200, reflectionOutputTokens: 20 },
     });
+  });
+});
+
+describe("writeAgentRun: reporting the tokens", () => {
+  it("reports the tokens spent so far each time they grow, also when the run fails later", async () => {
+    const seen: number[] = [];
+    async function* failingAfterTwoSteps() {
+      yield { agent: { messages: [draft("Draft")], usage: usage([100, 10], [0, 0]) } };
+      yield { reflect: { usage: usage([0, 0], [50, 5]) } };
+      throw new Error("provider down");
+    }
+    await expect(
+      writeAgentRun({
+        sink: { write: () => {} },
+        updates: failingAfterTwoSteps(),
+        timer: createChatTimer(() => 0),
+        meta: { modelId: "claude-sonnet-5-5", promptVersion: "agent.v3" },
+        onUsage: (spent) => seen.push(spent.agent.input + spent.reflection.input),
+      }),
+    ).rejects.toThrow("provider down");
+    // After the first update only the drafting tokens were known, after the second both.
+    expect(seen).toEqual([100, 150]);
   });
 });
