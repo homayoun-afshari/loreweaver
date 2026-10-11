@@ -186,6 +186,8 @@ On Vercel, import the GitHub repository and set the project's **Root Directory**
 | `pnpm measure:legacy`           | Load-test the legacy CMS and its client                                     |
 | `pnpm benchmark`                | Compare two models on the same five prompts through the chat route          |
 | `pnpm measure:chat`             | Time the chat with its tool: time to first UI, card, first token, total     |
+| `pnpm measure:agent`            | Run the agent prompt set and measure the reflection loop                    |
+| `pnpm cost:report`              | Cost, tokens and latency per query from the LangSmith traces                |
 
 **Database tests.** One test file checks the world separation against a real Postgres with pgvector. It runs only when `TEST_DATABASE_URL` points at a migrated database, and is skipped otherwise (CI always sets it, and fails if it is missing). It adds rows for its own test worlds and removes them afterwards. Use the local container, never a shared or hosted database. PowerShell: `$env:TEST_DATABASE_URL = "postgresql://loreweaver:loreweaver@localhost:5432/loreweaver"; pnpm test`.
 
