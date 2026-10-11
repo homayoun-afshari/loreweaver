@@ -66,7 +66,7 @@ Both kinds run on the same Node server (serverless functions on Vercel). The pag
 | Chat request   | Valid requests pass; empty, too many or oversized messages are rejected.                                                                                |
 | Tool           | With a fake CMS client: success, error passed through as data, and a non-numeric id rejected without calling the CMS.                                   |
 | Card helpers   | Bar width is clamped, an unknown location is never guessed, dates are formatted in UTC, error text never leaks internals.                               |
-| Feedback       | Only `up`, `down`, `copy` are accepted; model and prompt labels from the browser are kept only if recognised.                                           |
+| Feedback       | Only `up`, `down`, `copy` are accepted; model and prompt labels from the browser are kept only if recognized.                                           |
 | Prompt and env | The prompt keeps its key rules (use the tool, never guess, admit what is unknown); the env loader names every missing variable, including the new ones. |
 
 **CI** is unchanged: on every pull request and push to `main` it runs `pnpm install --frozen-lockfile`, `format:check`, `lint`, `typecheck` and `test`. It does **not** run `next build`. The Vercel preview build did, and caught a real error (a random chat id being prerendered), which is now fixed.
@@ -93,7 +93,7 @@ Five Loreweaver-style prompts (ideas, a rule check, an honesty test, a format te
 
 | Tool state                                      | What the user sees                                                                            |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Starting (`input-streaming`, `input-available`) | A **loading skeleton**: grey placeholder with the card's layout, shown before the CMS answers |
+| Starting (`input-streaming`, `input-available`) | A **loading skeleton**: gray placeholder with the card's layout, shown before the CMS answers |
 | Result with `ok: true`                          | The **Character Status Card**                                                                 |
 | Result with `ok: false`, or tool error          | An **error card**: "Character service unavailable", saying earlier data may be out of date    |
 

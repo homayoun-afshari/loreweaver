@@ -20,7 +20,7 @@ import { mean, percentile } from "../src/lib/stats";
 
 const baseUrl = (process.env.MEASURE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 const total = Number(process.env.MEASURE_REQUESTS ?? 10);
-/** Honoured only by a local server (a deployed one always uses its own model). */
+/** Honored only by a local server (a deployed one always uses its own model). */
 const model = process.env.MEASURE_MODEL;
 const question = "What does Kael have on them?";
 

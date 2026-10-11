@@ -80,7 +80,7 @@ A pull request can only be merged when this is green.
 
 **Rules for every `/v1` request**
 
-| Rule       | Behaviour                                                                                       |
+| Rule       | Behavior                                                                                        |
 | ---------- | ----------------------------------------------------------------------------------------------- |
 | Auth       | Header `X-API-Key` must match, otherwise `401`.                                                 |
 | Rate limit | 30 requests per minute per key, otherwise `429` with `Retry-After` (seconds).                   |
@@ -190,7 +190,7 @@ The typed client in `apps/web/src/lib/legacy/` is the only code that talks to th
 | `cond_flag: "WND"`              | `condition: "wounded"`                             |
 | `last_upd: "09-OCT-26 14:32"`   | `updatedAt: "2026-10-09T14:32:00.000Z"` (ISO, UTC) |
 
-It also protects the app from the CMS's bad behaviour:
+It also protects the app from the CMS's bad behavior:
 
 - **Validates** every response with Zod. A response that breaks the contract becomes an `invalid_response` error, never silently wrong data. An unknown location code stays `name: null`; it is never guessed.
 - **Timeout** of 2 s per attempt.

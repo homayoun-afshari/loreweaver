@@ -37,7 +37,7 @@ Evidence: a [mini model benchmark](../BENCHMARK.md) of 5 Loreweaver-style prompt
 
 3. **Claude Haiku 4.5 in development and Claude Sonnet 5.5 for the agent in Preview and Production.**
    - Pros: the higher quality where users see it, a low cost while building. A preview shows what would ship.
-   - Cons: behaviour can differ between a laptop and the cloud, so a prompt tuned on Haiku may need a check on Sonnet. Everything meant to be judged (evals, latency numbers) must run against the Preview and Production model.
+   - Cons: behavior can differ between a laptop and the cloud, so a prompt tuned on Haiku may need a check on Sonnet. Everything meant to be judged (evals, latency numbers) must run against the Preview and Production model.
 
 4. **A larger model, Claude Opus 5.5, for the agent.**
    - Pros: probably the best quality.

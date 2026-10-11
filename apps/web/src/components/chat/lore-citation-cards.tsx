@@ -68,7 +68,7 @@ export function LoreCitationCards({ hits }: { hits: LoreHit[] }) {
   );
 }
 
-/** The loading state: the same shape as one card, drawn in grey, shown while the search runs. */
+/** The loading state: the same shape as one card, drawn in gray, shown while the search runs. */
 export function LoreCitationCardsSkeleton() {
   return (
     <Card size="sm" className="w-full max-w-md" role="status" aria-label="Searching your lore">

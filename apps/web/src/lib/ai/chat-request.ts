@@ -13,7 +13,7 @@ export const chatRequestSchema = z.object({
     .array(z.looseObject({ role: z.string() }))
     .min(1)
     .max(MAX_MESSAGES),
-  /** Optional model override, honoured outside production only (see resolveModelId). */
+  /** Optional model override, honored outside production only (see resolveModelId). */
   model: z.string().optional(),
 });
 

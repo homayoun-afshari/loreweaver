@@ -126,7 +126,7 @@ describe("legacy client: retries", () => {
     });
   });
 
-  it("retries a 429 and honours a short Retry-After", async () => {
+  it("retries a 429 and honors a short Retry-After", async () => {
     sequence(status(429, { "Retry-After": "1" }), okResponse);
     const { client, sleep } = makeClient();
 

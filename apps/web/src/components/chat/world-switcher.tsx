@@ -23,18 +23,18 @@ export function WorldSwitcher({
   const [worldId, setWorldId] = useState<string>("");
 
   useEffect(() => {
-    let cancelled = false;
+    let canceled = false;
     fetch("/api/session/world")
       .then((response) => response.json())
       .then((data: { worldId: string }) => {
-        if (!cancelled) {
+        if (!canceled) {
           setWorldId(data.worldId);
           onWorld(data.worldId);
         }
       })
       .catch(() => {});
     return () => {
-      cancelled = true;
+      canceled = true;
     };
     // The parent passes a state setter, which never changes, so this still runs once.
   }, [onWorld]);

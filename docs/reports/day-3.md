@@ -119,7 +119,7 @@ The model never calls an endpoint for lore: `search_lore` runs inside `/api/chat
 
 | Tool state                                      | What the user sees                                                 |
 | ----------------------------------------------- | ------------------------------------------------------------------ |
-| Starting (`input-streaming`, `input-available`) | A grey **skeleton** card                                           |
+| Starting (`input-streaming`, `input-available`) | A gray **skeleton** card                                           |
 | Result with passages                            | "N sources from your lore", then one **card per passage**          |
 | Result without passages                         | A "No matching lore" card                                          |
 | Tool failure                                    | An error card ("Lore search unavailable"). The chat keeps working. |

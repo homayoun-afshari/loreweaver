@@ -18,7 +18,7 @@ const FRONT_MATTER = /^---\n([\s\S]*?)\n---\n?/;
 /**
  * Reads the small front matter block at the top of a lore file (`doc_type: rule`).
  * Only "key: value" lines are supported, which is all the lore files need.
- * Line endings are normalised first: on Windows, Git can check files out with "\r\n", and the
+ * Line endings are normalized first: on Windows, Git can check files out with "\r\n", and the
  * same file must give the same chunks (and hashes) on every machine.
  */
 export function parseLoreFile(

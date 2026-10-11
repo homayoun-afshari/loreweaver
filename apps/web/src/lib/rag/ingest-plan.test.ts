@@ -111,8 +111,8 @@ describe("planIngest", () => {
 
   it("rewrites the labels of a chunk without paying for a new vector", () => {
     const before = build([base]);
-    const relabelled = file(base.markdown, "a.md", "history");
-    const plan = planIngest(build([relabelled]), stored(before));
+    const relabeled = file(base.markdown, "a.md", "history");
+    const plan = planIngest(build([relabeled]), stored(before));
     expect(plan.embed).toHaveLength(0);
     expect(plan.write).toHaveLength(3);
     expect(plan.copy).toHaveLength(3);

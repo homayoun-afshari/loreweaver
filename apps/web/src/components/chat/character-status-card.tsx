@@ -9,7 +9,7 @@ import {
   statPercent,
 } from "./character-card-model";
 
-/** A labelled horizontal bar (used for mana and health). */
+/** A labeled horizontal bar (used for mana and health). */
 function StatBar({ label, value, barClass }: { label: string; value: number; barClass: string }) {
   const percent = statPercent(value);
   return (
@@ -70,7 +70,7 @@ export function CharacterStatusCard({ character }: { character: CharacterState }
   );
 }
 
-/** The loading state: the same layout as the card, drawn in grey, shown while the tool runs. */
+/** The loading state: the same layout as the card, drawn in gray, shown while the tool runs. */
 export function CharacterStatusCardSkeleton() {
   return (
     <Card className="w-full max-w-sm" role="status" aria-label="Loading character state">

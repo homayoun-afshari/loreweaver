@@ -37,7 +37,7 @@ export const characterStateSchema = z
       if (iso === null) {
         ctx.issues.push({
           code: "custom",
-          message: `Unrecognised date format: ${value}`,
+          message: `Unrecognized date format: ${value}`,
           input: value,
         });
         return z.NEVER;

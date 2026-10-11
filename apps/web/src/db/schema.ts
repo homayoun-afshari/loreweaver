@@ -54,7 +54,7 @@ export const loreDocType = pgEnum("lore_doc_type", DOC_TYPES);
  * A chunk's place is (world, chunking, file, position in the file); ingestion updates in place.
  *
  * There is no vector index on purpose: at a few hundred rows an exact scan is fast and always
- * returns the true nearest neighbours. Same Row Level Security reasoning as `feedback_events`.
+ * returns the true nearest neighbors. Same Row Level Security reasoning as `feedback_events`.
  */
 export const loreChunks = pgTable(
   "lore_chunks",
