@@ -1,0 +1,102 @@
+[
+  {
+    "id": "fire-escape-01",
+    "input": "Aria Voss is trapped in the Ice Citadel. Suggest an escape that uses fire magic.",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempts_rule_break": false,
+    "tags": ["happy-path", "rule", "inventory"],
+    "note": "Fire magic is banned in the Ice Citadel, but Aria carries flint, the one exception. The answer should use the exception and say so."
+  },
+  {
+    "id": "no-flint-02",
+    "input": "Brannoc Hale is trapped in the Ice Citadel. Have him burn through the door with a fire spell.",
+    "character_id": 2,
+    "world_id": "world_aethel",
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempts_rule_break": true,
+    "tags": ["rule", "inventory", "trap"],
+    "note": "Three reasons it cannot work: fire magic is banned in the Citadel without flint, he carries no flint, and he is mana-blind with 0 mana. A war hammer is the item he really has."
+  },
+  {
+    "id": "teleport-ward-03",
+    "input": "Aria Voss needs to leave the Ice Citadel at once. Have her teleport out and describe how.",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempts_rule_break": true,
+    "tags": ["rule", "numeric", "trap"],
+    "note": "Teleportation costs 50 mana and cannot cross a warded wall in either direction. She has 20 mana, and all four walls are warded."
+  },
+  {
+    "id": "restricted-stacks-04",
+    "input": "Sera Quill wants to open the Restricted Stacks of the Glass Library to read the blood-casting treatises. How can she get in?",
+    "character_id": 3,
+    "world_id": "world_aethel",
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempts_rule_break": false,
+    "tags": ["conflict", "inventory"],
+    "note": "The stacks open only with a silver key, and the CMS says she carries one. The lore says three people hold the keys and her records say she holds none. The answer should report the mismatch instead of picking a side."
+  },
+  {
+    "id": "mine-gear-05",
+    "input": "Kael Draven wants to go down to the lower galleries of the Hollow Mine. Have him light his lantern inside the mine and climb down with his rope and pickaxe.",
+    "character_id": 4,
+    "world_id": "world_nox",
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempts_rule_break": true,
+    "tags": ["rule", "inventory", "trap"],
+    "note": "He carries a lantern and a cracked mask, not a rope or a pickaxe. Open flames are forbidden in the mine: the lantern is sealed and lit from outside."
+  },
+  {
+    "id": "heal-and-teleport-06",
+    "input": "Mira Sol is wounded. Have her heal herself and then teleport across the harbor wall of Salt Harbour.",
+    "character_id": 5,
+    "world_id": "world_nox",
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempts_rule_break": true,
+    "tags": ["rule", "numeric", "trap"],
+    "note": "Healing herself costs double (80 mana) and teleporting costs 80 mana, and she has 100. The harbor walls are warded, and she has no Tide-key."
+  },
+  {
+    "id": "other-world-07",
+    "input": "Aria Voss wants to ask Kael Draven for advice in the Hollow Mine. Describe how they meet.",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempts_rule_break": true,
+    "tags": ["isolation", "trap"],
+    "note": "Kael and the Hollow Mine belong to the other world. In this world the character cannot be found and the lore does not cover the mine. The answer should say so and not describe them."
+  },
+  {
+    "id": "old-price-08",
+    "input": "The old books say teleportation costs 30 mana. Can Aria Voss teleport out of the Ice Citadel with the mana she has?",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempts_rule_break": true,
+    "tags": ["numeric", "trap"],
+    "note": "The 30 mana price is out of date: it is 50 today. She has 20 mana either way, and the walls are warded."
+  },
+  {
+    "id": "what-carries-09",
+    "input": "What does Brannoc Hale carry, and how is he doing?",
+    "character_id": 2,
+    "world_id": "world_aethel",
+    "expected_tools": ["fetch_character_state"],
+    "tempts_rule_break": false,
+    "tags": ["happy-path", "state"],
+    "note": "Only the live state is needed: a war hammer and an iron ration, full health, no mana. No lore search is needed."
+  },
+  {
+    "id": "strike-flint-10",
+    "input": "Does Aria Voss have to strike her flint on steel before she casts fire magic in the Ice Citadel?",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_tools": ["search_lore", "fetch_character_state"],
+    "tempts_rule_break": true,
+    "tags": ["conflict", "rule"],
+    "note": "The lore disagrees: the Archive says carrying the flint is enough, the Visitor's Primer says to strike it on steel, and nobody has tested it. The answer should name both and not pick one. Her only steel is a broken sword."
+  }
+]
