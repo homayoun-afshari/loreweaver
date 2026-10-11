@@ -1,7 +1,5 @@
 # Day 1 report: Discovery, scaffolding and the legacy layer
 
-**Status:** Build and Measure complete. Build is deployed; the measured numbers are in [`docs/METRICS.md`](../METRICS.md).
-
 ## 1. Summary
 
 Day 1 turned an empty folder into a production-shaped, deployed skeleton:
@@ -19,6 +17,7 @@ Nothing here uses AI yet. The point of Day 1 is that the AI will later read **tr
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Learn**                 | Product discovery (personas, jobs to be done, scope and non-goals), metric design (North Star, guardrails, p95), walking skeleton, deterministic vs probabilistic systems, legacy integration patterns (anti-corruption layer, timeouts, retries, circuit breaker, idempotency), cloud basics (regions, containers vs serverless, environments, IAM). |
 | **Prepare**               | Git and GitHub (with `gh` and 2FA), Node 24 and pnpm 12 through Corepack, PHP 8.4 and Composer, Docker Desktop, a Vercel account, a Google Cloud project with a budget alert, the Cloud Run, Artifact Registry, Cloud Build and Secret Manager APIs, region `europe-west1`, and Claude Code.                                                          |
+| **Build**                 | Four parts: the product definition, the code scaffolding, the legacy layer, and a walking skeleton deployed to the cloud.                                                                                                                                                                                                                             |
 | **Build A: Product**      | `docs/PRD.md` (problem, personas, scope, metrics, risks). ADR-0001: keep character state in a stand-alone legacy service, not the app database.                                                                                                                                                                                                       |
 | **Build B: Scaffolding**  | pnpm monorepo; Next.js app (TypeScript strict, ESLint, Prettier, Tailwind); Zod; Vitest; typed env loader that fails at startup; pinned Node and package versions; GitHub Actions CI.                                                                                                                                                                 |
 | **Build C: Legacy layer** | `services/legacy-cms` (PHP/Slim, SQLite, Docker) with API key, rate limit and simulated failures; an OpenAPI contract; a typed client with timeout, retries, circuit breaker; unit tests.                                                                                                                                                             |
@@ -31,7 +30,7 @@ Nothing here uses AI yet. The point of Day 1 is that the AI will later read **tr
 | **Frontend**    | Next.js App Router page "Hello, author" (`apps/web/src/app/page.tsx`), the root layout, Tailwind. Nothing else yet.                                                                                                                                                                                                                                           |
 | **Backend**     | In `apps/web`: `/api/health`, `/api/legacy/character-state` (quick fallback), the env loader, and the **legacy client** (`src/lib/legacy/`): Zod mapping, timeout, retries with backoff and jitter, circuit breaker, typed results. Separate service: the **legacy CMS** (PHP/Slim, SQLite, API key, rate limit, simulated failures), described in section 7. |
 | **Tooling**     | pnpm workspaces, TypeScript strict, ESLint, Prettier, Vitest, msw (HTTP mocking), `tsx`, Docker and Compose, GitHub Actions, the `gcloud` and `gh` CLIs.                                                                                                                                                                                                      |
-| **Documenting** | `docs/PRD.md`, ADR-0001, the OpenAPI contract (`services/legacy-cms/openapi.yaml`), `docs/METRICS.md`, the README, and this report.                                                                                                                                                                                                                           |
+| **Documenting** | `docs/PRD.md`, ADR-0001, the OpenAPI contract (`services/legacy-cms/openapi.yaml`), the README, and this report.                                                                                                                                                                                                                                              |
 
 ## 4. By environment
 
@@ -211,18 +210,9 @@ It also protects the app from the CMS's bad behaviour:
 
 Live: web app `https://loreweaver-nine.vercel.app` (`/api/health` reports `environment: production`); CMS `https://legacy-cms-vq2vvx5lxq-ew.a.run.app` (`/health` returns ok).
 
-## 10. Measure (headline results)
+## 10. Additional items and known limits
 
-Measured on a local CMS with the rate limit raised, 500 requests, 4 at a time (details and the 100-request run in `docs/METRICS.md`):
-
-| Metric                             | Result            |
-| ---------------------------------- | ----------------- |
-| CMS error rate (raw)               | 4.6%              |
-| CMS latency p50 / p95              | 873 ms / 1473 ms  |
-| Client success rate after retries  | 100% (500 of 500) |
-| Extra HTTP calls caused by retries | 4%                |
-
-## 11. Additional items
+**Additional items**
 
 - `apps/web/AGENTS.md`: generated by Next.js, tells AI coding agents to read the docs for the installed Next version.
 - `pnpm format:check` and `eslint-config-prettier`, added to CI so formatting is enforced.
@@ -230,12 +220,11 @@ Measured on a local CMS with the rate limit raised, 500 requests, 4 at a time (d
 - `services/legacy-cms/.gcloudignore`, `apps/web/vercel.json` (Paris function region, near the CMS) and `engines` in `apps/web/package.json` (Node 24 on Vercel).
 - `/api/health` also reports the environment and git commit, to show which deployment is live.
 - `"endOfLine": "auto"` in `.prettierrc.json`, because Git on Windows converts line endings.
-- `pnpm measure:legacy` (script `apps/web/scripts/measure-legacy.ts`, run with `tsx`) and `src/lib/stats.ts` for percentiles, with tests; `LEGACY_RATE_LIMIT_PER_MIN` can be overridden in `docker-compose.yml` for load tests.
 - Generated files `tsconfig.tsbuildinfo` and `next-env.d.ts` were removed from Git and ignored.
 
-## 12. Known limits
+**Known limits**
 
 - The CMS uses PHP's built-in server (4 workers): fine for a mock, not for real production.
 - The CMS database is re-seeded each time a container starts, and previews share the production CMS.
 - The CMS is public and protected only by its API key.
-- The web app does not call the CMS yet. The agent tool that uses the client comes on Day 4.
+- The web app does not call the CMS yet. A model tool that uses the client comes on Day 2, and the full agent (LangGraph, with reflection) on Day 4.

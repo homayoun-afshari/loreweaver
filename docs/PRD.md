@@ -1,7 +1,5 @@
 # Loreweaver: Product Requirements Document
 
-**Status:** Draft v1 · **Owner:** Homayoun Afshari · **Updated:** 2026-10-10 (data, assumptions and worlds made explicit)
-
 ## Problem
 
 Novelists who build large fictional worlds lose consistency as the world grows. A character carries an item they lost three chapters ago, a spell ignores the cost the magic system set, a city sits in the wrong place. These continuity errors and rule-breaking plot fixes are cheap to avoid while drafting and expensive to find in revision, or after publication. Lore wikis and notes help only if the author remembers to check them, and at 200 pages nobody does.
@@ -68,11 +66,11 @@ The two meet only through the world id, which names a world both in the lore fol
 
 A cross-tenant leak is any answer, passage or character from a world other than the conversation's own.
 
-Every figure reported in the README is measured and recorded in `docs/METRICS.md`.
+Every figure reported in the README must be measured, and recorded together with how it was measured.
 
 ## Risks and open questions
 
-- **Stale or unavailable character state.** The CMS is a legacy system and can be slow or fail. The product must say when state may be stale instead of inventing it (see ADR-0001).
+- **Stale or unavailable character state.** The CMS is a legacy system and can be slow or fail. The product must say when state may be stale instead of inventing it. Where this state lives must be decided in an ADR.
 - **Hallucinated lore.** Mitigated by citations and by refusing to answer when retrieval finds nothing relevant.
-- **World isolation.** A conversation must never see data from another world. Enforced in code, not in prompts (see ADR-0003).
+- **World isolation.** A conversation must never see data from another world. It must be enforced in code, not in prompts, and how must be decided in an ADR.
 - **No accounts yet.** Because any visitor can open any world, v1 must only hold worlds that are fine to show to everyone. Sign-in, and a list of the worlds each author may open, are a later version.

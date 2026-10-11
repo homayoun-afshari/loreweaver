@@ -20,13 +20,12 @@ The numeric results, the caveats and the reproduce command are in [METRICS.md](M
 
 Because no real world data is connected, the prompts either need no data (rules, brainstorming) or test whether the model **admits** it has none (P3). The prompts therefore cannot show how a model handles tool results.
 
-A full agent answer will be slower than these numbers: it adds the CMS call (about 1.5 s at p95 on Day 1), the model's tool-choosing step and more tokens. So these numbers describe the **model alone**, not the finished product.
+A full agent answer will be slower than these numbers: it adds the CMS call (measured in [METRICS.md](METRICS.md#day-1-legacy-cms-and-legacy-client)), the model's tool-choosing step and more tokens. So these numbers describe the **model alone**, not the finished product.
 
 ## 3. Setup
 
 | Item          | Value                                                                                                                                                                                   |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Date          | 2026-10-10                                                                                                                                                                              |
 | Where it ran  | Local dev server (`pnpm dev`) on my laptop. The script calls `http://localhost:3000/api/chat`, so the route is included. The model call goes to the real Anthropic API                  |
 | Models        | `claude-haiku-4-5` ($1 / $5 per million input / output tokens) and `claude-sonnet-5-5` ($2 / $10). Prices as published by Anthropic at the time                                         |
 | Credentials   | Dev API key, scoped to a workspace                                                                                                                                                      |

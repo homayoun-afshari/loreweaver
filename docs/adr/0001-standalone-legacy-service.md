@@ -1,8 +1,10 @@
 # ADR-0001: Use a stand-alone legacy service rather than keeping state in the app database
 
-**Status:** Accepted · **Date:** 2026-10-09 · **Owner:** Homayoun Afshari
+This record covers two linked decisions: where character state lives, and what data that service holds and how it gets in.
 
-## Context
+## 1. Where character state lives
+
+### Context
 
 Loreweaver answers questions that depend on live character state: location, inventory and mana (see [PRD](../PRD.md)). In the product's story, an author's existing story CMS owns this data. It is a separate, older system that the author already uses, and it is the source of truth.
 
@@ -14,7 +16,7 @@ Constraints:
 - Real legacy systems have awkward field names and numeric codes, require API keys, are rate limited, and fail or slow down at times. The product must handle that gracefully.
 - This is a portfolio product: it should show integration with an external system, not just a database table.
 
-## Options considered
+### Options considered
 
 1. **Keep character state in the app's own database (Postgres).**
    - Pros: simplest, fast, transactional with the rest of the app, no network hop, no flaky dependency.
@@ -28,20 +30,20 @@ Constraints:
    - Pros: matches how real legacy integrations look. Failures, latency and bad data are real, so retries, timeouts, circuit breaking and validation have a purpose. Separate deployment and ownership. The agent's tools talk to a contract (OpenAPI), not to internals.
    - Cons: more to build and run (a container, a cloud deployment, secrets). Adds latency and a failure mode to every state lookup.
 
-## Decision
+### Decision
 
 Build option 3: `services/legacy-cms` is a separate Dockerized service with its own SQLite store, exposed over a documented REST API (`openapi.yaml`) and protected by an API key. The web app never reads its data directly. It calls it through a typed legacy client in `apps/web`, which acts as an anti-corruption layer: it validates responses with Zod, maps legacy fields to a clean `CharacterState` model, and applies a timeout, retries with backoff and jitter, and a circuit breaker.
 
 Option 2 stays as a quick development fallback only.
 
-## Consequences
+### Consequences
 
 **Positive**
 
 - The agent gets clean, typed facts, or an explicit "state unavailable or possibly stale" signal. It never has to guess state.
 - Legacy oddities stay at the boundary, so the rest of the app is unaffected if the CMS changes.
 - The resilience work is measurable (latency, error rate, success rate after retries) and gives real numbers for the README and METRICS.
-- The service deploys independently to Cloud Run, as in a real organisation.
+- The service deploys independently to Cloud Run, as in a real organization.
 
 **Negative / costs**
 
@@ -49,14 +51,16 @@ Option 2 stays as a quick development fallback only.
 - Every state lookup pays a network round trip and can fail, so the product must handle "unavailable" in its answers and UI.
 - Contract changes need coordination between the service and the client (mitigated by the OpenAPI contract and tests).
 
-**Follow-ups**
+### Follow-ups
 
 - Cache slow reads if the measured latency requires it (revisit once real production latency data exists).
 - Enforce tenant isolation (`world_id`) at the client and in code, not in prompts (see PRD risks).
 
-## Update 2026-10-10: where the character data comes from
+## 2. The character data: who writes it, what it looks like, and how it gets in
 
-The decision above says where character state lives. It did not say who writes the data, what it looks like or how it gets into the service. These were decided while building the service, and are recorded here. The product-level assumptions are in the [PRD](../PRD.md#assumptions-v1).
+### Context
+
+Section 1 says where character state lives, not who writes the data, what it looks like or how it gets into the service. The product-level assumptions are in the [PRD](../PRD.md#assumptions-v1).
 
 **Who writes it.** In the product's story, the author's existing CMS owns the data and its owner changes it as the story moves on. In this project there is no such system, so the service ships with a **fixed snapshot**: five characters in two worlds (`world_aethel` and `world_nox`), written by hand to describe the worlds at one moment. The second world exists so that the separation of worlds can be tested.
 
@@ -75,21 +79,23 @@ The decision above says where character state lives. It did not say who writes t
 
 The API reshapes these rows a little (a nested `status` object, for example) and the typed client maps them to the clean `CharacterState` model, so none of these formats reach the agent.
 
-**How it gets in.** The rows are written as a PHP array in `services/legacy-cms/src/Database.php` (`migrateAndSeed`). `bin/init-db.php` runs it before the server starts, and it inserts the rows only into an empty table. In Docker the database file lives inside the container, so every new container starts from the same snapshot.
+### Options considered
 
-Options considered for the seed:
-
-1. **A PHP array next to the schema (chosen).** Pros: one copy of the data, in the same file as the table it fills; the container needs nothing else to start; easy to read in a review. Cons: changing a character means a code change and a new image.
+1. **A PHP array next to the schema.** Pros: one copy of the data, in the same file as the table it fills; the container needs nothing else to start; easy to read in a review. Cons: changing a character means a code change and a new image.
 2. **A seed file (SQL, JSON or CSV) loaded at start.** Pros: data separate from code. Cons: one more file to ship into the image and one more format to parse, for five rows.
 3. **A write API, filled by a script.** Pros: closest to a real system. Cons: a write path that v1 does not need, and one more thing to secure.
 
-**Consequences.**
+### Decision
+
+Option 1. The rows are written as a PHP array in `services/legacy-cms/src/Database.php` (`migrateAndSeed`). `bin/init-db.php` runs it before the server starts, and it inserts the rows only into an empty table. In Docker the database file lives inside the container, so every new container starts from the same snapshot.
+
+### Consequences
 
 - The service is **read-only**: its API has only `GET` endpoints. Loreweaver never writes character state, and nothing else does either while it runs.
 - Changing the state of a character means editing the array and starting a new container (or deleting the local SQLite file). This is acceptable because v1 treats the data as a snapshot.
 - Knowledge about the CMS is kept by hand in two places of the web app: the meaning of the location codes (`apps/web/src/lib/legacy/locations.ts`) and the list of each world's character names and ids (`apps/web/src/lib/worlds.ts`, see ADR-0003). A change to the seed has to be mirrored there.
 
-**Follow-ups.**
+### Follow-ups
 
 - A write path (an API, or a sync from the author's own tools), if character state ever has to change while the product runs.
 - If reads get cached, invalidate the cache when the CMS reports a change (webhooks or change data capture). Character state is never embedded, so its changes never require re-indexing the lore.

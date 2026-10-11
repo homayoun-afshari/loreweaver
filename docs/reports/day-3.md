@@ -1,7 +1,5 @@
 # Day 3 report: Lore, embeddings and retrieval
 
-**Status:** Build complete (steps 1 to 7). Not built: the optional hybrid search and reranker.
-
 ## 1. Summary
 
 Day 3 gave Loreweaver knowledge of the author's world, and the means to search it:
@@ -20,6 +18,7 @@ The assistant answers lore questions only from the passages it retrieves, and ci
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Learn**                       | Embeddings and similarity, chunking, metadata and tenant isolation, exact and approximate vector search, hybrid search, reranking, retrieval metrics. Also what lore, canon, character state and manuscript mean in this product, and what each data store holds.  |
 | **Prepare**                     | Voyage AI account and keys (`dev` and `prod`) with the Vercel variables. The `vector` extension in Docker and Supabase, as a migration. The `data/lore/` and `evals/` folders and the Markdown packages. A real Voyage call to check the vector size (section 11). |
+| **Build**                       | Four parts: the lore and its ingestion, the search tool with its cards, the separation of worlds, and the retrieval eval.                                                                                                                                          |
 | **Build A: Lore and ingestion** | The Lore Bible (6 files for Aethel, 3 for Nox) and `pnpm ingest`: cut at headings, embed, write to Postgres, safe to run again.                                                                                                                                    |
 | **Build B: Search and cards**   | The `search_lore` tool, a second system prompt version that tells the model how to use and cite it, and the Lore Citation cards.                                                                                                                                   |
 | **Build C: World separation**   | A server-side world for each request, a world selector, the world limit on lore search, the character tool, the prompt and the fallback route, and a test against a real database, with a database in CI.                                                          |

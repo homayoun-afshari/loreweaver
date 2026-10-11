@@ -1,7 +1,5 @@
 # Day 2 report: Model layer, streaming and Generative UI
 
-**Status:** Build and Measure complete (Build steps 1 to 10; two optional extras were skipped: a fallback model and token counting). The model benchmark and the chat timing are in [`docs/METRICS.md`](../METRICS.md).
-
 ## 1. Summary
 
 Day 2 gave Loreweaver its first AI features:
@@ -19,6 +17,7 @@ The model never invents character state: it asks the tool, and the card shows th
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Learn**                    | How inference feels to users (prefill and decode, TTFT), streaming (SSE and the AI SDK message stream), tool calling, Generative UI, model selection, sampling, prompt basics. Plus React, Next.js and chat UIs. |
 | **Prepare**                  | Anthropic Console (prepaid credits, spend limit, `dev` and `prod` keys). Supabase project in `eu-west-1` and Vercel variables. A Postgres container in Docker Compose. AI SDK, Drizzle and shadcn/ui installed.  |
+| **Build**                    | Four parts: the chat, the model choice, the first tool with its cards, and the product details around them.                                                                                                      |
 | **Build A: Chat**            | Streaming chat page and `POST /api/chat` route (validation, error masking, stop and regenerate).                                                                                                                 |
 | **Build B: Model choice**    | A five-prompt benchmark of two models, and ADR-0002: Haiku 4.5 in development, Sonnet 5.5 in Preview and Production.                                                                                             |
 | **Build C: Tool and cards**  | The `fetch_character_state` tool, and the Character Status Card with loading, loaded and error states.                                                                                                           |
@@ -31,7 +30,7 @@ The model never invents character state: it asks the tool, and the card shows th
 | **Frontend**    | `ChatPanel` (`useChat`, status handling, sticky auto-scroll), `MessageActions` (feedback), `CharacterStatusCard` with its skeleton and error versions, an AI-generated badge. Components come from shadcn/ui (Button, Textarea, Card, Badge, Skeleton), styled with Tailwind. Message parts are typed from the tool definition, so `part.output` is checked by TypeScript.                                                                                                                           |
 | **Backend**     | `/api/chat`: validates the request (1 to 30 messages, 40,000 characters), calls `streamText` with the tool (up to 3 steps), hides provider errors, stops the model call when the user presses Stop. `src/lib/ai/models.ts`: one place for models, prices and the per-environment default. `src/lib/ai/tools.ts`: the tool. `/api/feedback` and `src/db/` (Drizzle client and schema). `src/lib/prompts/`: loads the versioned prompt. Env loader also checks `ANTHROPIC_API_KEY` and `DATABASE_URL`. |
 | **Tooling**     | AI SDK 7.0.136 (`ai`, `@ai-sdk/react`, `@ai-sdk/anthropic`), Drizzle ORM and Drizzle Kit (migrations), `postgres` driver, shadcn CLI, Postgres (pgvector image) in Docker Compose, `pnpm benchmark`, `pnpm db:generate` and `pnpm db:migrate`, `outputFileTracingIncludes` so the prompt file is deployed, `.prettierignore` for prompt files.                                                                                                                                                       |
-| **Documenting** | ADR-0002 (model choice), `docs/BENCHMARK.md` (full benchmark record), `docs/METRICS.md` (numbers), `src/lib/prompts/agent.v1.md` (the prompt, as a reviewed file), and this report.                                                                                                                                                                                                                                                                                                                  |
+| **Documenting** | ADR-0002 (model choice), `docs/BENCHMARK.md` (full benchmark record), `src/lib/prompts/agent.v1.md` (the prompt, as a reviewed file), and this report.                                                                                                                                                                                                                                                                                                                                               |
 
 ## 4. By environment
 
@@ -69,22 +68,14 @@ Both kinds run on the same Node server (serverless functions on Vercel). The pag
 | Card helpers   | Bar width is clamped, an unknown location is never guessed, dates are formatted in UTC, error text never leaks internals.                               |
 | Feedback       | Only `up`, `down`, `copy` are accepted; model and prompt labels from the browser are kept only if recognised.                                           |
 | Prompt and env | The prompt keeps its key rules (use the tool, never guess, admit what is unknown); the env loader names every missing variable, including the new ones. |
-| Server timing  | With a fake clock: the first tool call and the first text token are timed separately, the first moment is kept, and a missing kind stays empty.         |
 
 **CI** is unchanged: on every pull request and push to `main` it runs `pnpm install --frozen-lockfile`, `format:check`, `lint`, `typecheck` and `test`. It does **not** run `next build`. The Vercel preview build did, and caught a real error (a random chat id being prerendered), which is now fixed.
 
 ## 7. The model benchmark
 
-Five Loreweaver-style prompts (ideas, a rule check, an honesty test, a format test, short prose) sent to both models through the real chat route. The legacy CMS was not involved. Full method in `docs/BENCHMARK.md`; numbers in `docs/METRICS.md`.
+Five Loreweaver-style prompts (ideas, a rule check, an honesty test, a format test, short prose) were sent to both models through the real chat route, and each answer was scored for quality. The legacy CMS was not involved. The full method, the prompts, the scores and the answers are in `docs/BENCHMARK.md`.
 
-| Measured (5 prompts, 1 run) | Haiku 4.5 | Sonnet 5.5 |
-| --------------------------- | --------: | ---------: |
-| Average quality (1 to 5)    |       3.8 |        4.6 |
-| Average time to first token |    669 ms |    1346 ms |
-| Average total time          |   2355 ms |    3998 ms |
-| Cost per answer             |   $0.0008 |    $0.0036 |
-
-**Result:** Sonnet is better mainly at following instructions; both refused to invent a name. It costs about 4x more and starts about 2x slower. **ADR-0002** therefore uses Sonnet for Preview and Prod and Haiku for development, with a revisit trigger: p95 above 8 s or cost per query above $0.05. The thin evidence (5 prompts, 1 run, one scorer, no tools) is stated in the ADR.
+**Result:** Sonnet is better mainly at following instructions; both refused to invent a name. Sonnet is slower to start and costs more per answer. **ADR-0002** therefore uses Sonnet for Preview and Prod and Haiku for development, with a revisit trigger: p95 above 8 s or cost per query above $0.05. The thin evidence (5 prompts, 1 run, one scorer, no tools) is stated in the ADR.
 
 ## 8. The tool and how it appears in the UI
 
@@ -113,16 +104,6 @@ Five Loreweaver-style prompts (ideas, a rule check, an honesty test, a format te
 - a **mana bar** and a **health bar** with their values (scale 0 to 100, an assumption from the seed data);
 - the **inventory** as chips, or "Carrying nothing.";
 - **"Updated … UTC"**, so the author sees how fresh the data is.
-
-**Time to first UI.** Measured on Production with Sonnet (30 runs; full table, local numbers and caveats in `docs/METRICS.md`):
-
-| Moment                                 | p50     | p95     |
-| -------------------------------------- | ------- | ------- |
-| Skeleton can appear (tool call starts) | 801 ms  | 933 ms  |
-| Card can appear (tool result arrives)  | 2192 ms | 2794 ms |
-| First text token                       | 3070 ms | 4364 ms |
-
-The skeleton waits only for the model to decide to call the tool, not for the CMS. A one-tool question finishes in about 3.1 s (p95 4.4 s), inside the 8 s budget. The tail comes from the CMS: across three Production batches, one run in 50 took 10.7 s because the CMS call took about 8.6 s. A full agent will add steps.
 
 ## 9. What the UI can do
 
@@ -153,7 +134,9 @@ The skeleton waits only for the model to decide to call the tool, not for the CM
 
 **Not stored:** message text, user identity, character data. The table is created by the migration `apps/web/drizzle/0000_*.sql`, generated from `src/db/schema.ts` with Drizzle Kit. `0001_*.sql` switches on **Row Level Security** (no policies): Supabase exposes public tables through its own web API, and RLS closes that door; the app connects as the database owner, which bypasses RLS. Migrations are applied by hand with `pnpm db:migrate` and the target's connection string (not part of the deploy). Character state stays in the legacy CMS's own SQLite database (see the Day 1 report). Day 3 will add vectors in the same Postgres (pgvector).
 
-## 11. Additional items
+## 11. Additional items and known limits
+
+**Additional items**
 
 - Request guards on `/api/chat`: size limits, generic user-facing errors, a 30 s limit, and the model override restricted to an allowlist and to local machines.
 - Per-environment default model, and `promptVersion` and `modelId` attached to each answer and sent back with feedback.
@@ -161,12 +144,11 @@ The skeleton waits only for the model to decide to call the tool, not for the CM
 - `useId()` as the chat id, so the page can be prerendered (found by the Vercel build).
 - Typed tool parts shared between server and browser (type-only import).
 - Plain-text and short-reply rules in the prompt, after seeing raw Markdown and repeated text in the UI.
-- Server-side timing of each answer (first UI, first token, total), sent with the answer, and `pnpm measure:chat` to measure the chat with its tool.
 - Row Level Security on `feedback_events`, after Supabase's Security Advisor flagged it.
 - A random chat id per session for feedback (React's `useId()` gave every visitor the same value).
 - Not built: a fallback model for when the provider fails, and counting tokens before sending.
 
-## 12. Known limits
+**Known limits**
 
 - `/api/chat` and `/api/feedback` have no login or rate limit. The $20 Anthropic spend limit is the safety net.
 - Chat history is kept only in the browser and is sent by the browser on each message, so it can be forged (the tool re-reads facts each turn).

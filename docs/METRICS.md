@@ -8,14 +8,14 @@ Every figure reported in the README is measured and recorded here, with how it w
 
 ### Setup
 
-| Item       | Value                                                                                                             |
-| ---------- | ----------------------------------------------------------------------------------------------------------------- |
-| Date       | 2026-10-09                                                                                                        |
-| Target     | Legacy CMS in Docker on the same laptop (`http://localhost:8080`), so network time is close to zero               |
-| Rate limit | Raised from 30 to 100000 requests per minute for the run. Otherwise `429` would hide what is being measured       |
-| Load       | 100 requests (baseline run) and 500 requests (for a steadier estimate); 4 at a time; characters 1 to 5 in turn    |
-| Client     | Default settings: 2 s timeout, up to 3 retries, backoff 200 ms doubling (capped 2 s) with jitter, circuit breaker |
-| Script     | `apps/web/scripts/measure-legacy.ts`                                                                              |
+| Item         | Value                                                                                                                                                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Target       | Legacy CMS in Docker on the same laptop (`http://localhost:8080`), so network time is close to zero                                                                                             |
+| Code version | Commit `b4eedbf`                                                                                                                                                                                |
+| Rate limit   | Raised from 30 to 100000 requests per minute for the run (`LEGACY_RATE_LIMIT_PER_MIN`, which `docker-compose.yml` lets a load test override). Otherwise `429` would hide what is being measured |
+| Load         | 100 requests (baseline run) and 500 requests (for a steadier estimate); 4 at a time; characters 1 to 5 in turn                                                                                  |
+| Client       | Default settings: 2 s timeout, up to 3 retries, backoff 200 ms doubling (capped 2 s) with jitter, circuit breaker                                                                               |
+| Script       | `apps/web/scripts/measure-legacy.ts`, run with `tsx` through `pnpm measure:legacy`. Percentiles come from `apps/web/src/lib/stats.ts`, which has unit tests                                     |
 
 ### Results
 
@@ -80,7 +80,6 @@ On Windows PowerShell, set the variable first with `$env:LEGACY_RATE_LIMIT_PER_M
 
 | Item         | Value                                                                                                                                  |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Date         | 2026-10-10                                                                                                                             |
 | Code version | Commit `414cddb`: the original three-line system prompt and no tools. Later commits added the tool and the longer `agent.v1.md` prompt |
 | Target       | Local dev server and the real Anthropic API (dev key). The route is included, the legacy CMS is not                                    |
 | Models       | `claude-haiku-4-5` ($1 / $5 per million input / output tokens) and `claude-sonnet-5-5` ($2 / $10)                                      |
@@ -129,7 +128,7 @@ pnpm benchmark    # terminal 2 (BENCHMARK_RUNS=3 repeats each prompt for steadie
 
 A run costs about two cents. The full answers go to `apps/web/scripts/.out/benchmark-latest.json` (git-ignored); the curated copy is in BENCHMARK.md.
 
-**To reproduce the recorded numbers exactly,** check out commit `414cddb` first (`git checkout 414cddb`). On the current code the same command also exercises the `fetch_character_state` tool and the longer prompt, so the answers, token counts and timings will differ.
+**To reproduce the recorded numbers exactly,** check out commit `414cddb` first (`git checkout 414cddb`). On the current code the same command also exercises the `fetch_character_state` tool and the longer prompt, so the answers, token counts and timings will differ. Even on that commit, the models' answers and timings vary from run to run, so a new run gives close numbers, not identical ones.
 
 ## Day 2: chat with the tool (time to first UI)
 
@@ -137,13 +136,14 @@ A run costs about two cents. The full answers go to `apps/web/scripts/.out/bench
 
 ### Setup (chat)
 
-| Item  | Value                                                                                                                                                                                           |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Date  | 2026-10-10                                                                                                                                                                                      |
-| Model | `claude-sonnet-5-5` in both targets (the Preview and Production model, ADR-0002)                                                                                                                |
-| Local | Dev server and the Docker CMS on the same laptop. Sonnet is chosen with the local-only model override. 10 runs                                                                                  |
-| Prod  | `https://loreweaver-nine.vercel.app` with the CMS on Cloud Run, deployed from the working tree with the Vercel CLI (the same code as the final-touch commit). 30 runs, client and server timing |
-| Load  | One run at a time                                                                                                                                                                               |
+| Item          | Value                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Model         | `claude-sonnet-5-5` in both targets (the Preview and Production model, ADR-0002)                                                                                                                                                                                                                                                                                                                             |
+| Local         | Dev server and the Docker CMS on the same laptop. Sonnet is chosen with the local-only model override. 10 runs                                                                                                                                                                                                                                                                                               |
+| Prod          | `https://loreweaver-nine.vercel.app` with the CMS on Cloud Run, deployed from the working tree with the Vercel CLI (the same code as the final-touch commit). 30 runs, client and server timing                                                                                                                                                                                                              |
+| Load          | One run at a time                                                                                                                                                                                                                                                                                                                                                                                            |
+| Code version  | Commit `66c16db`, which added the script and the server timing                                                                                                                                                                                                                                                                                                                                               |
+| Server timing | The chat route times each answer with `createChatTimer` (`apps/web/src/lib/ai/server-timing.ts`): the first tool call, the first text token and the end, sent with the answer as metadata (`serverFirstUiMs`, `serverTtftMs`, `serverTotalMs`). Its unit tests use a fake clock: the first tool call and the first text token are timed separately, the first moment is kept, and a missing kind stays empty |
 
 | Metric               | Meaning                                                                                           |
 | -------------------- | ------------------------------------------------------------------------------------------------- |
@@ -190,7 +190,9 @@ MEASURE_MODEL=claude-sonnet-5-5 pnpm measure:chat           # terminal 2: local,
 MEASURE_URL=https://loreweaver-nine.vercel.app MEASURE_REQUESTS=30 pnpm measure:chat   # against Production
 ```
 
-`MEASURE_REQUESTS` sets the number of runs (default 10). Each run costs about one cent. Run it on the code of the commit that added `measure-chat.ts` or later.
+`MEASURE_REQUESTS` sets the number of runs (default 10). Each run costs about one cent.
+
+**To reproduce the recorded numbers exactly,** check out commit `66c16db` first (`git checkout 66c16db`). The model's answers and the network vary, so a new run gives close numbers, not identical ones.
 
 ## Day 3: lore retrieval
 
@@ -200,7 +202,6 @@ MEASURE_URL=https://loreweaver-nine.vercel.app MEASURE_REQUESTS=30 pnpm measure:
 
 | Item           | Value                                                                                                                                                                                                                                                                   |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Date           | 2026-10-10                                                                                                                                                                                                                                                              |
 | Code version   | Commit `cb1f815` (the scripts, the eval set and the lore it measured)                                                                                                                                                                                                   |
 | Lore           | 9 files in 2 worlds: `world_aethel` (6 files) and `world_nox` (3 files)                                                                                                                                                                                                 |
 | Eval set       | `evals/retrieval.jsonl`: 36 questions, of which 32 have an answer in the lore (26 Aethel, 6 Nox) and 4 do not. Labels are lore sections, graded 2 (answers) or 1 (related). Written before the scoring code was run, and not changed after the first result             |
@@ -282,7 +283,7 @@ Each vector has 1024 numbers and takes 4,100 bytes as stored. The list price is 
 
 - **The eval set is small and was written by one person.** Thirty-two questions with an answer: one question moves a mean by about 3 points, so the differences between configurations (0.917 against 0.891) are within what one or two questions can cause. Labels are whole sections, so scoring cannot see whether only a part of a section answers the question. The set was not blind: eight earlier questions had been tried on the search, and some topics overlap.
 - **The same set was used to compare and to choose,** with only three configurations, so overfitting is unlikely but not excluded.
-- **Latency is for this laptop.** The embedding time includes the internet path from here to Voyage's servers, and the search time includes the Windows to Docker connection. The hosted app was measured separately in the next subsection, as a whole tool call, so the split between embedding and search (85% and the 45 ms effect) is only known for the laptop. The first calls (connection set-up) are excluded.
+- **Latency is for this laptop.** The embedding time includes the internet path from here to Voyage's servers, and the search time includes the Windows to Docker connection. The hosted app was measured separately (Day 3: the search tool on Production), as a whole tool call, so the split between embedding and search (85% and the 45 ms effect) is only known for the laptop. The first calls (connection set-up) are excluded.
 - **The latency figures leave out the chat route, the tools' other work and the model.** They are the search only.
 - **The sizes are for fresh databases** with 70 to 109 rows. A hosted database may report slightly different totals.
 - **Hybrid search and a reranker were not built,** so they are not measured. A chunking strategy that ignores headings (fixed-size) is not implemented, so it is not compared.
@@ -329,20 +330,23 @@ The runs need `VOYAGE_API_KEY` and `EMBEDDING_MODEL` in `apps/web/.env.local`. A
 
 **To reproduce the recorded numbers exactly,** check out commit `cb1f815` first (`git checkout cb1f815`). The measured code has not changed since: only a comment in `search.ts` and documentation did. The quality figures, the token counts and the sizes are deterministic: repeated runs gave identical results. The latency depends on the machine and the network, so a new run gives close numbers, not identical ones.
 
-### The search tool on Production
+## Day 3: the search tool on Production
 
 **What was measured:** how long the chat's `search_lore` tool takes on the deployed app, with its hosted database and the real embedding service, seen from the outside: the time between the model calling the tool and the tool's result arriving in the stream. This is the whole search as the app runs it. The model is only used to decide to call the tool. Script: `apps/web/scripts/measure-search-tool.ts`.
 
+### Setup (search tool)
+
 | Item           | Value                                                                                                                                                                           |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Date           | 2026-10-10                                                                                                                                                                      |
 | Script version | Commit `51a459b`                                                                                                                                                                |
 | Local          | The dev server on the laptop, the Docker Postgres, the dev model (Haiku 4.5). 20 questions                                                                                      |
 | Production     | `https://loreweaver-nine.vercel.app`, which reported commit `05adb54`: Vercel, the hosted Supabase database, Sonnet 5.5. Two batches of 20 questions, asked one after the other |
 | Questions      | The first 20 lore questions of the retrieval eval set (all in the Aethel world), one at a time, each in its world. The model decides whether to search and with which words     |
 | Timing         | By the client. Events that arrive in the same network read share a time, and each of the two events adds a few milliseconds of network, so the tool time is slightly overstated |
 
-**Results (milliseconds)**
+### Results (search tool)
+
+In milliseconds:
 
 | Target              | Tool calls | **Tool time p50** | **Tool time p95** | Mean | Min / max  | Whole question p50 / p95 |
 | ------------------- | ---------: | ----------------: | ----------------: | ---: | ---------- | -----------------------: |
@@ -352,24 +356,24 @@ The runs need `VOYAGE_API_KEY` and `EMBEDDING_MODEL` in `apps/web/.env.local`. A
 
 On Production all 40 tool calls succeeded and returned passages. The model searched for every question on Production, and for 19 of 20 locally (one question was answered without a search). "Whole question" is the time for the complete answer, with the model included: one search and two model steps.
 
-**Key findings**
+### Key findings (search tool)
 
-- **A search takes about 0.29 s at p50 on Production, and about 0.7 s at p95.** That is a little faster than on the laptop (0.36 s locally through the app, the same as the 0.35 s measured directly in the section above, so the method agrees). The embedding request from the cloud is probably quicker than from the laptop, but this measurement cannot separate the parts.
+- **A search takes about 0.29 s at p50 on Production, and about 0.7 s at p95.** That is a little faster than on the laptop (0.36 s locally through the app, the same as the 0.35 s measured directly in the Day 3 lore retrieval entry, so the method agrees). The embedding request from the cloud is probably quicker than from the laptop, but this measurement cannot separate the parts.
 - **About one search in ten is slower** (0.6 to 0.8 s, against 0.22 to 0.3 s for the rest). A likely cause is a new connection to the database when a serverless function starts, but this was not checked.
 - **The lore is in the hosted database and works end to end:** no failure and no empty result in 40 calls.
 - **The search is about 7% of a lore answer's time.** A whole question takes about 4.0 to 4.2 s at p50 and 5.7 to 7.3 s at p95, mostly the two model steps. That is inside the 8 s target, but the first batch left under 1 s of margin, with no character lookup and no reflection step yet.
-- **The 50 ms effect of the large query parameter (section above) cannot be seen here.** The whole hosted tool is faster than the laptop's embedding plus search, so the effect does not dominate on Production, but this does not show whether it exists there.
+- **The 50 ms effect of the large query parameter (Day 3 lore retrieval entry) cannot be seen here.** The whole hosted tool is faster than the laptop's embedding plus search, so the effect does not dominate on Production, but this does not show whether it exists there.
 
-**Caveats**
+### Caveats (search tool)
 
 - 20 questions per batch: the p95 is the second slowest call. The two Production batches agree on the median (289 and 287 ms) and on the p95 within about 4%, but the whole-question p95 differs by 1.6 s between them.
 - The tool time includes the tool's own work (embedding, query, building the result) and two stream events over the network. It is not the database time alone.
 - Cold starts were not isolated. The 10 minutes between batches may or may not have kept the function warm.
-- Questions were all in one world, and the model chose the search words, so they differ from the fixed words of the section above.
+- Questions were all in one world, and the model chose the search words, so they differ from the fixed words of the Day 3 lore retrieval entry.
 - Production runs Sonnet and local runs Haiku, which only affects the whole-question time, not the tool time.
 - A Production run costs about 1 cent per question (about 40 cents for the 40 questions); the local run costs a fraction of that. The cost was estimated from token prices, not read from the console.
 
-**Reproduce**
+### Reproduce (search tool)
 
 ```sh
 pnpm dev                                                       # terminal 1 (the CMS is not needed: no character tool is used)
