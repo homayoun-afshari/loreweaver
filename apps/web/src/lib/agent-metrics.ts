@@ -1,6 +1,6 @@
 import type { BaseMessage } from "@langchain/core/messages";
 import { costUsd, type ModelId } from "@/lib/ai/models";
-import { RULE_CHECK_UNAVAILABLE } from "@/lib/agent/reflection";
+import { RULE_CHECK_UNAVAILABLE, RULE_EMPTY_ANSWER } from "@/lib/agent/reflection";
 import type { Usage, Verdict } from "@/lib/agent/state";
 import { mean, percentile } from "./stats";
 
@@ -22,15 +22,18 @@ export type RunEvent = {
   };
 };
 
-/** What a verdict says about a draft. An unavailable check says nothing about the rules. */
-export type VerdictKind = "clean" | "violations" | "unavailable";
+/**
+ * What a verdict says about a draft. An empty draft and an unavailable check say nothing about
+ * the rules of the world, so they are not counted as rule violations.
+ */
+export type VerdictKind = "clean" | "violations" | "empty" | "unavailable";
 
 export function kindOf(verdict: Verdict | undefined): VerdictKind | undefined {
   if (!verdict) return undefined;
   if (verdict.valid) return "clean";
-  return verdict.violations.some((v) => v.rule_id === RULE_CHECK_UNAVAILABLE)
-    ? "unavailable"
-    : "violations";
+  if (verdict.violations.some((v) => v.rule_id === RULE_CHECK_UNAVAILABLE)) return "unavailable";
+  if (verdict.violations.every((v) => v.rule_id === RULE_EMPTY_ANSWER)) return "empty";
+  return "violations";
 }
 
 /** How a run ended. */
@@ -149,7 +152,7 @@ export function summarizeRun(args: {
   let endedBy: EndedBy = "no-check";
   if (finalKind === "clean") endedBy = "valid";
   else if (finalKind === "unavailable") endedBy = "check-unavailable";
-  else if (finalKind === "violations") {
+  else if (finalKind === "violations" || finalKind === "empty") {
     endedBy = iterations >= args.maxIterations ? "revision-limit" : "time-limit";
   }
 
@@ -240,6 +243,8 @@ export function summarizeRuns(records: RunRecord[]) {
       checkUnavailable: count("check-unavailable"),
       noCheck: count("no-check"),
     },
+    emptyFirstDrafts: records.filter((r) => r.firstVerdict === "empty").length,
+    emptyFinalAnswers: records.filter((r) => r.finalVerdict === "empty").length,
     caveats: records.filter((r) => r.caveat).length,
     latencyMs: stats(records.map((r) => r.totalMs)),
     overheadMs: stats(records.map((r) => r.overheadMs)),

@@ -14,6 +14,10 @@ const broken: Verdict = {
   valid: false,
   violations: [{ rule_id: "inventory", explanation: "No rope." }],
 };
+const empty: Verdict = {
+  valid: false,
+  violations: [{ rule_id: "empty_answer", explanation: "The answer is empty." }],
+};
 const unavailable: Verdict = {
   valid: false,
   violations: [{ rule_id: "check_unavailable", explanation: "The check did not run." }],
@@ -125,6 +129,11 @@ describe("summarizeRun", () => {
     expect(run([draftEvent(1)]).endedBy).toBe("no-check");
   });
 
+  it("reads a verdict that only says the draft was empty as an empty draft", () => {
+    const record = run([draftEvent(1, ""), checkEvent(2, empty, { iterations: 1 })]);
+    expect(record.firstVerdict).toBe("empty");
+  });
+
   it("notes whether the expected tools were called", () => {
     const record = run([
       { node: "agent", atMs: 1, update: { messages: [asksFor("search_lore")] } },
@@ -137,7 +146,7 @@ describe("summarizeRun", () => {
 });
 
 describe("summarizeRuns", () => {
-  type Kind = "clean" | "violations" | "unavailable";
+  type Kind = "clean" | "violations" | "empty" | "unavailable";
   const record = (
     first: Kind,
     final: Kind,
@@ -175,6 +184,17 @@ describe("summarizeRuns", () => {
     expect(summary.iterations.withRevision).toBe(3);
     expect(summary.ended.revisionLimit).toBe(1);
     expect(summary.ended.checkUnavailable).toBe(1);
+  });
+
+  it("does not count an empty first draft as a rule violation, and counts it on its own", () => {
+    const summary = summarizeRuns([
+      record("empty", "clean", true, { iterations: 1, endedBy: "valid" }),
+      record("violations", "clean", true, { iterations: 1, endedBy: "valid" }),
+      record("clean", "clean", false),
+    ]);
+    expect(summary.violations.firstDrafts).toEqual({ bad: 1, of: 2, rate: 0.5 });
+    expect(summary.emptyFirstDrafts).toBe(1);
+    expect(summary.emptyFinalAnswers).toBe(0);
   });
 
   it("gives no rate when no run had a usable verdict", () => {

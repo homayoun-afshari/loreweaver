@@ -132,6 +132,8 @@ async function main() {
   console.log(`| Ended at the time limit | ${s.ended.timeLimit} |`);
   console.log(`| Ended with the check unavailable | ${s.ended.checkUnavailable} |`);
   console.log(`| Answers with a caveat | ${s.caveats} |`);
+  console.log(`| Empty first drafts (not a rule violation) | ${s.emptyFirstDrafts} |`);
+  console.log(`| Empty final answers | ${s.emptyFinalAnswers} |`);
 
   console.log("\n| Per query | mean | p50 | p95 |");
   console.log("| --- | ---: | ---: | ---: |");
@@ -163,6 +165,8 @@ async function main() {
     JSON.stringify({ agentModel, summary: s, runs: raw }, null, 2),
   );
   console.log("\nRaw record: apps/web/scripts/.out/measure-agent-latest.json");
+  // The database connection of the lore search stays open, so end the process here.
+  process.exit(0);
 }
 
 main().catch((error) => {

@@ -3,7 +3,7 @@ import { END } from "@langchain/langgraph";
 import { describe, expect, it, vi } from "vitest";
 import type { CharacterState } from "@/lib/legacy";
 import type { LegacyClient } from "@/lib/legacy/client";
-import { agentRunConfig, MAX_AGENT_CALLS_PER_DRAFT } from "./config";
+import { agentRunConfig, MAX_AGENT_CALLS_PER_DRAFT, NO_MORE_TOOLS_NOTE } from "./config";
 import { feedbackMessage, isFeedbackMessage, textOf } from "./messages";
 import {
   createAgentNode,
@@ -93,6 +93,20 @@ describe("agent node", () => {
       messages.push(new AIMessage("a"));
     }
     expect(calls.map((c) => c.allowTools)).toEqual([true, true, false]);
+  });
+
+  it("tells the model on the last call of a draft that no tools are left", async () => {
+    const { model, calls } = fakeAgentModel([draft("x")]);
+    const node = createAgentNode({ model, systemPromptFor });
+    const messages: BaseMessage[] = [new HumanMessage("q")];
+    for (let i = 0; i < MAX_AGENT_CALLS_PER_DRAFT; i++) {
+      await node(state({ messages }), config);
+      messages.push(new AIMessage("a"));
+    }
+    const prompts = calls.map((c) => textOf(c.messages[0]));
+    expect(prompts[0]).toBe("system for world_aethel");
+    expect(prompts[1]).toBe("system for world_aethel");
+    expect(prompts[2]).toBe(`system for world_aethel\n\n${NO_MORE_TOOLS_NOTE}`);
   });
 
   it("drops a tool call that was not allowed, so no call is left without a result", async () => {

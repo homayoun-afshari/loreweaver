@@ -12,6 +12,11 @@ export const DEFAULT_MAX_ITERATIONS = 2;
  */
 export const MAX_AGENT_CALLS_PER_DRAFT = 3;
 
+/** Added to the instructions of the last model call of a draft, which has no tools. */
+export const NO_MORE_TOOLS_NOTE =
+  "You cannot call any more tools for this answer. Write the answer now from the results you " +
+  "already have. If something is still missing, say what could not be looked up.";
+
 /**
  * The most graph steps one draft can take: every model call, the tool round after each call that
  * asked for tools (all but the last), and one reflection.
