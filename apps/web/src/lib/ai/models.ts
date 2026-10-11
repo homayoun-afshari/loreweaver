@@ -15,6 +15,9 @@ export const DEV_MODEL_ID: ModelId = "claude-haiku-4-5";
 /** The model the agent uses in Preview and Production (ADR-0002). */
 export const AGENT_MODEL_ID: ModelId = "claude-sonnet-5-5";
 
+/** The cheap model that checks drafts against the world's rules, in every environment. */
+export const REFLECTION_MODEL_ID: ModelId = "claude-haiku-4-5";
+
 export function isModelId(value: unknown): value is ModelId {
   return typeof value === "string" && Object.hasOwn(MODELS, value);
 }

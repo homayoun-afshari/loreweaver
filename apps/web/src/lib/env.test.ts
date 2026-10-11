@@ -12,7 +12,19 @@ const valid = {
 
 describe("parseEnv", () => {
   it("returns typed values when everything is present", () => {
-    expect(parseEnv(valid)).toEqual(valid);
+    expect(parseEnv(valid)).toEqual({ ...valid, AGENT_MAX_ITERATIONS: 2 });
+  });
+
+  it("reads the revision limit when it is set, and defaults to 2", () => {
+    expect(parseEnv({ ...valid, AGENT_MAX_ITERATIONS: "0" }).AGENT_MAX_ITERATIONS).toBe(0);
+    expect(parseEnv({ ...valid, AGENT_MAX_ITERATIONS: "5" }).AGENT_MAX_ITERATIONS).toBe(5);
+    expect(parseEnv(valid).AGENT_MAX_ITERATIONS).toBe(2);
+  });
+
+  it.each(["", "6", "-1", "2.5", "many"])("rejects the revision limit %j", (value) => {
+    expect(() => parseEnv({ ...valid, AGENT_MAX_ITERATIONS: value })).toThrow(
+      /AGENT_MAX_ITERATIONS/,
+    );
   });
 
   it("fails fast and names every missing variable", () => {

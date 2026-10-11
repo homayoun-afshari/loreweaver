@@ -149,18 +149,19 @@ The chat has a tool, `search_lore`, that the model calls for questions about how
 
 Set them in `apps/web/.env.local` locally, and in your hosting provider's settings for preview and production. Never commit real values.
 
-| Variable             | Meaning                                                                                |
-| -------------------- | -------------------------------------------------------------------------------------- |
-| `LEGACY_CMS_URL`     | Base URL of the legacy CMS (`http://localhost:8080` locally)                           |
-| `LEGACY_CMS_API_KEY` | The CMS API key (`dev-local-key` locally)                                              |
-| `ANTHROPIC_API_KEY`  | Your Anthropic API key. Use a separate key for production so each can be rotated alone |
-| `DATABASE_URL`       | Postgres connection string (local Docker, or the Supabase pooled string when hosted)   |
-| `VOYAGE_API_KEY`     | Your Voyage AI API key, for embeddings. Use a separate key for production              |
-| `EMBEDDING_MODEL`    | The embedding model (`voyage-4-lite`). Chunks and queries must use the same one        |
+| Variable               | Meaning                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| `LEGACY_CMS_URL`       | Base URL of the legacy CMS (`http://localhost:8080` locally)                           |
+| `LEGACY_CMS_API_KEY`   | The CMS API key (`dev-local-key` locally)                                              |
+| `ANTHROPIC_API_KEY`    | Your Anthropic API key. Use a separate key for production so each can be rotated alone |
+| `DATABASE_URL`         | Postgres connection string (local Docker, or the Supabase pooled string when hosted)   |
+| `VOYAGE_API_KEY`       | Your Voyage AI API key, for embeddings. Use a separate key for production              |
+| `EMBEDDING_MODEL`      | The embedding model (`voyage-4-lite`). Chunks and queries must use the same one        |
+| `AGENT_MAX_ITERATIONS` | Optional. How many times a draft may be sent back for a revision (0 to 5, default 2)   |
 
 ## Deploying the web app
 
-On Vercel, import the GitHub repository and set the project's **Root Directory** to `apps/web`. Add the six variables above for Preview and Production. `apps/web/vercel.json` pins the function region to Paris (`cdg1`), near the CMS in `europe-west1`. Every pull request gets a preview URL and every merge to `main` updates production.
+On Vercel, import the GitHub repository and set the project's **Root Directory** to `apps/web`. Add the six required variables above for Preview and Production (`AGENT_MAX_ITERATIONS` is optional). `apps/web/vercel.json` pins the function region to Paris (`cdg1`), near the CMS in `europe-west1`. Every pull request gets a preview URL and every merge to `main` updates production.
 
 ## Scripts
 
