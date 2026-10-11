@@ -66,16 +66,22 @@ async function collect(page: AsyncIterable<unknown>): Promise<ApiRun[]> {
 }
 
 /**
- * The root runs of a project since a moment, and every model call of the same period. The client
+ * The root runs of a project between two moments, and every model call of the same period. The client
  * reads LANGSMITH_API_KEY, LANGSMITH_ENDPOINT and LANGSMITH_WORKSPACE_ID from the environment.
  */
 export async function fetchTraceRuns(args: {
   projectName: string;
   since: Date;
+  /** The end of the period; now when omitted. */
+  until?: Date;
 }): Promise<{ roots: RootRun[]; calls: LlmCall[] }> {
   const client = new Client();
   const project = await client.readProject({ projectName: args.projectName });
-  const window = { project_ids: [project.id], min_start_time: args.since.toISOString() };
+  const window = {
+    project_ids: [project.id],
+    min_start_time: args.since.toISOString(),
+    ...(args.until && { max_start_time: args.until.toISOString() }),
+  };
   const roots = await collect(
     client.runs.queryV2({
       ...window,

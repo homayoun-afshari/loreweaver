@@ -13,6 +13,10 @@
  *   pnpm dev                    # terminal 1 (also needs the legacy CMS: docker compose up -d legacy-cms)
  *   pnpm measure:chat           # terminal 2
  *
+ * The question is about Kael Draven, who lives in the world Nox, so the script sends the session
+ * cookie of that world (MEASURE_WORLD to change it). Without it the agent is in the default world,
+ * cannot find Kael, answers without a tool call and the numbers measure a refusal, not a lookup.
+ *
  * Against a deployment:  MEASURE_URL=https://loreweaver-nine.vercel.app pnpm measure:chat
  * See docs/METRICS.md for the exact commands and what the numbers mean.
  */
@@ -22,6 +26,8 @@ const baseUrl = (process.env.MEASURE_URL ?? "http://localhost:3000").replace(/\/
 const total = Number(process.env.MEASURE_REQUESTS ?? 10);
 /** Honored only by a local server (a deployed one always uses its own model). */
 const model = process.env.MEASURE_MODEL;
+/** The world of the session. Kael Draven lives in Nox; without the cookie the default world is used. */
+const world = process.env.MEASURE_WORLD ?? "world_nox";
 const question = "What does Kael have on them?";
 
 type Sample = {
@@ -41,7 +47,7 @@ async function runOnce(): Promise<Sample> {
   const start = performance.now();
   const response = await fetch(`${baseUrl}/api/chat`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", cookie: `lw_world=${world}` },
     body: JSON.stringify({
       model,
       messages: [{ id: "m1", role: "user", parts: [{ type: "text", text: question }] }],

@@ -5,6 +5,7 @@
  *
  *   pnpm cost:report                                  the last 24 hours of the project in .env.local
  *   pnpm cost:report --since 3                        the last 3 hours
+ *   pnpm cost:report --from 2026-10-11T17:58:00Z --to 2026-10-11T18:01:00Z   an exact period (UTC)
  *   pnpm cost:report --env development --model claude-sonnet-5-5 --prompt-version agent.v3
  *   pnpm cost:report --project loreweaver-prod        another project (same workspace, same key)
  *   pnpm cost:report --queries-per-day 20 --authors 100,1000,10000
@@ -24,6 +25,8 @@ const { values: args } = parseArgs({
   options: {
     project: { type: "string" },
     since: { type: "string", default: "24" },
+    from: { type: "string" },
+    to: { type: "string" },
     env: { type: "string" },
     model: { type: "string" },
     "prompt-version": { type: "string" },
@@ -41,6 +44,7 @@ const tok = (n: number) => Math.round(n).toLocaleString("en-US");
 const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 
 async function main() {
+  let period: string;
   try {
     process.loadEnvFile(".env.local");
   } catch {
@@ -49,6 +53,16 @@ async function main() {
   const projectName = args.project ?? process.env.LANGSMITH_PROJECT ?? "loreweaver-dev";
   const sinceHours = Number(args.since);
   if (!Number.isFinite(sinceHours) || sinceHours <= 0) throw new Error("--since must be hours");
+  // An exact period (--from, --to) wins over the last hours, so a report can be repeated later.
+  const from = args.from ? new Date(args.from) : new Date(Date.now() - sinceHours * 3_600_000);
+  const to = args.to ? new Date(args.to) : undefined;
+  if (Number.isNaN(from.getTime()) || (to && Number.isNaN(to.getTime()))) {
+    throw new Error("--from and --to must be dates, like 2026-10-11T17:58:00Z");
+  }
+  period =
+    args.from || args.to
+      ? `${from.toISOString()} to ${(to ?? new Date()).toISOString()}`
+      : `the last ${sinceHours} h`;
   const queriesPerDay = Number(args["queries-per-day"]);
   const authors = args.authors!.split(",").map((n) => Number(n.trim()));
   if (!Number.isFinite(queriesPerDay) || authors.some((n) => !Number.isFinite(n))) {
@@ -57,7 +71,8 @@ async function main() {
 
   const fetched = await fetchTraceRuns({
     projectName,
-    since: new Date(Date.now() - sinceHours * 3_600_000),
+    since: from,
+    until: to,
   });
   const roots = fetched.roots.filter(
     (r) =>
@@ -71,7 +86,7 @@ async function main() {
   const { queries, skipped } = buildQueries(roots, calls);
   if (queries.length === 0) {
     throw new Error(
-      `No query to report in "${projectName}" for the last ${sinceHours} h with these filters ` +
+      `No query to report in "${projectName}" for ${period} with these filters ` +
         `(root traces found: ${roots.length}, skipped: ${JSON.stringify(skipped)}).`,
     );
   }
@@ -86,7 +101,7 @@ async function main() {
     const filters = { env: args.env, model: args.model, promptVersion: args["prompt-version"] };
     console.log(
       JSON.stringify(
-        { projectName, sinceHours, filters, queries, skipped, summary: s, projection },
+        { projectName, period, filters, queries, skipped, summary: s, projection },
         null,
         2,
       ),
@@ -100,7 +115,7 @@ async function main() {
     args["prompt-version"] && `prompt ${args["prompt-version"]}`,
   ].filter(Boolean);
   console.log(
-    `Project ${projectName}, last ${sinceHours} h${filters.length ? `, ${filters.join(", ")}` : ""}: ` +
+    `Project ${projectName}, ${period}${filters.length ? `, ${filters.join(", ")}` : ""}: ` +
       `${queries.length} queries (left out: ${skipped.notSuccessful} failed, ${skipped.noCalls} without a model call, ${skipped.unknownModel} with an unpriced model).\n`,
   );
 
