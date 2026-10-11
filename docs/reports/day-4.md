@@ -131,7 +131,7 @@ Same URLs as Day 3. Only the behavior of one changes.
 
 **The checker.** It reports a violation for a claim that a retrieved passage forbids, an item or ability the character does not have, a contradiction of the character's state, or a claim the evidence does not support. It does not report omissions, style or limits the draft admits. The verdict lists violations first and then a `valid` flag; a verdict that contradicts itself is repaired (any violation makes it invalid), and one that cannot be read, or a check that fails, ends the run with a caveat that says so instead of triggering a revision. The caveat is built by code from the verdict, so a model cannot soften it. Its instructions are `reflection.v2`, a constant in `reflection.ts`.
 
-**What reaches the author.** Draft text, verdicts and revisions never leave the server. Two layers keep it so: the route streams only node updates, and both models run with streaming switched off.
+**What reaches the author.** Draft text, verdicts and revisions never leave the server. Two layers keep it so: the route streams only node updates, and both models run with streaming switched off (which the checker's structured reply also needs: with streaming on, it failed to parse).
 
 | Moment                                | What is sent                                                                         |
 | ------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -163,14 +163,10 @@ The metadata of an answer has the drafting model and the prompt version, the dra
 
 **Additional items**
 
-- The tools were moved into a shared core, so the AI SDK and the graph run the same handlers and checks.
-- The graph's models run with streaming switched off, which the checker's structured reply also needed: with streaming on, its reply failed to parse.
-- A time limit on revisions, to keep a run inside the host's 30 s limit.
 - The last model call of a draft, which has no tools, is told so and asked to answer from the results it has. Without the note, Claude Sonnet 5.5 could end that call with only a thinking block and no text, which the checker then reported as an empty answer.
 - A shorter-answers system prompt (`agent.v3`) and a stricter checker prompt (`reflection.v2`), after live runs showed long answers and rejections for omissions and for a wrong calculation.
-- Token usage kept per kind in the graph's state and in the message metadata, for the measuring scripts.
 - A check of the stream of tool results with the real CMS, lore database and models, and a look at a preview deployment, found two interface bugs: a skeleton left after Stop, and no Regenerate after an early Stop. Both are fixed.
-- Not built: tracing (the next day), human-in-the-loop, a router in front of the agent, deterministic checks for hard rules (the inventory could be compared as text).
+- Not built: tracing, human-in-the-loop, a router in front of the agent, deterministic checks for hard rules (the inventory could be compared as text).
 
 **Known limits**
 

@@ -2,7 +2,7 @@
 
 This record covers two linked decisions about the agent: which library runs the agent's steps and which one delivers the result to the browser, and whether the agent saves its state between requests.
 
-Loreweaver's agent fetches a character's live state, searches the lore, drafts an answer and checks the draft against the world's rules before the author sees it (see [PRD](../PRD.md) and [Agent design](../AGENT_DESIGN.md)). Until now one library did everything: the chat route calls the AI SDK's `streamText` with the two tools, and that one call runs the model and tool loop and also produces the stream the browser reads. The reflection step is new: it must finish before any answer text is sent, and the loop needs bounds and tests of its own.
+Loreweaver's agent fetches a character's live state, searches the lore, drafts an answer and checks the draft against the world's rules before the author sees it (see [PRD](../PRD.md) and [Agent design](../AGENT_DESIGN.md)). Before the agent graph, one library did everything: the chat route called the AI SDK's `streamText` with the two tools, and that one call ran the model and tool loop and also produced the stream the browser reads. The reflection step is new: it must finish before any answer text is sent, and the loop needs bounds and tests of its own.
 
 ## 1. Who runs the agent, and who delivers the result
 
@@ -66,7 +66,7 @@ The reason is the new step. A check that must finish before the answer is sent, 
 
 **Negative / costs**
 
-- **The first answer token comes later, and in one piece.** The answer cannot start before the check ends, so the time to the first text is the whole run. The tool cards and a short status line ("Checking against world rules…") soften the wait. The first live runs were above the 8 s budget for a full answer, so the measurement decides whether ADR-0002 is revisited.
+- **The first answer token comes later, and in one piece.** The answer cannot start before the check ends, so the time to the first text is the whole run. The tool cards and a short status line ("Checking against world rules…") soften the wait. The measured runs were mostly above the 8 s budget for a full answer, so ADR-0002 is to be revisited (see [METRICS.md](../METRICS.md)).
 - **A worst case that can multiply latency and cost.** A question can go through several drafts and reflections before it ends. The bounds in [Agent design](../AGENT_DESIGN.md) keep it finite, and a time bound keeps it inside the route's 30 s function limit: a run that is older than 12 s does not start another revision, it returns its best draft with a caveat.
 - **Things `streamText` gave for free are rebuilt:** the step limit, the abort when the user presses Stop, the timing metadata that the measuring scripts read, and the masking of provider errors.
 - **A version coupling:** the bridge package depends on one exact `ai` version, and the app still uses it to convert the conversation. The AI SDK packages and the bridge must be upgraded together.
@@ -75,7 +75,7 @@ The reason is the new step. A check that must finish before the answer is sent, 
 
 ### Follow-ups
 
-- Measure the time to the first text, the cost and the latency of the new loop against the old route (`docs/METRICS.md`), and revisit ADR-0002 if the budget is not met.
+- Revisit ADR-0002: the measured latency of the full agent is above its trigger (see [METRICS.md](../METRICS.md)).
 - Reduce the latency of a run: the drafting call is the longest step, so shorter drafts, prompt caching and the choice of drafting model are the levers.
 - Move the guards that are not specific to the AI SDK (abort, error masking, timing) into code that both the route and the scripts can use.
 
