@@ -1,4 +1,5 @@
 import { AIMessage, HumanMessage, ToolMessage } from "@langchain/core/messages";
+import { RunCollectorCallbackHandler } from "@langchain/core/tracers/run_collector";
 import { describe, expect, it, vi } from "vitest";
 import type { CharacterState } from "@/lib/legacy";
 import type { LegacyClient } from "@/lib/legacy/client";
@@ -298,6 +299,32 @@ describe("the agent graph", () => {
     });
     await graph.invoke(ask("What is the weather?"), config);
     expect(textOf(reflection.calls[0][1])).toContain("(none)");
+  });
+
+  it("labels every run of a trace with the prompt version, the model and the environment", async () => {
+    const { graph } = setup({ agent: [lookups, draft("Use the flint.")], reflection: [valid] });
+    const collector = new RunCollectorCallbackHandler();
+    await graph.invoke(ask(), {
+      ...agentRunConfig("world_aethel", Date.now(), {
+        promptVersion: "agent.v3",
+        modelId: "claude-sonnet-5-5",
+        vercelEnv: "preview",
+      }),
+      callbacks: [collector],
+    });
+
+    // The root run, the nodes, the model calls and the tool calls: all carry the labels.
+    type TracedRun = (typeof collector.tracedRuns)[number];
+    const all = (run: TracedRun): TracedRun[] => [run, ...(run.child_runs ?? []).flatMap(all)];
+    const runs = collector.tracedRuns.flatMap(all);
+    expect(runs.length).toBeGreaterThan(5);
+    for (const run of runs) {
+      expect(run.extra?.metadata).toMatchObject({
+        prompt_version: "agent.v3",
+        model: "claude-sonnet-5-5",
+        env: "preview",
+      });
+    }
   });
 
   it("needs the world in its configuration", async () => {

@@ -47,10 +47,38 @@ export type AgentConfigurable = {
   startedAt?: number;
 };
 
-/** The run configuration for one question. */
+/** What a trace is filtered and compared by: the setup that produced the answer. */
+export type TraceLabels = {
+  /** The version of the drafting prompt (see prompts/index.ts). */
+  promptVersion: string;
+  /** The drafting model. */
+  modelId: string;
+  /** VERCEL_ENV: "preview" or "production" in the cloud, unset locally. */
+  vercelEnv: string | undefined;
+};
+
+/** The environment label of a trace: "development" on a developer's machine. */
+export function traceEnv(vercelEnv: string | undefined): "development" | "preview" | "production" {
+  return vercelEnv === "preview" || vercelEnv === "production" ? vercelEnv : "development";
+}
+
+/**
+ * The run configuration for one question. With labels, every run of the trace (the graph, its
+ * nodes, the model calls) carries `prompt_version`, `model` and `env` as metadata in LangSmith.
+ */
 export function agentRunConfig(
   worldId: string,
   startedAt: number = Date.now(),
-): { configurable: AgentConfigurable } {
-  return { configurable: { worldId, startedAt } };
+  labels?: TraceLabels,
+): { configurable: AgentConfigurable; metadata?: Record<string, string> } {
+  const configurable = { worldId, startedAt };
+  if (!labels) return { configurable };
+  return {
+    configurable,
+    metadata: {
+      prompt_version: labels.promptVersion,
+      model: labels.modelId,
+      env: traceEnv(labels.vercelEnv),
+    },
+  };
 }

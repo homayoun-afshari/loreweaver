@@ -8,6 +8,8 @@
  *   MEASURE_MODEL   the drafting model (default: the Preview and Production model)
  *   MEASURE_ONLY    comma-separated prompt ids, to run a few (default: all)
  *
+ * With LANGSMITH_TRACING=true in .env.local, every run is also traced to LangSmith.
+ *
  * It needs the local services of the app (the legacy CMS and the Postgres with the lore ingested,
  * see the README) and the keys in apps/web/.env.local. It calls the real models: every run costs
  * a few cents. The results are printed as tables, and the raw record of every run (verdicts,
@@ -18,6 +20,7 @@
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
 import { HumanMessage } from "@langchain/core/messages";
 import { parseAgentPrompts } from "../../../evals/agent-prompts";
 import { agentRunConfig } from "../src/lib/agent";
@@ -72,7 +75,15 @@ async function main() {
       try {
         const updates = await graph.stream(
           { messages: [new HumanMessage(prompt.input)] },
-          { ...agentRunConfig(prompt.world_id), streamMode: "updates" },
+          {
+            // With LANGSMITH_TRACING on, the run is traced under the same labels as a chat request.
+            ...agentRunConfig(prompt.world_id, Date.now(), {
+              promptVersion: PROMPT_VERSION,
+              modelId: agentModel,
+              vercelEnv: process.env.VERCEL_ENV,
+            }),
+            streamMode: "updates",
+          },
         );
         for await (const chunk of updates) {
           for (const [node, update] of Object.entries(
@@ -165,6 +176,8 @@ async function main() {
     JSON.stringify({ agentModel, summary: s, runs: raw }, null, 2),
   );
   console.log("\nRaw record: apps/web/scripts/.out/measure-agent-latest.json");
+  // Send the traces that are still waiting (a no-op with tracing off).
+  await awaitAllCallbacks();
   // The database connection of the lore search stays open, so end the process here.
   process.exit(0);
 }

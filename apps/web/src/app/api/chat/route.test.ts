@@ -28,6 +28,9 @@ vi.mock("@/lib/ai/agent-runtime", () => ({
   },
 }));
 
+// `after()` only works inside a real Next.js request.
+vi.mock("@/lib/ai/tracing", () => ({ flushTracesAfterResponse: vi.fn() }));
+
 const { POST } = await import("./route");
 
 const aria: CharacterState = {

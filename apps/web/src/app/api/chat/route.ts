@@ -8,6 +8,7 @@ import { parseChatRequest } from "@/lib/ai/chat-request";
 import { createChatTimer } from "@/lib/ai/server-timing";
 import { resolveModelId } from "@/lib/ai/models";
 import { createTools } from "@/lib/ai/tools";
+import { flushTracesAfterResponse } from "@/lib/ai/tracing";
 import { PROMPT_VERSION } from "@/lib/prompts";
 import { getSessionWorldId } from "@/lib/session";
 
@@ -42,6 +43,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const modelId = resolveModelId(body.model, process.env.VERCEL_ENV);
   const graph = getAgentGraph(modelId);
+  flushTracesAfterResponse();
 
   const stream = createUIMessageStream<ChatMessage>({
     execute: async ({ writer }) => {
@@ -50,7 +52,11 @@ export async function POST(request: Request): Promise<Response> {
       const updates = await graph.stream(
         { messages: history },
         {
-          ...agentRunConfig(worldId, startedAt),
+          ...agentRunConfig(worldId, startedAt, {
+            promptVersion: PROMPT_VERSION,
+            modelId,
+            vercelEnv: process.env.VERCEL_ENV,
+          }),
           streamMode: "updates",
           // Stop the run when the user presses "Stop" (the browser aborts the request).
           signal: request.signal,
