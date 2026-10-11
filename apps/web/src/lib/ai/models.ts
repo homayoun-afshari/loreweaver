@@ -1,10 +1,23 @@
 /**
  * The models the app may call, with their prices. One place to change a model.
- * Prices are USD per million tokens (input / output), as published by Anthropic at the time.
+ * Prices are USD per million tokens, as published by Anthropic on 2026-10-11: input, output,
+ * cache reads (a hit) and cache writes (the 5-minute lifetime, which is the default).
  */
 export const MODELS = {
-  "claude-haiku-4-5": { label: "Claude Haiku 4.5", inputPerMTok: 1, outputPerMTok: 5 },
-  "claude-sonnet-5-5": { label: "Claude Sonnet 5.5", inputPerMTok: 2, outputPerMTok: 10 },
+  "claude-haiku-4-5": {
+    label: "Claude Haiku 4.5",
+    inputPerMTok: 1,
+    outputPerMTok: 5,
+    cacheReadPerMTok: 0.1,
+    cacheWritePerMTok: 1.25,
+  },
+  "claude-sonnet-5-5": {
+    label: "Claude Sonnet 5.5",
+    inputPerMTok: 2,
+    outputPerMTok: 10,
+    cacheReadPerMTok: 0.1,
+    cacheWritePerMTok: 2.5,
+  },
 } as const;
 
 export type ModelId = keyof typeof MODELS;
@@ -42,7 +55,30 @@ export function resolveModelId(requested: unknown, vercelEnv: string | undefined
   return isModelId(requested) ? requested : defaultModelId(vercelEnv);
 }
 
-/** Cost in USD of one call. */
+/** The tokens of one call by price: the three kinds of input and the output. */
+export type TokenUsage = {
+  /** Input that was neither read from nor written to the cache. */
+  input: number;
+  /** Input read from the cache. */
+  cacheRead: number;
+  /** Input written to the cache. */
+  cacheWrite: number;
+  output: number;
+};
+
+/** Cost in USD of one call, each kind of token at its own price. */
+export function usageCostUsd(modelId: ModelId, usage: TokenUsage): number {
+  const m = MODELS[modelId];
+  return (
+    (usage.input * m.inputPerMTok +
+      usage.cacheRead * m.cacheReadPerMTok +
+      usage.cacheWrite * m.cacheWritePerMTok +
+      usage.output * m.outputPerMTok) /
+    1_000_000
+  );
+}
+
+/** Cost in USD of one call without caching. */
 export function costUsd(modelId: ModelId, inputTokens: number, outputTokens: number): number {
   const m = MODELS[modelId];
   return (inputTokens * m.inputPerMTok + outputTokens * m.outputPerMTok) / 1_000_000;
