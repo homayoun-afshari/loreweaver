@@ -76,7 +76,7 @@ The reason is the new step. A check that must finish before the answer is sent, 
 ### Follow-ups
 
 - Revisit ADR-0002: the measured latency of the full agent is above its trigger (see [METRICS.md](../METRICS.md)).
-- Reduce the latency of a run: the drafting call is the longest step, so shorter drafts, prompt caching and the choice of drafting model are the levers.
+- Reduce the latency of a run: the drafting call is the longest step. Prompt caching was tried and did not change the latency in a way that the measurement can tell from noise (see [METRICS.md](../METRICS.md)); shorter drafts, the choice of drafting model and fewer drafting rounds are still open.
 - Move the guards that are not specific to the AI SDK (abort, error masking, timing) into code that both the route and the scripts can use.
 
 ## 2. No checkpointer: the graph keeps nothing between requests

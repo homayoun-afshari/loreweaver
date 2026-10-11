@@ -41,7 +41,7 @@ Evidence: a [mini model benchmark](../BENCHMARK.md) of 5 Loreweaver-style prompt
 
 4. **A larger model, Claude Opus 5.5, for the agent.**
    - Pros: probably the best quality.
-   - Cons: not measured here. It would be slower and more expensive, so it would put the latency and cost guardrails at more risk. Kept for the LLM judge on Day 6, where answer speed does not matter.
+   - Cons: not measured here. It would be slower and more expensive, so it would put the latency and cost guardrails at more risk. Kept for a later LLM judge, where answer speed does not matter.
 
 ### Decision
 
@@ -62,7 +62,7 @@ The decision rests mainly on quality: 4.6 against 3.8, with the gap in instructi
 
 **Negative / costs**
 
-- **The 8 s latency budget is not proven.** One plain Sonnet answer took up to 6.3 s, and a real answer adds the legacy CMS call (about 1.5 s at p95) and a model step to choose the tool. A multi-step agent could exceed 8 s at p95. Mitigations: stream, so the user sees the Character Status Card and the first words early; keep answers short (concise instructions, an output limit); keep the reflection loop bounded; and use Haiku for cheap steps if the measurement requires it. With one tool call on Production (Sonnet, 30 runs), a chat took a median of 3.1 s and a p95 of 4.4 s from question to complete answer (see [METRICS.md](../METRICS.md)): inside the 8 s budget, which eases the risk for a one-tool question. One run in 50 across three Production batches took 10.7 s, because the legacy CMS call took about 8.6 s: the tail comes from the CMS, not the model, and needs attention (see Day 5). The full agent, with several tool calls and a reflection step, was measured afterwards: its p95 is above the 8 s budget (see [METRICS.md](../METRICS.md)).
+- **The 8 s latency budget is not proven.** One plain Sonnet answer took up to 6.3 s, and a real answer adds the legacy CMS call (about 1.5 s at p95) and a model step to choose the tool. A multi-step agent could exceed 8 s at p95. Mitigations: stream, so the user sees the Character Status Card and the first words early; keep answers short (concise instructions, an output limit); keep the reflection loop bounded; and use Haiku for cheap steps if the measurement requires it. With one tool call on Production (Sonnet, 30 runs), a chat took a median of 3.1 s and a p95 of 4.4 s from question to complete answer (see [METRICS.md](../METRICS.md)): inside the 8 s budget, which eases the risk for a one-tool question. One run in 50 across three Production batches took 10.7 s, because the legacy CMS call took about 8.6 s: the tail comes from the CMS, not the model, and still needs attention. The full agent, with several tool calls and a reflection step, was measured afterwards: its p95 is above the 8 s budget (see [METRICS.md](../METRICS.md)).
 - **Cost grows with the agent.** One call is cheap, but the agent makes several calls with a growing context. The budget of $0.05 has room (about 14 single answers), and it is checked again when the agent exists.
 - **Sonnet writes longer answers** (about 2.2x the tokens of Haiku), which adds latency and cost beyond the price difference.
 - **Evidence is thin:** 5 prompts, 1 run, one reader scoring, no tools, run on a laptop. It is enough to choose a direction, not to promise a number.
@@ -70,6 +70,6 @@ The decision rests mainly on quality: 4.6 against 3.8, with the gap in instructi
 ### Follow-ups
 
 - The p95 latency and cost per query of the full agent were measured on Day 4 and again on Day 5 (see [METRICS.md](../METRICS.md)). **The p95 exceeded 8 s, so this ADR is to be revisited.** One of the levers, prompt caching, was tried on Day 5: it lowered the cost per query and did not change the latency in a way that the measurement can tell from run-to-run noise, so the p95 is still above the budget. The other levers (shorter drafts, a faster or cheaper drafting model, fewer drafting rounds) have not been tried. The cost per query is inside the $0.05 budget.
-- Re-score quality with an LLM judge (Opus 5.5) and a larger set of prompts on Day 6, and compare Haiku again with a better prompt.
+- Re-score quality with an LLM judge (Opus 5.5) and a larger set of prompts, later, and compare Haiku again with a better prompt.
 - Add a fallback model for when the primary fails or times out (not built on Day 2): Haiku is the natural candidate.
 - Check the provider's data-handling terms before any real user data is sent (the PRD rules out training on user data).

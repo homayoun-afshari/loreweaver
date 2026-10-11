@@ -115,7 +115,7 @@ Per prompt (TTFT / total latency / output tokens). Prompt texts and per-prompt q
 ### Caveats
 
 - Five prompts, one run each: a trend, not a precise number. An earlier run, with a script bug that lost the token counts, gave TTFT within about 10% of this one.
-- One reader scored quality with an informal rubric, not blind. The LLM judge arrives on Day 6.
+- One reader scored quality with an informal rubric, not blind. An LLM judge is planned for later.
 - A dev laptop: no Vercel network hop and no cold start. No CMS and no tools, so these numbers describe the model alone, not a full agent answer.
 - The answers contain Markdown; the current prompt asks for plain text because the chat UI does not render Markdown.
 
@@ -468,7 +468,7 @@ Overhead is 21% of the latency and 21% of the cost of a query (mean of the per-r
 ### Caveats
 
 - **Ten prompts, one run each.** The p95 of 10 runs is the slowest run, and one prompt moves a rate by 10 points (14 points for the seven that tempt). The three runs differ by more than the effect of the fix for empty drafts, so read the rates as a range, not a point: first drafts with a rule violation 2 to 3 of 10, final answers 1 to 2 of 10.
-- **The checker grades its own pipeline.** A violation is what the reflection model reported. A draft it accepts may still break a rule, and a draft it rejects may be fine (as the false rejection shows). The independent check is the judge planned for Day 6.
+- **The checker grades its own pipeline.** A violation is what the reflection model reported. A draft it accepts may still break a rule, and a draft it rejects may be fine (as the false rejection shows). The independent check is the judge planned for later.
 - **The set was written before the runs and was not changed to improve a result,** but the prompt of the checker (`reflection.v2`) was tightened on Day 4 after live runs of a similar question (an escape from the Ice Citadel, which is not one of the ten), so the numbers are not from a fully blind check. The fix for empty drafts was made after runs 1 and 2 and measured in run 3.
 - **A laptop, not the deployed app.** The CMS and the database are local (the CMS adds its simulated delay and failures), the model and embedding APIs are over the internet, and there is no Vercel hop or cold start. The times are the graph's, not the browser's, and the answer is not streamed token by token: it arrives in one piece after the check.
 - **No prompt caching,** so every model call pays for the whole system prompt again; it is the first lever of Day 5.
@@ -590,7 +590,7 @@ pnpm cost:report --from <start UTC> --to <end UTC> --env development --model cla
 
 For the recorded run the period is `--from 2026-10-11T17:58:00Z --to 2026-10-11T18:01:00Z`, for as long as the traces exist. `pnpm measure:agent` also prints the cost and the latency per query itself (at the commit of the baseline it prices tokens at list prices, which is the same for a run without caching). `pnpm cost:report` reads `apps/web/.env.local` (the LangSmith key, the EU address and the workspace id) and sends nothing to a model. **A run of the ten prompts costs about $0.24** at list prices and takes about 2 minutes.
 
-**To reproduce the recorded numbers exactly,** check out `baseline-day5` first. The numbers are **not deterministic**: the models, the network and the CMS's random delay and failures change from run to run, so a new run gives close numbers, not identical ones. The code that produced them has not changed in what the agent does; later commits add caching and the limits.
+**To reproduce the recorded numbers exactly,** check out `baseline-day5` first. The numbers are **not deterministic**: the models, the network and the CMS's random delay and failures change from run to run, so a new run gives close numbers, not identical ones. The agent has changed since: caching lowers the cost per query (see the caching entry below), and the usage limits add one database write per request. Checking out `baseline-day5` reproduces the figures before caching.
 
 ## Day 5: latency and time to first token through the graph
 
@@ -651,7 +651,7 @@ MEASURE_MODEL=claude-sonnet-5-5 pnpm measure:chat                 # terminal 2: 
 MEASURE_REQUESTS=30 pnpm measure:chat                             # more runs
 ```
 
-For the ten prompts, see the cost entry. **A run of `pnpm measure:chat` costs about $0.10 at the prices of that commit.** **To reproduce the recorded numbers exactly,** check out `a78fb5f`. The numbers are not deterministic; a new run gives close numbers.
+For the ten prompts, see the cost entry. **A run of `pnpm measure:chat` costs about $0.10 at the prices of that commit.** **To reproduce the recorded numbers exactly,** check out `a78fb5f`. The numbers are not deterministic; a new run gives close numbers. Since that commit the agent gained caching and the usage limits; neither changed the time to first token in a way that the measurement can tell from noise (see the caching entry below).
 
 ## Day 5: prompt caching, before and after
 
