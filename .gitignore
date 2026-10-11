@@ -28,7 +28,7 @@ next-env.d.ts
 *.sqlite-*
 
 # Raw output of local scripts
-scripts/.out/
+**/scripts/.out/
 
 # Vercel CLI link (project and org ids)
 .vercel/

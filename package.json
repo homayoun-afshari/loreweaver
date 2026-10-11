@@ -25,6 +25,7 @@
     "ingest": "pnpm --filter web exec tsx scripts/ingest.ts",
     "eval:retrieval": "pnpm --filter web exec tsx ../../evals/retrieval.ts",
     "measure:retrieval": "pnpm --filter web exec tsx scripts/measure-retrieval.ts",
-    "measure:search-tool": "pnpm --filter web exec tsx scripts/measure-search-tool.ts"
+    "measure:search-tool": "pnpm --filter web exec tsx scripts/measure-search-tool.ts",
+    "measure:agent": "pnpm --filter web exec tsx scripts/measure-agent.ts"
   }
 }
