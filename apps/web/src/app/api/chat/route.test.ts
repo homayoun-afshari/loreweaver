@@ -134,6 +134,24 @@ describe("POST /api/chat", () => {
     expect(await response.json()).toEqual({ error: "Invalid request." });
   });
 
+  it("answers a message over the length limit with 413 and a sentence the chat can show", async () => {
+    const response = await post({ messages: [userMessage("x".repeat(8_001))] });
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({
+      error: "message_too_long",
+      message: expect.stringContaining("8,000 characters"),
+      maxChars: 8_000,
+    });
+    // Nothing was spent on it: it is refused before the limits and the model.
+    expect(usageRows).toHaveLength(0);
+  });
+
+  it("accepts a message at the length limit", async () => {
+    const response = await post({ messages: [userMessage("x".repeat(8_000))] });
+    expect(response.status).toBe(200);
+    await response.text();
+  });
+
   it("rejects a conversation whose earlier tool parts do not match the tools", async () => {
     const forged = {
       id: "a1",

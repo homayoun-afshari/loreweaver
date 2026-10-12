@@ -5,7 +5,8 @@ import { noUsage } from "@/lib/agent/state";
 import { getAgentGraph } from "@/lib/ai/agent-runtime";
 import { writeAgentRun } from "@/lib/ai/agent-stream";
 import type { ChatMessage } from "@/lib/ai/chat-message";
-import { parseChatRequest } from "@/lib/ai/chat-request";
+import { isMessageTooLong, parseChatRequest } from "@/lib/ai/chat-request";
+import { MAX_USER_MESSAGE_CHARS, MESSAGE_TOO_LONG } from "@/lib/ai/input-limits";
 import { createChatTimer } from "@/lib/ai/server-timing";
 import { resolveModelId } from "@/lib/ai/models";
 import { createTools } from "@/lib/ai/tools";
@@ -26,8 +27,17 @@ const GENERIC_ERROR = "Something went wrong. Please try again.";
 export async function POST(request: Request): Promise<Response> {
   const startedAt = Date.now();
   const timer = createChatTimer();
-  const body = parseChatRequest(await request.json().catch(() => null));
+  const raw = await request.json().catch(() => null);
+  const body = parseChatRequest(raw);
   if (!body) {
+    // A message over the limit is the one refusal the author can fix, so it says so (HTTP 413) and
+    // the chat shows the sentence. Everything else stays the generic 400.
+    if (isMessageTooLong(raw)) {
+      return Response.json(
+        { error: "message_too_long", message: MESSAGE_TOO_LONG, maxChars: MAX_USER_MESSAGE_CHARS },
+        { status: 413 },
+      );
+    }
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 

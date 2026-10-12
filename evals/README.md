@@ -230,7 +230,7 @@ The report adds three figures:
 | An answer that leaks is replaced      | Ten words in a row from the system prompt, or any world id, and the author gets a fixed message      |
 | The world comes from the session      | The tools cannot be asked for another world; a character of another world looks like a missing one   |
 | Both tools only read                  | There is nothing to write, delete or send                                                            |
-| A message is at most 8,000 characters | The request check; the text box stops at the same number                                             |
+| A message is at most 8,000 characters | The request check answers HTTP 413 with a sentence; the text box shows a counter and blocks sending  |
 | The model's answer is capped          | 1,024 tokens per model call                                                                          |
 
 ## Limits to keep in mind

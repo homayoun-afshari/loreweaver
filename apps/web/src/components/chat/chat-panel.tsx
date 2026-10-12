@@ -6,10 +6,9 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { MAX_USER_MESSAGE_CHARS } from "@/lib/ai/input-limits";
 import type { ChatMessage } from "@/lib/ai/chat-message";
-import { parseLimitError } from "@/lib/usage/limit-error";
-import { canRegenerate } from "./chat-controls";
+import { parseLimitError, parseTooLongError } from "@/lib/usage/limit-error";
+import { canRegenerate, messageLengthStatus } from "./chat-controls";
 import { MessageActions } from "./message-actions";
 import {
   LoreCitationCards,
@@ -39,6 +38,8 @@ export function ChatPanel() {
   // Without an id, useChat makes a random one while the page is prerendered, which Next.js
   // refuses (the value would be frozen into the static HTML). useId() is stable and safe.
   const chatId = useId();
+  // Ties the character counter to the text box, for screen readers.
+  const counterId = useId();
 
   // The id that groups feedback events by chat session. useId() is NOT unique per visitor (it is
   // the same text for everyone, because it only depends on the position in the component tree),
@@ -77,6 +78,10 @@ export function ChatPanel() {
   const busy = status === "submitted" || status === "streaming";
   // Over the rate limit or the daily budget: the route says so in plain words, and they are shown.
   const limit = parseLimitError(error?.message);
+  // A message over the length limit that got past the text box: the route says so, and sending the
+  // same text again cannot work.
+  const tooLong = parseTooLongError(error?.message);
+  const length = messageLengthStatus(input.length);
 
   /** Feedback only makes sense on a finished assistant message that has some text. */
   function showActions(message: ChatMessage, index: number): boolean {
@@ -98,7 +103,7 @@ export function ChatPanel() {
 
   function submit() {
     const text = input.trim();
-    if (!text || busy) return;
+    if (!text || busy || length.over) return;
     stickToBottom.current = true;
     setAgentStatus(null);
     sendMessage({ text });
@@ -222,9 +227,15 @@ export function ChatPanel() {
           role="alert"
           className="flex items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
-          <span>{limit ? limit.message : "Something went wrong. Please try again."}</span>
-          {/* A spent daily allowance does not come back by retrying, so there is no button. */}
-          {limit?.error !== "daily_budget" && (
+          <span>
+            {limit
+              ? limit.message
+              : tooLong
+                ? tooLong.message
+                : "Something went wrong. Please try again."}
+          </span>
+          {/* A spent daily allowance, or a message that is too long, does not change by retrying. */}
+          {limit?.error !== "daily_budget" && !tooLong && (
             <Button type="button" variant="outline" size="sm" onClick={() => regenerate()}>
               Retry
             </Button>
@@ -251,9 +262,19 @@ export function ChatPanel() {
           }}
           placeholder="Ask about your world…"
           aria-label="Your message"
-          maxLength={MAX_USER_MESSAGE_CHARS}
+          aria-invalid={length.over}
+          aria-describedby={length.text ? counterId : undefined}
           rows={2}
         />
+        {length.text && (
+          <p
+            id={counterId}
+            aria-live="polite"
+            className={length.over ? "text-xs text-destructive" : "text-xs text-muted-foreground"}
+          >
+            {length.text}
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           Loreweaver&apos;s suggestions are AI-generated and can be wrong. Check them against your
           own canon.
@@ -269,7 +290,7 @@ export function ChatPanel() {
               Stop
             </Button>
           ) : (
-            <Button type="submit" disabled={!input.trim()}>
+            <Button type="submit" disabled={!input.trim() || length.over}>
               Send
             </Button>
           )}
