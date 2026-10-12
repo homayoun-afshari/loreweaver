@@ -52,7 +52,7 @@ If there is no evidence, a draft that states facts about the author's world is "
 Each explanation is one short sentence of at most 25 words. List the violations first, then set valid. valid is true only when there are no violations.`;
 
 /** Evidence as text for the checker: what each tool returned for this question. */
-function describeToolResult(message: BaseMessage): string {
+export function describeToolResult(message: BaseMessage): string {
   const raw = textOf(message);
   const name = (message as { name?: string }).name ?? "tool";
   let parsed: unknown;

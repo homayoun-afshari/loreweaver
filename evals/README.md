@@ -100,3 +100,78 @@ One prompt, as written:
 - **`expected_tools`** are the tools a good run uses, in any order. The prompt names the character, because the chat has no character selector: the agent finds the id from the list of the world's characters.
 - **`note`** says what is right and what makes the prompt hard. It is for the reader, not for the agent. Every note was written against the lore in `data/lore` and the seed data of the legacy CMS.
 - **Do not change a prompt to make a result look better.** Add new prompts instead, and change an existing one only when the lore or the seed data change, in its own commit with the reason.
+
+# End-to-end eval
+
+`pnpm eval` runs the whole agent (drafting, tools and reflection) on every case of `datasets/e2e.json`, without a browser, and grades each answer twice. The retrieval eval above says whether the right passages are found; this one says whether the author gets a correct answer.
+
+```sh
+pnpm eval                                      # every case: Sonnet 5.5 under test, Opus 5.5 judging
+pnpm eval --only fire-escape-01,no-flint-02    # a few cases, by id
+pnpm eval --agent-model claude-haiku-4-5       # another model under test (cheaper)
+pnpm eval --no-judge                           # code checks only: no judge call
+pnpm eval --label baseline                     # adds a label to the report's file name
+```
+
+It needs the same local services as the chat (`docker compose up -d`, and the lore ingested with `pnpm ingest`) and the keys in `apps/web/.env.local`. It calls the real models and prints its own cost at the end. Cases run one at a time, once each.
+
+| File                | What it is                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `datasets/e2e.json` | The cases                                                                                                                    |
+| `e2e-dataset.ts`    | Reads and validates the cases                                                                                                |
+| `e2e-checks.ts`     | The code checks: tools, items and citations                                                                                  |
+| `e2e-judge.ts`      | The judge: rubric, reply schema, consistency rule and cost                                                                   |
+| `e2e-report.ts`     | Decides whether a case passes, and sums the results                                                                          |
+| `judge.ts`          | The command: runs the cases, grades them and writes the report                                                               |
+| `reports/`          | One JSON report per run: the setup, every answer, every grade and the summary                                                |
+| `*.test.ts`         | Unit tests for all of the above (no model is called). One checks the cases against the real world list and the agent prompts |
+
+## The cases
+
+```json
+{
+  "id": "fire-escape-01",
+  "input": "Aria Voss is trapped in the Ice Citadel. Suggest an escape that uses fire magic.",
+  "character_id": 1,
+  "world_id": "world_aethel",
+  "expected_constraints": [
+    "Says fire magic is normally smothered inside the Ice Citadel and that Aria's flint is the exception"
+  ],
+  "expected_tools": ["fetch_character_state", "search_lore"],
+  "tags": ["happy-path", "rule", "inventory"],
+  "note": "Why the case exists, and what is right."
+}
+```
+
+- **The first ten cases are the agent prompts** (`agent-prompts.json`), unchanged, with constraints added. A test fails if one drifts. The others add a rule exception, a healer who cannot heal herself, a character that does not exist, lore that does not cover the question, a legacy service that is down, an off-topic request, a lore-only question and two questions in the other world.
+- **`expected_constraints`** are one checkable sentence each, written by hand from the lore and the seed data. The judge marks each as pass or fail.
+- **`expected_tools` / `forbidden_tools`** are checked by code. `character_id` can be `null` for a question about no character.
+- **`legacy: "down"`** swaps the legacy service for one that always fails, for the case that checks the agent says "unavailable" instead of guessing.
+- **`tempting_items`** names items a request invites that nobody carries (a rope, a Tide-key), so the item check looks for them.
+
+## How a case is graded
+
+A case passes when every code check holds **and** the judge passes it.
+
+**Code checks** (no model):
+
+- **Tools:** every expected tool was called and no forbidden one.
+- **Items:** an item of the world (any item in the CMS, plus the case's `tempting_items`) named in the answer must be one the character carries. A mention in a clause that denies it ("carries no rope") is allowed. This is text matching: it does not see a paraphrase, and its denial cues are a short word list.
+- **Citations:** every bracketed id in the answer (`[3fa9c1d2]`) is a real chunk of the question's world. A real chunk that no search returned in that run is reported but does not fail the check.
+
+**The judge** (Claude Opus 5.5, through structured outputs) sees the question, the evidence the agent had (the passages and the character lookup), the true character record, the answer and the numbered constraints. It writes its reasoning first, then gives a **faithfulness** score from 1 to 5 and a pass or fail for each constraint. The answer passes only when faithfulness is 4 or more and every constraint passes, whatever the judge's own `pass` says. A reply that is missing a constraint is asked for again once, and then reported as a judge error, not as a pass or a fail.
+
+| Faithfulness | Meaning                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------- |
+| 5            | Every claim is supported by the evidence                                                      |
+| 4            | Every rule, number, item and place is supported; at most one small neutral detail goes beyond |
+| 3            | One unsupported or wrong claim that could matter to the story                                 |
+| 2            | Several unsupported claims, or one that contradicts the evidence                              |
+| 1            | The core is invented, or it contradicts the rules or the character's state                    |
+
+## Limits to keep in mind
+
+- **One run per case.** Agent and judge both vary between runs, so a single pass or fail is one draw. Opus 5.5 accepts no temperature other than its default, so the judge cannot be run at temperature 0.
+- **The judge is a model.** Its agreement with a human is measured on hand labels (see `docs/METRICS.md`); until then, read its scores with care. Judge and agent are from the same model family.
+- **The set is small and written by one person.** Do not change a case or a constraint to make a result look better; change one only when the lore or the seed data change, in its own commit with the reason.
+- **Reports are machine output.** Keep a report in Git only when a document refers to it.

@@ -180,6 +180,7 @@ On Vercel, import the GitHub repository and set the project's **Root Directory**
 | `pnpm typecheck`                | Type-check with TypeScript                                                  |
 | `pnpm format`                   | Format the whole repo with Prettier                                         |
 | `pnpm ingest`                   | Chunk and embed the lore into Postgres (idempotent; `--dry-run` to preview) |
+| `pnpm eval`                     | Run the agent on the end-to-end eval set and grade every answer             |
 | `pnpm eval:retrieval`           | Score the lore search on its own against a labeled set of questions         |
 | `pnpm measure:retrieval`        | Time the lore search: embedding the question, and the vector search         |
 | `pnpm measure:search-tool`      | Time the chat's `search_lore` tool on any running app, deployed or local    |
@@ -202,7 +203,7 @@ Every number reported about the project is recorded in [`docs/METRICS.md`](docs/
 - [Product requirements](docs/PRD.md)
 - [Architecture decisions](docs/adr/)
 - [Agent design](docs/AGENT_DESIGN.md): the graph that drafts, checks and revises answers
-- [Retrieval eval](evals/README.md): the labeled questions and how the lore search is scored
+- [Evals](evals/README.md): the retrieval eval, the agent prompt set and the end-to-end eval with its judge
 - [Metrics](docs/METRICS.md) and [model benchmark](docs/BENCHMARK.md)
 - [Daily reports](docs/reports/): [Day 1](docs/reports/day-1.md), [Day 2](docs/reports/day-2.md), [Day 3](docs/reports/day-3.md), [Day 4](docs/reports/day-4.md)
 
@@ -211,7 +212,7 @@ Every number reported about the project is recorded in [`docs/METRICS.md`](docs/
 ```
 apps/web/            Next.js app: chat page, API routes, database schema and migrations, ingestion script
 data/lore/           The lore of each world, as Markdown files (the source of the search index)
-evals/               Retrieval evaluation data and code
+evals/               Evaluation data and code: retrieval, agent prompts, end-to-end
 services/legacy-cms/ The legacy CMS (PHP, Slim, SQLite) and its OpenAPI contract
 packages/shared/     Reserved for code shared between projects (empty so far)
 docs/                PRD, ADRs, metrics, benchmark and daily reports

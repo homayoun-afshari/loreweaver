@@ -208,6 +208,15 @@ importers:
 
   .:
     devDependencies:
+      '@langchain/anthropic':
+        specifier: 1.5.12
+        version: 1.5.12(@langchain/core@1.2.17)
+      '@langchain/core':
+        specifier: 1.2.17
+        version: 1.2.17
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(postgres@3.4.9)
       eslint-config-prettier:
         specifier: 10.1.8
         version: 10.1.8(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))
