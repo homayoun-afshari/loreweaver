@@ -61,6 +61,8 @@ export function decide(args: {
   judge?: JudgeGrade;
   judgeError?: string;
   judged: boolean;
+  /** The faithfulness a case needs to pass. 4 by default. */
+  minFaithfulness?: number;
 }): { pass: boolean; failures: string[] } {
   const failures: string[] = [];
   if (args.error) failures.push(`run failed: ${args.error}`);
@@ -83,7 +85,10 @@ export function decide(args: {
   if (args.judged && !args.error && !args.inputLimit) {
     if (args.judgeError) failures.push(`judge error: ${args.judgeError}`);
     else if (args.judge) {
-      if (args.judge.faithfulness < 4) failures.push(`faithfulness ${args.judge.faithfulness}`);
+      const needed = args.minFaithfulness ?? 4;
+      if (args.judge.faithfulness < needed) {
+        failures.push(`faithfulness ${args.judge.faithfulness}`);
+      }
       const failed = args.judge.constraints.filter((c) => !c.pass).length;
       if (failed > 0) failures.push(`${failed} constraint(s) failed`);
     }

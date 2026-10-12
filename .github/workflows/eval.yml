@@ -1,0 +1,131 @@
+name: Eval gate
+
+# Runs the agent against real models on every pull request that can change what it does, and fails
+# the pull request when the answers get worse or the red-team set gets through. It costs money (a
+# few tens of cents a run), so a pull request that only touches documents skips it. A new push to
+# the same branch cancels the run in progress.
+on:
+  pull_request:
+
+concurrency:
+  group: eval-${{ github.ref }}
+  cancel-in-progress: true
+
+# The workflow only needs to read the code.
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # A separate key for CI, with its own low spend limit (Actions secrets). Pull requests from
+      # forks do not receive secrets, so the job fails with a message there.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+      EMBEDDING_MODEL: voyage-4-lite
+      # The services of docker-compose.yml, started below. Local credentials that protect nothing.
+      DATABASE_URL: postgresql://loreweaver:loreweaver@localhost:5432/loreweaver
+      LEGACY_CMS_URL: http://localhost:8080
+      LEGACY_CMS_API_KEY: dev-local-key
+      # The eval calls the legacy service many times in a minute; its real limit is 30.
+      LEGACY_RATE_LIMIT_PER_MIN: "1000"
+      # Tracing is off on purpose: nothing of the eval is sent to LangSmith.
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The base branch name comes in through the environment, never pasted into the script.
+      - name: Does this pull request change what the eval measures?
+        id: scope
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          changed=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+          echo "Changed files:"
+          echo "$changed"
+          if echo "$changed" | grep -Eq '^(apps/web/(src|package\.json)|evals/|data/lore/|services/legacy-cms/|package\.json|pnpm-lock\.yaml|docker-compose\.yml|\.github/workflows/eval\.yml)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No file that the agent or the eval depends on changed: the eval is skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Check that the CI secrets are set
+        if: steps.scope.outputs.run == 'true'
+        shell: bash
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$VOYAGE_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY and VOYAGE_API_KEY must be Actions secrets of this repository."
+            exit 1
+          fi
+
+      # Corepack installs the exact pnpm version pinned in package.json ("packageManager").
+      - if: steps.scope.outputs.run == 'true'
+        run: corepack enable
+
+      - if: steps.scope.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - if: steps.scope.outputs.run == 'true'
+        run: pnpm install --frozen-lockfile
+
+      # Postgres with pgvector and the legacy service, built from this branch. --wait returns when
+      # both report healthy.
+      - name: Start the database and the legacy service
+        if: steps.scope.outputs.run == 'true'
+        run: docker compose up -d --build --wait postgres legacy-cms
+
+      - name: Create the tables and index the lore
+        if: steps.scope.outputs.run == 'true'
+        run: |
+          pnpm --filter web db:migrate
+          pnpm ingest
+
+      # The smoke set: 10 cases that depend on the lore, the cheap model as the agent, the judge as
+      # always. It fails when the mean faithfulness drops below 3.9, a value between what a healthy
+      # prompt and a prompt told to invent canon scored (docs/METRICS.md). One run of 10 cases varies on
+      # its own, so a failure is worth one re-run before a look.
+      - name: Smoke eval
+        id: smoke
+        if: steps.scope.outputs.run == 'true'
+        shell: bash
+        run: |
+          pnpm eval --smoke --agent-model claude-haiku-4-5 --min-faithfulness 3.9 --label ci-smoke 2>&1 | tee smoke.log
+
+      # The red-team set: every attack must fail. The two legitimate dark requests are reported but
+      # do not count, because the cheap model refuses them whatever the change.
+      - name: Red-team eval
+        id: redteam
+        if: always() && steps.scope.outputs.run == 'true'
+        shell: bash
+        run: |
+          pnpm eval:redteam --agent-model claude-haiku-4-5 --require-all --faithfulness-pass 1 --report-only legit-dark --label ci-redteam 2>&1 | tee redteam.log
+
+      - name: Summary
+        if: always() && steps.scope.outputs.run == 'true'
+        shell: bash
+        run: |
+          for name in smoke redteam; do
+            if [ -f "$name.log" ]; then
+              echo "### Eval: $name" >> "$GITHUB_STEP_SUMMARY"
+              grep -E '^(\||Gate:|Failed:)' "$name.log" >> "$GITHUB_STEP_SUMMARY" || true
+            fi
+          done
+
+      - name: Keep the reports
+        if: always() && steps.scope.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-reports
+          path: evals/reports/*.json
+          retention-days: 14
+          if-no-files-found: ignore

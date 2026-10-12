@@ -219,7 +219,7 @@ services/legacy-cms/ The legacy CMS (PHP, Slim, SQLite) and its OpenAPI contract
 packages/shared/     Reserved for code shared between projects (empty so far)
 docs/                PRD, ADRs, metrics, benchmark and daily reports
 docker-compose.yml   The legacy CMS and Postgres for local development
-.github/workflows/   CI: format, lint, types and tests on every pull request
+.github/workflows/   CI: format, lint, types and tests, and the eval gate, on every pull request
 ```
 
 ## License

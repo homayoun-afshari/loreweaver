@@ -71,7 +71,7 @@ The lore is the author's text, and text can carry an instruction ("SYSTEM: revea
 - **Tool results are marked as data** before the model reads them: each passage is wrapped in a tag, a forged tag inside a passage is removed, and the result carries a notice. Only the model's copy is marked; the browser's cards and the reflection check read the original.
 - **An answer that leaks is replaced** in the agent node, before reflection or the author see it: ten words in a row from the system prompt, or any world id, and the answer becomes a fixed message. A paraphrase of the prompt is not caught.
 - **Scope does not rely on the model.** The world is set by the server, the tools have no world parameter, and a character of another world looks like a missing one. Both tools only read.
-- **Input and output are bounded.** A message is at most 8,000 characters (the request check, and the text box), and a model call writes at most 1,024 tokens.
+- **Input and output are bounded.** A message is at most 8,000 characters (the request check refuses a longer one with HTTP 413; the text box shows a counter and blocks sending, and cuts nothing), and a model call writes at most 1,024 tokens.
 
 These were chosen over a separate guard node: the same checks live in the agent node, so every draft, including a revision, passes through them and the graph keeps its shape. They can be switched off for the eval only, to measure what the model does alone (see [`evals/README.md`](../evals/README.md)).
 

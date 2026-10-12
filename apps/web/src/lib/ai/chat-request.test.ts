@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MAX_MESSAGES, MAX_USER_MESSAGE_CHARS, parseChatRequest } from "./chat-request";
+import {
+  isMessageTooLong,
+  MAX_MESSAGES,
+  MAX_USER_MESSAGE_CHARS,
+  parseChatRequest,
+} from "./chat-request";
 
 const message = { id: "1", role: "user", parts: [{ type: "text", text: "hi" }] };
 
@@ -63,5 +68,28 @@ describe("parseChatRequest", () => {
       parts: [{ type: "text", text: "a".repeat(MAX_USER_MESSAGE_CHARS + 1_000) }],
     };
     expect(parseChatRequest({ messages: [message, answer, message] })).not.toBeNull();
+  });
+});
+
+describe("isMessageTooLong", () => {
+  const text = (n: number) => ({ ...message, parts: [{ type: "text", text: "x".repeat(n) }] });
+
+  it("is true for a request refused only because the newest message is too long", () => {
+    const body = { messages: [text(MAX_USER_MESSAGE_CHARS + 1)] };
+    expect(parseChatRequest(body)).toBeNull();
+    expect(isMessageTooLong(body)).toBe(true);
+  });
+
+  it("is true even when the message is also over the size of a whole request", () => {
+    expect(isMessageTooLong({ messages: [text(50_000)] })).toBe(true);
+  });
+
+  it("is false for a message at the limit and for the other reasons a request is refused", () => {
+    expect(isMessageTooLong({ messages: [text(MAX_USER_MESSAGE_CHARS)] })).toBe(false);
+    expect(isMessageTooLong({ messages: [] })).toBe(false);
+    expect(isMessageTooLong({})).toBe(false);
+    expect(isMessageTooLong(null)).toBe(false);
+    const many = Array.from({ length: MAX_MESSAGES + 1 }, () => text(MAX_USER_MESSAGE_CHARS + 1));
+    expect(isMessageTooLong({ messages: many })).toBe(false);
   });
 });

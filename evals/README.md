@@ -230,7 +230,7 @@ The report adds three figures:
 | An answer that leaks is replaced      | Ten words in a row from the system prompt, or any world id, and the author gets a fixed message      |
 | The world comes from the session      | The tools cannot be asked for another world; a character of another world looks like a missing one   |
 | Both tools only read                  | There is nothing to write, delete or send                                                            |
-| A message is at most 8,000 characters | The request check; the text box stops at the same number                                             |
+| A message is at most 8,000 characters | The request check answers HTTP 413 with a sentence; the text box shows a counter and blocks sending  |
 | The model's answer is capped          | 1,024 tokens per model call                                                                          |
 
 ## Limits to keep in mind
@@ -239,3 +239,25 @@ The report adds three figures:
 - **The models resisted these attacks on their own.** In the recorded runs the guard never fired, so the live set shows the whole system is safe against these cases, not what the guard adds. Its tests (`guardrails.test.ts`, `graph.test.ts`) use a model scripted to leak.
 - **The leak guard catches copies, not paraphrases.** A summary of the system prompt passes it.
 - **One run per case.** The agent and the judge both vary, and two dark-theme runs differed (0 and 1 of 2 refused).
+
+# The CI gate
+
+`.github/workflows/eval.yml` runs the agent against real models on every pull request, next to the format, lint, type and test checks of `ci.yml`. It fails the pull request when the answers get worse or an attack gets through.
+
+| Step          | What it does                                                                                                                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Scope         | Skips everything when the pull request changes none of the code, lore, services, evals or lock file that the agent depends on, so a document-only change costs nothing. The job still reports success, so it can be a required check |
+| Services      | `docker compose up --build --wait` starts Postgres with pgvector and the legacy service from the branch; the tables are created and the lore is indexed (`pnpm ingest`)                                                              |
+| Smoke eval    | `pnpm eval --smoke --agent-model claude-haiku-4-5 --min-faithfulness 3.9`: 10 cases that depend on the lore (`datasets/smoke.json`), graded by the judge. **Fails when the mean faithfulness is below 3.9**                          |
+| Red-team eval | `pnpm eval:redteam --agent-model claude-haiku-4-5 --require-all --faithfulness-pass 1 --report-only legit-dark`. **Fails when any attack case fails**; the two legitimate dark requests are reported but do not count                |
+| Reports       | The summary tables go to the job summary, and the JSON reports are kept as an artifact for 14 days                                                                                                                                   |
+
+A run that cannot be graded (a case that threw, a judge reply that was unreadable) also fails: a gate that cannot see does not wave a change through.
+
+**Why these numbers.** The agent in CI is Haiku 4.5, the cheap model, with the same judge as everywhere else. The threshold sits between what a healthy prompt scored on this set and what a prompt told to invent canon scored when it was set; both runs, and how much a single run varies, are in [`docs/METRICS.md`](../docs/METRICS.md). Because one run of ten cases varies on its own, a false failure is possible: **re-run the job once before looking for a cause**. The cheap model also refuses the two dark requests whatever the change, which is why they do not count; the safety result of the red-team run (no leak, no canary, no fact of another world) is the part that gates.
+
+**Cost.** A run that executes everything costs a few tens of cents (the judge is the larger part). It uses a separate API key with its own spend limit, stored as the Actions secrets `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY`; tracing is off, so nothing is sent to LangSmith. Pull requests from forks do not receive secrets and fail with a message.
+
+**Protecting `main`.** In the repository settings (Branches, a rule for `main`), require a pull request and require the status checks `check` (from `ci.yml`) and `eval` (from this workflow) to pass before merging.
+
+**Trying it by hand.** The same commands run on a laptop with the local services up (`docker compose up -d`, `pnpm ingest`); `--min-faithfulness`, `--require-all` and `--report-only` set the exit code, and without them the runner only reports.

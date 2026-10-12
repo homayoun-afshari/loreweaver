@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseLimitError } from "./limit-error";
+import { parseLimitError, parseTooLongError } from "./limit-error";
 
 const body = (over: Record<string, unknown> = {}) =>
   JSON.stringify({
@@ -24,5 +24,40 @@ describe("parseLimitError", () => {
     ["a wait that is not a number", body({ retryAfterSeconds: "soon" })],
   ])("returns null for %s", (_name, text) => {
     expect(parseLimitError(text)).toBeNull();
+  });
+});
+
+describe("parseTooLongError", () => {
+  const tooLong = (over: Record<string, unknown> = {}) =>
+    JSON.stringify({
+      error: "message_too_long",
+      message: "Your message is too long: the limit is 8,000 characters.",
+      maxChars: 8000,
+      ...over,
+    });
+
+  it("reads the answer of the route to a message that is too long", () => {
+    expect(parseTooLongError(tooLong())).toMatchObject({
+      error: "message_too_long",
+      maxChars: 8000,
+    });
+  });
+
+  it.each([
+    ["nothing", undefined],
+    ["a plain error message", "Failed to fetch"],
+    ["the generic invalid request", JSON.stringify({ error: "Invalid request." })],
+    [
+      "a rate limit",
+      JSON.stringify({ error: "rate_limited", message: "Wait.", retryAfterSeconds: 3 }),
+    ],
+    ["no message", tooLong({ message: "" })],
+    ["a limit that is not a number", tooLong({ maxChars: "many" })],
+  ])("returns null for %s", (_name, text) => {
+    expect(parseTooLongError(text)).toBeNull();
+  });
+
+  it("is not mistaken for a rate limit, and a rate limit is not mistaken for it", () => {
+    expect(parseLimitError(tooLong())).toBeNull();
   });
 });
