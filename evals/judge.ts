@@ -20,6 +20,14 @@
  *   pnpm eval --label baseline                   adds a label to the report's file name
  *   pnpm eval:redteam                            the red-team set (same as --dataset redteam)
  *   pnpm eval:redteam --no-guardrails            the same set with the code defenses off, to measure them
+ *   pnpm eval --smoke                            only the 10 cases of datasets/smoke.json
+ *
+ * The gate, for a workflow (the exit code is 1 when a rule fails; without a rule it is always 0):
+ *   --min-faithfulness 4.3    the mean faithfulness of the judge must reach it
+ *   --require-all             every case must pass
+ *   --report-only legit-dark  cases with these tags (comma-separated) are run and reported but
+ *                             do not count against --require-all
+ *   --faithfulness-pass 1     the faithfulness a single case needs (4 by default)
  *
  * A red-team case whose world has a folder in evals/fixtures/lore/ gets that lore written to the
  * LOCAL database for the run (a world with an instruction hidden in a passage) and removed after.
@@ -75,6 +83,7 @@ import {
   JUDGE_PROMPT_VERSION,
   judgeCostUsd,
 } from "./e2e-judge";
+import { evaluateGate, parseThreshold } from "./e2e-gate";
 import { decide, summarizeResults, type CaseResult } from "./e2e-report";
 import { loadFixtureWorld } from "./redteam-fixture";
 
@@ -91,6 +100,11 @@ const { values: args } = parseArgs({
     label: { type: "string" },
     dataset: { type: "string", default: "e2e" },
     "no-guardrails": { type: "boolean", default: false },
+    smoke: { type: "boolean", default: false },
+    "min-faithfulness": { type: "string" },
+    "faithfulness-pass": { type: "string" },
+    "require-all": { type: "boolean", default: false },
+    "report-only": { type: "string" },
   },
 });
 
@@ -146,8 +160,12 @@ function gitCommit(): string | undefined {
   }
 }
 
-async function main() {
-  process.loadEnvFile(".env.local");
+async function main(): Promise<number> {
+  try {
+    process.loadEnvFile(".env.local");
+  } catch {
+    // No .env.local (for example in CI): rely on the real environment.
+  }
   const env = getEnv();
   const requested = args["agent-model"];
   if (requested !== undefined && !isModelId(requested)) {
@@ -160,10 +178,21 @@ async function main() {
     throw new Error(`--dataset ${args.dataset} is not e2e or redteam`);
   }
   const datasetName = args.dataset;
+  if (args.smoke && datasetName !== "e2e") throw new Error("--smoke is for the e2e dataset");
+  const smokeIds: string[] | undefined = args.smoke
+    ? (JSON.parse(
+        await readFile(fileURLToPath(new URL("smoke.json", DATASETS)), "utf8"),
+      ) as string[])
+    : undefined;
   const cases = parseE2eDataset(
     await readFile(fileURLToPath(new URL(`${datasetName}.json`, DATASETS)), "utf8"),
-  ).filter((c) => !only || only.includes(c.id));
+  ).filter((c) => (!only || only.includes(c.id)) && (!smokeIds || smokeIds.includes(c.id)));
   if (cases.length === 0) throw new Error("no case selected");
+  const gateOptions = {
+    minFaithfulness: parseThreshold("--min-faithfulness", args["min-faithfulness"]),
+    requireAll: args["require-all"],
+  };
+  const faithfulnessPass = parseThreshold("--faithfulness-pass", args["faithfulness-pass"]);
 
   // Worlds that exist only for the eval (a lore passage with an instruction hidden in it): written
   // to the local database now and removed when the run ends, whatever happens.
@@ -183,7 +212,16 @@ async function main() {
         `Fixture world ${worldId}: ${fixture.chunks} chunk(s) written to the local database.`,
       );
     }
-    await runCases({ env, agentModel, judged, cases, datasetName });
+    return await runCases({
+      env,
+      agentModel,
+      judged,
+      cases,
+      datasetName,
+      gateOptions,
+      faithfulnessPass,
+      reportOnlyTags: (args["report-only"] ?? "").split(",").filter((t) => t !== ""),
+    });
   } finally {
     for (const remove of removeFixtures) await remove();
   }
@@ -195,8 +233,20 @@ async function runCases(args2: {
   judged: boolean;
   cases: E2eCase[];
   datasetName: string;
-}) {
-  const { env, agentModel, judged, cases, datasetName } = args2;
+  gateOptions: Parameters<typeof evaluateGate>[1];
+  faithfulnessPass: number | undefined;
+  reportOnlyTags: string[];
+}): Promise<number> {
+  const {
+    env,
+    agentModel,
+    judged,
+    cases,
+    datasetName,
+    gateOptions,
+    faithfulnessPass,
+    reportOnlyTags,
+  } = args2;
 
   // The truth about the characters: read from the CMS once, with a client of its own so that a
   // case with a legacy service that is down does not touch it.
@@ -242,7 +292,7 @@ async function runCases(args2: {
   console.log(
     `Agent ${agentModel} (prompts ${PROMPT_VERSION} and ${REFLECTION_PROMPT_VERSION}), ` +
       (judged
-        ? `judge ${JUDGE_MODEL_ID} (${JUDGE_PROMPT_VERSION}, faithfulness ${FAITHFULNESS_PASS}+ to pass).`
+        ? `judge ${JUDGE_MODEL_ID} (${JUDGE_PROMPT_VERSION}, faithfulness ${faithfulnessPass ?? FAITHFULNESS_PASS}+ to pass).`
         : "no judge (code checks only)."),
   );
   console.log(`${cases.length} case(s), one run each.\n`);
@@ -385,7 +435,14 @@ async function runCases(args2: {
       }
     }
 
-    const { pass, failures } = decide({ error, checks, judge: grade, judgeError, judged });
+    const { pass, failures } = decide({
+      error,
+      checks,
+      judge: grade,
+      judgeError,
+      judged,
+      minFaithfulness: faithfulnessPass,
+    });
     results.push({
       id: c.id,
       tags: c.tags,
@@ -444,6 +501,20 @@ async function runCases(args2: {
     `| Cost: agent / judge / total | ${usd(s.agentCostUsd)} / ${usd(s.judgeCostUsd)} / ${usd(s.agentCostUsd + s.judgeCostUsd)} |`,
   );
   if (s.failedIds.length > 0) console.log(`\nFailed: ${s.failedIds.join(", ")}`);
+  // Cases with a report-only tag are in the report and the table, but cannot fail the gate.
+  const reportOnly = new Set(
+    results.filter((r) => r.tags.some((t) => reportOnlyTags.includes(t))).map((r) => r.id),
+  );
+  const gate = evaluateGate(
+    { ...s, failedIds: s.failedIds.filter((id) => !reportOnly.has(id)) },
+    gateOptions,
+  );
+  if (gate.active) {
+    console.log(
+      `\nGate: ${gate.pass ? "PASS" : "FAIL"}` +
+        (gate.reasons.length > 0 ? ` (${gate.reasons.join("; ")})` : ""),
+    );
+  }
 
   const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15);
   const file = `${REPORTS}${datasetName}-${stamp}${args.label ? `-${args.label}` : ""}.json`;
@@ -462,7 +533,8 @@ async function runCases(args2: {
           reflectionPromptVersion: REFLECTION_PROMPT_VERSION,
           judgePromptVersion: judged ? JUDGE_PROMPT_VERSION : null,
           judgeEffort: judged ? JUDGE_EFFORT : null,
-          faithfulnessPass: FAITHFULNESS_PASS,
+          faithfulnessPass: faithfulnessPass ?? FAITHFULNESS_PASS,
+          gate: { ...gateOptions, reportOnly: args["report-only"] ?? null },
           dataset: datasetName,
           guardrails,
           label: args.label ?? null,
@@ -479,11 +551,12 @@ async function runCases(args2: {
   console.log(`\nReport: ${file.replace(REPO, "")}`);
   // Send the traces that are still waiting (a no-op with tracing off).
   await awaitAllCallbacks();
+  return gate.pass ? 0 : 1;
 }
 
 main()
   // The database connection of the lore search stays open, so end the process here.
-  .then(() => process.exit(0))
+  .then((code) => process.exit(code))
   .catch((error) => {
     console.error(error);
     process.exit(1);

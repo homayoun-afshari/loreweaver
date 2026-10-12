@@ -57,6 +57,16 @@ describe("decide", () => {
     ]);
   });
 
+  it("needs the faithfulness the caller asks for, 4 by default", () => {
+    expect(decide({ checks: okChecks, judge: grade(3), judged: true }).pass).toBe(false);
+    expect(
+      decide({ checks: okChecks, judge: grade(3), judged: true, minFaithfulness: 3 }).pass,
+    ).toBe(true);
+    expect(
+      decide({ checks: okChecks, judge: grade(1), judged: true, minFaithfulness: 1 }).pass,
+    ).toBe(true);
+  });
+
   it("fails an unsafe answer and says what was found", () => {
     const checks: CaseChecks = {
       ...okChecks,

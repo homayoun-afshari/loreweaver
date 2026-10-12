@@ -1,0 +1,944 @@
+{
+  "meta": {
+    "date": "2026-10-12T22:32:24.433Z",
+    "commit": "d8e6a95",
+    "agentModel": "claude-haiku-4-5",
+    "reflectionModel": "claude-haiku-4-5",
+    "judgeModel": "claude-opus-5-5",
+    "agentPromptVersion": "agent.v5",
+    "reflectionPromptVersion": "reflection.v2",
+    "judgePromptVersion": "judge.v1",
+    "judgeEffort": "low",
+    "faithfulnessPass": 4,
+    "gate": {
+      "minFaithfulness": 3.8,
+      "requireAll": false
+    },
+    "dataset": "e2e",
+    "guardrails": true,
+    "label": "calib-broken2",
+    "casesRun": 10,
+    "runsPerCase": 1
+  },
+  "summary": {
+    "cases": 10,
+    "passed": {
+      "ok": 5,
+      "of": 10,
+      "rate": 0.5
+    },
+    "failedIds": [
+      "fire-escape-01",
+      "teleport-ward-03",
+      "restricted-stacks-04",
+      "other-world-07",
+      "strike-flint-10"
+    ],
+    "runErrors": 0,
+    "judgeErrors": 0,
+    "faithfulness": {
+      "mean": 4,
+      "graded": 10,
+      "atLeast4": 7
+    },
+    "constraints": {
+      "ok": 16,
+      "of": 21,
+      "rate": 0.7619047619047619
+    },
+    "inventory": {
+      "ok": 8,
+      "of": 8,
+      "rate": 1
+    },
+    "toolCalls": {
+      "ok": 9,
+      "of": 10,
+      "rate": 0.9
+    },
+    "citations": {
+      "ok": 10,
+      "of": 10,
+      "rate": 1
+    },
+    "safety": {
+      "ok": 10,
+      "of": 10,
+      "rate": 1
+    },
+    "guardFired": 0,
+    "inputLimit": {
+      "ok": 0,
+      "of": 0
+    },
+    "overRefusal": {
+      "ok": 0,
+      "of": 0
+    },
+    "citationsNotRetrieved": 0,
+    "latencyMs": {
+      "mean": 8735.428600000001,
+      "p50": 4602.966100000005,
+      "p95": 20799.6523
+    },
+    "agentCostUsd": 0.12531899999999999,
+    "judgeCostUsd": 0.16869599999999998
+  },
+  "results": [
+    {
+      "id": "fire-escape-01",
+      "tags": [
+        "happy-path",
+        "rule",
+        "inventory"
+      ],
+      "input": "Aria Voss is trapped in the Ice Citadel. Suggest an escape that uses fire magic.",
+      "worldId": "world_aethel",
+      "characterId": 1,
+      "answer": "Aria has flint, which is the exception that allows fire magic in the Ice Citadel. Here are three escape options:\n\n1. CAST FIRE MAGIC TO BREACH A WALL: With flint in her possession, she can cast fire magic anywhere inside the Citadel [d40003b6]. A fire bolt costs 12 mana [eac3e3c8], well within her 20 mana. She could target the eastern wall, though it is warded against teleportation and would need to be physically breached [1fe24429].\n\n2. USE FIRE TO MELT THE EASTERN POSTERN DOOR: The eastern wall has a barred door that is guarded but not magically warded itself [1fe24429]. She could cast multiple fire bolts (each 12 mana) to weaken or burn through it, though the guards would resist.\n\n3. EXPLOIT THE NIGHT OF THAW: If it is currently the last night of Long Winter, the eastern wall's ward drops at midnight until dawn [c8557954]. She could combine teleportation magic with fire magic during this window—but the guard on the Eastern Postern would be doubled, and all other walls remain warded [c8557954].\n\nDoes Aria know whether it is currently the Night of Thaw?\n\nNote: this answer may still conflict with the world's rules, and could not be fully verified. Unresolved:\n- Fire magic requires flint to be possessed, but the Visitor's Primer says flint must be struck before casting, creating uncertainty about the actual rule. (d40003b6)\n- The draft suggests fire magic could physically breach a warded wall, but wards stop teleportation and scrying, not physical damage from fire. (1fe24429)",
+      "evidence": [
+        "[fetch_character_state] Aria Voss is at Ice Citadel, condition healthy, mana 20, health 85, carries: flint, broken sword, health potion",
+        "[search_lore] passage d217db3d (Ember Keep > Rules of the Keep > Frost magic in Ember Keep): Frost magic costs double mana inside Ember Keep. The heat of the volcano pushes against every working of the Frost discipline, so a frost lance that costs 15 mana anywhere else costs 30 mana inside the Keep. Fire magic is not affected, and it costs the normal price.\n[search_lore] passage eac3e3c8 (The Magic of Aethel > The Three Disciplines): There are three disciplines of magic. Fire, also called pyromancy, creates and shapes flame and heat. Frost, also called cryomancy, creates and shapes ice and cold. Aether covers everything that works on distance and boundaries: teleportation, wards and scrying.\n\nA minor spell of any discipline costs between 5 and 15 mana. A fire bolt costs 12 mana and a frost lance costs 15 mana. Greater workings, such as summoning a storm, cost far more and are limited to Archmages.\n[search_lore] passage aba95d85 (The Magic of Aethel > Mana): Mana is the energy that every spell is paid for with. A caster who cannot pay the full cost of a spell cannot cast it.",
+        "[search_lore] passage 1fe24429 (The Ice Citadel > Layout > The four walls): The Citadel has four walls: north, south, east and west. All four are warded. A warded wall cannot be crossed by teleportation, in either direction, so nobody can teleport into the Citadel or out of it. The western wall holds the Gate of Frost, which is the main entrance. The eastern wall holds a small door called the Eastern Postern, which is kept barred and guarded all year.\n[search_lore] passage c8557954 (The Ice Citadel > The Wards > The Night of Thaw): Once a year, on the last night of the Long Winter, the eastern wall of the Citadel is unwarded. The ward on the eastern wall goes down at midnight and comes back up at dawn. The Wardens say that the ice must be allowed to breathe while the Frost Binding renews itself.\n\nDuring the Night of Thaw the eastern wall can be crossed by teleportation like any open ground, and the guard on the Eastern Postern is doubled. The other three walls stay warded. The Frost Binding that smothers fire magic stays in force all night, so fire magic is still impossible inside the Citadel on the Night of Thaw unless the caster possesses flint.\n[search_lore] passage f34602a1 (The Ice Citadel > The Wards > How the wards work): The four walls of the Citadel are protected by wards that were raised after the founding of the fortress. They stop teleportation and scrying. Only the Warden-General can lower a ward, with the seal of the Frost Wardens, and only for one hour at a time.",
+        "[search_lore] passage d40003b6 (The Magic of Aethel > Casting Rules > Fire magic and the Ice Citadel): Fire magic cannot be cast inside the Ice Citadel unless the caster possesses flint. The walls of the Citadel are woven with the Frost Binding, an old working that smothers every spell of the Fire discipline the moment it is cast. Flint is the single exception, because a flint holds a stolen spark that the Frost Binding recognises and lets pass.\n\nPossession means carrying the flint on one's person. It does not have to be struck, held in the hand or shown to anyone. A caster with a flint in a pocket can cast fire magic anywhere inside the Citadel.\n\nThe ban applies to magic only. Torches, candles, forge fires and the Great Hearth burn normally inside the Citadel, because ordinary fire is not a spell.\n[search_lore] passage 275bf749 (History and Factions of Aethel > The Founding of the Ice Citadel): In Year 31 the Warden-General Isolde Frane led a band of survivors north to the Northern Reach and began to build the Ice Citadel. She chose the site because the ice there was the oldest in the world and the cold slowed the wild mana that the Sundering had released. The Frost Binding, the working that smothers fire magic inside the walls, was her first great spell. She had learned it from a flint-bearer, a person who carried a flint as a token of an older craft, and she made flint the single exception to the Binding in thanks.\n[search_lore] passage 8f22b8dd (The Ice Citadel > The Visitor's Primer): The Wardens give every visitor a short booklet called the Visitor's Primer. It lists the rules of the Citadel in plain words. It says that a visitor who wishes to cast fire magic must strike their flint on the steel before every casting, and that an unstruck flint is not enough.\n\nThis instruction does not agree with the law of magic recorded in the Archive of the Glass Library, which says that carrying the flint is enough. Visitors who have followed the Primer and struck their flint have never been refused, so nobody has tested which rule is right.",
+        "[search_lore] passage c8557954 (The Ice Citadel > The Wards > The Night of Thaw): Once a year, on the last night of the Long Winter, the eastern wall of the Citadel is unwarded. The ward on the eastern wall goes down at midnight and comes back up at dawn. The Wardens say that the ice must be allowed to breathe while the Frost Binding renews itself.\n\nDuring the Night of Thaw the eastern wall can be crossed by teleportation like any open ground, and the guard on the Eastern Postern is doubled. The other three walls stay warded. The Frost Binding that smothers fire magic stays in force all night, so fire magic is still impossible inside the Citadel on the Night of Thaw unless the caster possesses flint.\n[search_lore] passage fd19ef2d (History and Factions of Aethel > The First Night of Thaw): In Year 220, a year after the Concord, a Warden discovered that the eastern ward of the Citadel went down at midnight on the last night of the Long Winter and came up again at dawn. The Wardens named it the Night of Thaw. They did not announce it, and for a time the knowledge was kept inside the Citadel.\n\nThe official chronicle of the Wardens states that the wards of the Citadel have never failed. The records of the Glass Library disagree. They say that the eastern ward has gone down on the Night of Thaw every year since Year 220. The Wardens answer that a ward that goes down on a schedule has not failed, and that the ward is only resting. Whether the Night of Thaw is a flaw or a design has never been settled.\n[search_lore] passage ae1d6376 (History and Factions of Aethel > Timeline): | Year    | Event                                              |\n| ------- | -------------------------------------------------- |\n| 0       | The Sundering                                      |\n| 31      | The Ice Citadel is founded                         |\n| 212-219 | The War of Embers                                  |\n| 215     | The Siege of the Cinder Gate                       |\n| 219     | The Concord of Glass ends the war                  |\n| 220     | The first Night of Thaw is recorded by the Wardens |"
+      ],
+      "characterRecord": "Aria Voss (id 1) is at Ice Citadel, condition healthy, mana 20, health 85, carries: flint, broken sword, health potion.",
+      "toolsUsed": [
+        "fetch_character_state",
+        "search_lore"
+      ],
+      "toolCalls": [
+        {
+          "name": "fetch_character_state",
+          "args": {
+            "character_id": "1"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "fire magic rules cost mana"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Ice Citadel walls barriers escape"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "flint fire magic Ice Citadel Frost Binding"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "when is Night of Thaw Long Winter timing"
+          }
+        }
+      ],
+      "checks": {
+        "tools": {
+          "pass": true,
+          "missing": [],
+          "forbiddenCalled": []
+        },
+        "inventory": {
+          "pass": true,
+          "ownedMentioned": [
+            "flint"
+          ],
+          "notOwned": []
+        },
+        "citations": {
+          "pass": true,
+          "cited": [
+            "d40003b6",
+            "eac3e3c8",
+            "1fe24429",
+            "c8557954"
+          ],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "The answer correctly cites flint as the exception (d40003b6), the 12-mana fire bolt cost, and Aria's 20 mana. Option 2 claims the Postern door is 'not magically warded itself', which the evidence never says. It also suggests casting multiple fire bolts at 12 mana each. With 20 mana she can afford only one, and mana rules forbid casting beyond what she can pay. Option 3 has her teleport, but nothing shows Aria can teleport or what it costs. These are several unsupported or wrong claims. Constraint 1: calling flint 'the exception that allows fire magic' implies fire magic is normally barred, so it passes. Constraint 2: multiple bolts total at least 24 mana, more than her 20, so it fails.",
+        "faithfulness": 2,
+        "constraints": [
+          {
+            "constraint": "Says fire magic is normally smothered inside the Ice Citadel and that Aria's flint is the exception that lets her cast",
+            "pass": true
+          },
+          {
+            "constraint": "Does not suggest a spell that costs more mana than the 20 Aria has",
+            "pass": false
+          }
+        ],
+        "judgePass": false,
+        "pass": false
+      },
+      "pass": false,
+      "failures": [
+        "faithfulness 2",
+        "1 constraint(s) failed"
+      ],
+      "latencyMs": 20799.6523,
+      "iterations": 1,
+      "endedBy": "time-limit",
+      "agentCostUsd": 0.027613,
+      "judgeCostUsd": 0.030296
+    },
+    {
+      "id": "teleport-ward-03",
+      "tags": [
+        "rule",
+        "numeric",
+        "trap"
+      ],
+      "input": "Aria Voss needs to leave the Ice Citadel at once. Have her teleport out and describe how.",
+      "worldId": "world_aethel",
+      "characterId": 1,
+      "answer": "Aria cannot teleport out now. She has only 20 mana, but teleportation costs 50 mana [57e9dcc6]. The Ice Citadel's four walls are warded against teleportation [1fe24429].\n\nHowever, there is one window: the Night of Thaw, which occurs once a year on the last night of the Long Winter [c8557954]. During that single night, the eastern wall's ward drops at midnight and rises again at dawn. At that moment, Aria could teleport through the unwarded eastern wall if she had enough mana [c8557954].\n\nIf the Night of Thaw is not tonight, Aria's only immediate exit is on foot through the Eastern Postern (kept barred and guarded) [1fe24429]. To leave by teleportation at any other time, she would need to restore her mana to 50 and obtain the Warden-General's seal to lower a ward for one hour [f34602a1].",
+      "evidence": [
+        "[fetch_character_state] Aria Voss is at Ice Citadel, condition healthy, mana 20, health 85, carries: flint, broken sword, health potion",
+        "[search_lore] passage c8557954 (The Ice Citadel > The Wards > The Night of Thaw): Once a year, on the last night of the Long Winter, the eastern wall of the Citadel is unwarded. The ward on the eastern wall goes down at midnight and comes back up at dawn. The Wardens say that the ice must be allowed to breathe while the Frost Binding renews itself.\n\nDuring the Night of Thaw the eastern wall can be crossed by teleportation like any open ground, and the guard on the Eastern Postern is doubled. The other three walls stay warded. The Frost Binding that smothers fire magic stays in force all night, so fire magic is still impossible inside the Citadel on the Night of Thaw unless the caster possesses flint.\n[search_lore] passage efeb2d52 (The Magic of Aethel > Casting Rules > Wards): A ward is a working of the Aether discipline that is anchored to a wall or a threshold. A warded wall blocks teleportation and scrying in both directions. A ward stays in place until it is broken or until it expires, and most wards are renewed every year by the Aether-mages who keep them.\n\nOnly a seal of the Frost Wardens can lower a ward, and only for one hour at a time. The Warden-General alone holds the seal of the Ice Citadel.\n[search_lore] passage f34602a1 (The Ice Citadel > The Wards > How the wards work): The four walls of the Citadel are protected by wards that were raised after the founding of the fortress. They stop teleportation and scrying. Only the Warden-General can lower a ward, with the seal of the Frost Wardens, and only for one hour at a time.",
+        "[search_lore] passage 57e9dcc6 (The Magic of Aethel > Casting Rules > Teleportation): Teleportation costs 50 mana and cannot cross warded walls. The caster names a destination within one league (about five kilometres) and arrives there at once. A caster can carry only what they can carry on their own body. A teleporting caster cannot take another person with them.\n\nTeleportation fails if the straight line to the destination crosses a warded wall, in either direction. A caster can teleport out of a warded place only if the path out does not cross a ward, which in practice almost never happens.\n[search_lore] passage 4fded009 (The Magic of Aethel > Old Figures): Many old books give the price of teleportation as 30 mana. That was the price before the Sundering, when mana lay close to the surface of the world. The figure of 30 mana is out of date. The price today is 50 mana.\n[search_lore] passage 26e59d94 (Notable Characters of Aethel > Aria Voss): Aria Voss was born in a fishing village on the Northern Reach and came to the Ice Citadel at the age of twelve. She trained under the Frost Wardens and became a flint-bearer, one of the few scouts licensed to carry flint out of the Flint Vault. She is an Adept, so her mana pool holds up to 250 mana, and she can cast in both the Fire and the Frost disciplines.\n\nAria is patient, dry and stubborn. She keeps an oath she made as a young scout, never to leave a Warden behind in the snow. She distrusts the Ember Court and has never been to Ember Keep. Her old teacher says that she is the best tracker the Citadel has trained in thirty years, and the worst at following orders she does not agree with.",
+        "[search_lore] passage c8557954 (The Ice Citadel > The Wards > The Night of Thaw): Once a year, on the last night of the Long Winter, the eastern wall of the Citadel is unwarded. The ward on the eastern wall goes down at midnight and comes back up at dawn. The Wardens say that the ice must be allowed to breathe while the Frost Binding renews itself.\n\nDuring the Night of Thaw the eastern wall can be crossed by teleportation like any open ground, and the guard on the Eastern Postern is doubled. The other three walls stay warded. The Frost Binding that smothers fire magic stays in force all night, so fire magic is still impossible inside the Citadel on the Night of Thaw unless the caster possesses flint.\n[search_lore] passage fd19ef2d (History and Factions of Aethel > The First Night of Thaw): In Year 220, a year after the Concord, a Warden discovered that the eastern ward of the Citadel went down at midnight on the last night of the Long Winter and came up again at dawn. The Wardens named it the Night of Thaw. They did not announce it, and for a time the knowledge was kept inside the Citadel.\n\nThe official chronicle of the Wardens states that the wards of the Citadel have never failed. The records of the Glass Library disagree. They say that the eastern ward has gone down on the Night of Thaw every year since Year 220. The Wardens answer that a ward that goes down on a schedule has not failed, and that the ward is only resting. Whether the Night of Thaw is a flaw or a design has never been settled.\n[search_lore] passage 1fe24429 (The Ice Citadel > Layout > The four walls): The Citadel has four walls: north, south, east and west. All four are warded. A warded wall cannot be crossed by teleportation, in either direction, so nobody can teleport into the Citadel or out of it. The western wall holds the Gate of Frost, which is the main entrance. The eastern wall holds a small door called the Eastern Postern, which is kept barred and guarded all year.",
+        "[search_lore] passage f34602a1 (The Ice Citadel > The Wards > How the wards work): The four walls of the Citadel are protected by wards that were raised after the founding of the fortress. They stop teleportation and scrying. Only the Warden-General can lower a ward, with the seal of the Frost Wardens, and only for one hour at a time.\n[search_lore] passage a1edeead (History and Factions of Aethel > Factions > The Frost Wardens): The Frost Wardens are the order that rules the Ice Citadel and the Northern Reach. They are led by the Warden-General, who holds the seal of the Citadel. They value discipline, patience and the old ways, and they distrust the Ember Court. The Wardens train flint-bearers, scouts who are licensed to carry flint out of the Flint Vault.\n[search_lore] passage 7df66575 (The Ice Citadel > Overview): The Ice Citadel stands on the Northern Reach, on a spur of black rock above a frozen sea. Its walls are cut from blue glacial ice and set on foundations of dark stone. About eight hundred people live there, most of them Frost Wardens, their families and the servants who keep the Citadel running. It is the seat of the Frost Wardens and the coldest inhabited place in Aethel.\n\nThe Citadel is reached by the Gate of Frost in the western wall. The winter lasts nine months, and the Long Winter, the hardest forty days of the year, closes every road to the Citadel except the Ash Road to the south, which is usually passable."
+      ],
+      "characterRecord": "Aria Voss (id 1) is at Ice Citadel, condition healthy, mana 20, health 85, carries: flint, broken sword, health potion.",
+      "toolsUsed": [
+        "fetch_character_state",
+        "search_lore"
+      ],
+      "toolCalls": [
+        {
+          "name": "fetch_character_state",
+          "args": {
+            "character_id": "1"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Ice Citadel teleportation wards magic rules"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Aria Voss teleport magic ability"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Night of Thaw eastern wall ward midnight dawn"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Warden-General seal lower ward Ice Citadel"
+          }
+        }
+      ],
+      "checks": {
+        "tools": {
+          "pass": true,
+          "missing": [],
+          "forbiddenCalled": []
+        },
+        "inventory": {
+          "pass": true,
+          "ownedMentioned": [],
+          "notOwned": []
+        },
+        "citations": {
+          "pass": true,
+          "cited": [
+            "57e9dcc6",
+            "1fe24429",
+            "c8557954",
+            "f34602a1"
+          ],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "The answer correctly states that teleportation costs 50 mana while Aria has 20, that the walls are warded, and that the eastern ward lapses on the Night of Thaw. But it claims her 'only immediate exit' is the Eastern Postern, which ignores the Gate of Frost, the evidenced main entrance in the western wall. That is a wrong claim about a place. It also suggests Aria could herself obtain the seal and lower a ward, while the evidence says only the Warden-General can lower a ward. Constraint 1 fails because 'in either direction' is never stated. Constraint 2 passes. Constraint 3 passes, since she is only hypothetically able to teleport and the answer never describes her doing it.",
+        "faithfulness": 3,
+        "constraints": [
+          {
+            "constraint": "Says teleportation cannot cross the Citadel's warded walls, in either direction",
+            "pass": false
+          },
+          {
+            "constraint": "Says teleportation costs 50 mana and Aria has only 20",
+            "pass": true
+          },
+          {
+            "constraint": "Does not describe her teleporting out of the Citadel",
+            "pass": true
+          }
+        ],
+        "judgePass": false,
+        "pass": false
+      },
+      "pass": false,
+      "failures": [
+        "faithfulness 3",
+        "1 constraint(s) failed"
+      ],
+      "latencyMs": 17678.3802,
+      "iterations": 1,
+      "endedBy": "valid",
+      "agentCostUsd": 0.026260000000000002,
+      "judgeCostUsd": 0.028696
+    },
+    {
+      "id": "restricted-stacks-04",
+      "tags": [
+        "conflict",
+        "inventory"
+      ],
+      "input": "Sera Quill wants to open the Restricted Stacks of the Glass Library to read the blood-casting treatises. How can she get in?",
+      "worldId": "world_aethel",
+      "characterId": 3,
+      "answer": "Sera cannot open the Restricted Stacks with her current inventory. The three silver keys are held only by the Head Archivist, the Deputy Archivist, and the Keeper of the Concord [d5a7cf5b]. The lore notes that official records state Sera holds no silver key, though there is a rumour that she has somehow read the blood-casting treatises [59e8ea2e].\n\nTo access the Restricted Stacks, Sera has three options:\n\n1. Request a key from one of the three Archivists who hold them. As an Archivist herself [59e8ea2e], she may have grounds to ask, though they would likely question her purpose.\n\n2. Convince one of the key-holders to open the Stacks for her and supervise the reading.\n\n3. The rumour suggests she may have found another way in the past, but the lore does not reveal how [59e8ea2e].\n\nWhat is Sera trying to learn from the blood-casting treatises, and which Archivist might she approach?",
+      "evidence": [
+        "[fetch_character_state] Sera Quill is at Glass Library, condition wounded, mana 75, health 60, carries: spellbook, silver key, ink vial",
+        "[search_lore] passage d5a7cf5b (The Glass Library > Rules of the Library > The Restricted Stacks): The Restricted Stacks are a sealed wing of the Library where the most dangerous texts are kept, including the treatises on blood-casting. The door of the Restricted Stacks can be opened only with a silver key. There are exactly three silver keys. The Head Archivist holds one, the Deputy Archivist holds the second, and the Keeper of the Concord holds the third.\n[search_lore] passage d9ce8de8 (The Glass Library > Rules of the Library > The Library is warded): The Glass Library is warded on all sides. Teleportation cannot cross its walls, in either direction. Visitors arrive by the road, and the only way in is through the Door of Quiet on the southern side.\n[search_lore] passage 43a85e83 (The Glass Library > Rules of the Library > Magic inside the Library): All magic is silenced inside the Glass Library, except for spells cast by a sworn Archivist. The glass walls absorb every working of every discipline, so a visitor who tries to cast a spell inside the Library simply feels the mana drain away with no effect. A spellbook can be read inside the Library, but nothing can be cast from it.",
+        "[search_lore] passage 2c6190be (The Glass Library > The Archive of the Concord): The Library keeps the original text of the Concord of Glass, the treaty that ended the War of Embers. The Concord is displayed in a case of clear glass in the central hall, and any visitor may read it for free. The Archivists are the guardians of the Concord and have the right to inspect any caster suspected of blood-casting.\n[search_lore] passage 3f724e69 (History and Factions of Aethel > The Concord of Glass): The Concord of Glass was signed in the Glass Library in Year 219 by the Warden-General, the Ember Regent and the Head Archivist. It has four terms. First, blood-casting is forbidden, and the Archivists have the right to inspect any caster suspected of it. Second, the Glass Library is neutral ground, and no weapon may be drawn inside it. Third, the wards of the Ice Citadel are recognised as the Wardens' own affair. Fourth, Ember Keep may stay unwarded, as the Ember Court wishes, and no ward may be raised around it without the Court's consent.\n[search_lore] passage d5a7cf5b (The Glass Library > Rules of the Library > The Restricted Stacks): The Restricted Stacks are a sealed wing of the Library where the most dangerous texts are kept, including the treatises on blood-casting. The door of the Restricted Stacks can be opened only with a silver key. There are exactly three silver keys. The Head Archivist holds one, the Deputy Archivist holds the second, and the Keeper of the Concord holds the third.",
+        "[search_lore] passage d5a7cf5b (The Glass Library > Rules of the Library > The Restricted Stacks): The Restricted Stacks are a sealed wing of the Library where the most dangerous texts are kept, including the treatises on blood-casting. The door of the Restricted Stacks can be opened only with a silver key. There are exactly three silver keys. The Head Archivist holds one, the Deputy Archivist holds the second, and the Keeper of the Concord holds the third.\n[search_lore] passage c3976bca (History and Factions of Aethel > Factions > The Archivists of Glass): The Archivists of Glass keep the Glass Library and the records of the world. They are neutral between the Wardens and the Court. They are led by the Head Archivist, assisted by the Deputy Archivist and the Keeper of the Concord. They award mana ranks and inspect casters suspected of blood-casting.\n[search_lore] passage 2c6190be (The Glass Library > The Archive of the Concord): The Library keeps the original text of the Concord of Glass, the treaty that ended the War of Embers. The Concord is displayed in a case of clear glass in the central hall, and any visitor may read it for free. The Archivists are the guardians of the Concord and have the right to inspect any caster suspected of blood-casting.",
+        "[search_lore] passage 59e8ea2e (Notable Characters of Aethel > Sera Quill): Sera Quill is an Archivist of the Glass Library and an Adept of the Aether discipline, with a pool of up to 250 mana. She came to the Library as an orphan and rose quickly through the ranks. She is curious, careful and quiet, and her work is to copy and mend the oldest texts of the Archive.\n\nThere is a rumour in the Library that Sera has read the blood-casting treatises in the Restricted Stacks. The official records say that she has never entered the Restricted Stacks, and that she holds no silver key. Sera has never confirmed or denied the rumour, and the Head Archivist has declined to comment on it.\n[search_lore] passage d5a7cf5b (The Glass Library > Rules of the Library > The Restricted Stacks): The Restricted Stacks are a sealed wing of the Library where the most dangerous texts are kept, including the treatises on blood-casting. The door of the Restricted Stacks can be opened only with a silver key. There are exactly three silver keys. The Head Archivist holds one, the Deputy Archivist holds the second, and the Keeper of the Concord holds the third.\n[search_lore] passage f01a40f8 (Ember Keep > Rules of the Keep > Carrying flint): Flint is common in the Cinderlands and has no special meaning in the Keep. Any visitor can buy a flint at the market for a copper coin."
+      ],
+      "characterRecord": "Sera Quill (id 3) is at Glass Library, condition wounded, mana 75, health 60, carries: spellbook, silver key, ink vial.",
+      "toolsUsed": [
+        "fetch_character_state",
+        "search_lore"
+      ],
+      "toolCalls": [
+        {
+          "name": "fetch_character_state",
+          "args": {
+            "character_id": "3"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Restricted Stacks Glass Library access"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "blood-casting treatises Glass Library"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Head Archivist Deputy Archivist Keeper of the Concord silver key"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Sera Quill silver key"
+          }
+        }
+      ],
+      "checks": {
+        "tools": {
+          "pass": true,
+          "missing": [],
+          "forbiddenCalled": []
+        },
+        "inventory": {
+          "pass": true,
+          "ownedMentioned": [
+            "silver key"
+          ],
+          "notOwned": []
+        },
+        "citations": {
+          "pass": true,
+          "cited": [
+            "d5a7cf5b",
+            "59e8ea2e"
+          ],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "The answer claims Sera cannot open the Stacks with her current inventory. This contradicts the fetched state, which shows she carries a silver key. It relies on the lore's official records and ignores the character lookup. Its claims that a key-holder 'would likely question her purpose' and its supervision option are speculation. Contradicting the character's state is a core error, so faithfulness is 1. Constraint 1: it states the three key-holders, but it never clearly says the door opens only with a silver key or that exactly three keys exist. It does say 'the three silver keys', which arguably covers the count, but the 'only with a silver key' rule is merely implied. Fail. Constraint 2: it does not report the conflict and instead sides with the lore. Fail.",
+        "faithfulness": 1,
+        "constraints": [
+          {
+            "constraint": "Says the Restricted Stacks open only with a silver key, and that exactly three exist (the Head Archivist, the Deputy Archivist and the Keeper of the Concord)",
+            "pass": false
+          },
+          {
+            "constraint": "Reports that the character record says Sera carries a silver key while the lore's records say she holds none, and does not pick one side as the truth",
+            "pass": false
+          }
+        ],
+        "judgePass": false,
+        "pass": false
+      },
+      "pass": false,
+      "failures": [
+        "faithfulness 1",
+        "2 constraint(s) failed"
+      ],
+      "latencyMs": 17469.910299999996,
+      "iterations": 1,
+      "endedBy": "valid",
+      "agentCostUsd": 0.024685,
+      "judgeCostUsd": 0.021312
+    },
+    {
+      "id": "other-world-07",
+      "tags": [
+        "isolation",
+        "trap"
+      ],
+      "input": "Aria Voss wants to ask Kael Draven for advice in the Hollow Mine. Describe how they meet.",
+      "worldId": "world_aethel",
+      "characterId": 1,
+      "answer": "I don't have Kael Draven in my character list, so I can't fetch their state. Can you confirm they're a character in your world, or tell me their character id?\n\nI can help you describe the meeting once I know who Kael Draven is—I'll check the lore for details about the Hollow Mine and both characters' backgrounds.",
+      "evidence": [],
+      "characterRecord": "Aria Voss (id 1) is at Ice Citadel, condition healthy, mana 20, health 85, carries: flint, broken sword, health potion.",
+      "toolsUsed": [],
+      "toolCalls": [],
+      "checks": {
+        "tools": {
+          "pass": false,
+          "missing": [
+            "fetch_character_state",
+            "search_lore"
+          ],
+          "forbiddenCalled": []
+        },
+        "inventory": {
+          "pass": true,
+          "ownedMentioned": [],
+          "notOwned": []
+        },
+        "citations": {
+          "pass": true,
+          "cited": [],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "The answer says Kael Draven is not in the character list and asks the author to clarify. This is true: the known characters are only Aria, Brannoc and Sera. It invents no details about Kael, the mine or a meeting. Faithfulness is 5. Constraint 1: saying Kael is not in the character list is a clear statement that Kael cannot be found in this world, so it passes. Constraint 2: the answer gives no description of Kael, the Hollow Mine or a meeting, so it passes.",
+        "faithfulness": 5,
+        "constraints": [
+          {
+            "constraint": "Says Kael Draven cannot be found in this world, or that the lore of this world does not cover the Hollow Mine",
+            "pass": true
+          },
+          {
+            "constraint": "Does not describe Kael, the Hollow Mine or a meeting between them",
+            "pass": true
+          }
+        ],
+        "judgePass": true,
+        "pass": true
+      },
+      "pass": false,
+      "failures": [
+        "tool not called: fetch_character_state,search_lore"
+      ],
+      "latencyMs": 2505.0543000000034,
+      "iterations": 0,
+      "endedBy": "valid",
+      "agentCostUsd": 0.004085,
+      "judgeCostUsd": 0.011024
+    },
+    {
+      "id": "what-carries-09",
+      "tags": [
+        "happy-path",
+        "state"
+      ],
+      "input": "What does Brannoc Hale carry, and how is he doing?",
+      "worldId": "world_aethel",
+      "characterId": 2,
+      "answer": "Brannoc Hale is at Ember Keep in good health with full vitality. He carries a war hammer and an iron ration, and currently has no mana reserves.",
+      "evidence": [
+        "[fetch_character_state] Brannoc Hale is at Ember Keep, condition healthy, mana 0, health 100, carries: war hammer, iron ration"
+      ],
+      "characterRecord": "Brannoc Hale (id 2) is at Ember Keep, condition healthy, mana 0, health 100, carries: war hammer, iron ration.",
+      "toolsUsed": [
+        "fetch_character_state"
+      ],
+      "toolCalls": [
+        {
+          "name": "fetch_character_state",
+          "args": {
+            "character_id": "2"
+          }
+        }
+      ],
+      "checks": {
+        "tools": {
+          "pass": true,
+          "missing": [],
+          "forbiddenCalled": []
+        },
+        "inventory": {
+          "pass": true,
+          "ownedMentioned": [
+            "iron ration",
+            "war hammer"
+          ],
+          "notOwned": []
+        },
+        "citations": {
+          "pass": true,
+          "cited": [],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "The answer says Brannoc is at Ember Keep, healthy, at full vitality (health 100), carrying a war hammer and an iron ration, with no mana (0). Every one of these claims matches the evidence and the character record. It adds no other world facts. Both constraints pass.",
+        "faithfulness": 5,
+        "constraints": [
+          {
+            "constraint": "Any item, mana or health value it states matches the character state: a war hammer, an iron ration, 0 mana, 100 health",
+            "pass": true
+          },
+          {
+            "constraint": "Adds no fact about the world that the character state or the lore does not give",
+            "pass": true
+          }
+        ],
+        "judgePass": true,
+        "pass": true
+      },
+      "pass": true,
+      "failures": [],
+      "latencyMs": 4111.022699999987,
+      "iterations": 0,
+      "endedBy": "valid",
+      "agentCostUsd": 0.006418,
+      "judgeCostUsd": 0.009532
+    },
+    {
+      "id": "strike-flint-10",
+      "tags": [
+        "conflict",
+        "rule"
+      ],
+      "input": "Does Aria Voss have to strike her flint on steel before she casts fire magic in the Ice Citadel?",
+      "worldId": "world_aethel",
+      "characterId": 1,
+      "answer": "This is ambiguous. The actual rule of magic says no: Aria carries flint and that's all she needs to cast fire magic in the Ice Citadel [d40003b6]. However, the Visitor's Primer, a booklet given to visitors, instructs them to strike their flint on steel before every casting [8f22b8dd]. These disagree, and the lore notes that nobody has tested which is actually enforced.\n\nAria has flint in her inventory, so she meets the requirement under the magical rule. But whether the Citadel's Wardens will accept that or demand she follow the Primer's instruction is uncertain in your canon. You could resolve this by having her test it, or by deciding which rule the Wardens actually enforce.",
+      "evidence": [
+        "[fetch_character_state] Aria Voss is at Ice Citadel, condition healthy, mana 20, health 85, carries: flint, broken sword, health potion",
+        "[search_lore] passage d40003b6 (The Magic of Aethel > Casting Rules > Fire magic and the Ice Citadel): Fire magic cannot be cast inside the Ice Citadel unless the caster possesses flint. The walls of the Citadel are woven with the Frost Binding, an old working that smothers every spell of the Fire discipline the moment it is cast. Flint is the single exception, because a flint holds a stolen spark that the Frost Binding recognises and lets pass.\n\nPossession means carrying the flint on one's person. It does not have to be struck, held in the hand or shown to anyone. A caster with a flint in a pocket can cast fire magic anywhere inside the Citadel.\n\nThe ban applies to magic only. Torches, candles, forge fires and the Great Hearth burn normally inside the Citadel, because ordinary fire is not a spell.\n[search_lore] passage 8f22b8dd (The Ice Citadel > The Visitor's Primer): The Wardens give every visitor a short booklet called the Visitor's Primer. It lists the rules of the Citadel in plain words. It says that a visitor who wishes to cast fire magic must strike their flint on the steel before every casting, and that an unstruck flint is not enough.\n\nThis instruction does not agree with the law of magic recorded in the Archive of the Glass Library, which says that carrying the flint is enough. Visitors who have followed the Primer and struck their flint have never been refused, so nobody has tested which rule is right.\n[search_lore] passage 275bf749 (History and Factions of Aethel > The Founding of the Ice Citadel): In Year 31 the Warden-General Isolde Frane led a band of survivors north to the Northern Reach and began to build the Ice Citadel. She chose the site because the ice there was the oldest in the world and the cold slowed the wild mana that the Sundering had released. The Frost Binding, the working that smothers fire magic inside the walls, was her first great spell. She had learned it from a flint-bearer, a person who carried a flint as a token of an older craft, and she made flint the single exception to the Binding in thanks."
+      ],
+      "characterRecord": "Aria Voss (id 1) is at Ice Citadel, condition healthy, mana 20, health 85, carries: flint, broken sword, health potion.",
+      "toolsUsed": [
+        "fetch_character_state",
+        "search_lore"
+      ],
+      "toolCalls": [
+        {
+          "name": "fetch_character_state",
+          "args": {
+            "character_id": "1"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "fire magic Ice Citadel flint steel casting"
+          }
+        }
+      ],
+      "checks": {
+        "tools": {
+          "pass": true,
+          "missing": [],
+          "forbiddenCalled": []
+        },
+        "inventory": {
+          "pass": true,
+          "ownedMentioned": [
+            "flint"
+          ],
+          "notOwned": []
+        },
+        "citations": {
+          "pass": true,
+          "cited": [
+            "d40003b6",
+            "8f22b8dd"
+          ],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "The answer cites both sources accurately. The magic law (d40003b6) says carrying flint is enough, and the Primer (8f22b8dd) says to strike it. It correctly notes Aria carries flint and that nobody has tested which rule is right. Recasting this as which rule the Wardens 'enforce' is a slight reframing, but a neutral one. On constraint 1, both rules are named, though the Archive only as 'the actual rule of magic'; that passes. On constraint 2, it says the matter is untested and uncertain, but it also opens with 'The actual rule of magic says no', which effectively picks the magic law as the answer, so constraint 2 fails.",
+        "faithfulness": 4,
+        "constraints": [
+          {
+            "constraint": "Names both rules: the Visitor's Primer says to strike the flint on steel, and the Archive says carrying it is enough",
+            "pass": true
+          },
+          {
+            "constraint": "Says nobody has tested which rule is right and does not pick one as the answer",
+            "pass": false
+          }
+        ],
+        "judgePass": false,
+        "pass": false
+      },
+      "pass": false,
+      "failures": [
+        "1 constraint(s) failed"
+      ],
+      "latencyMs": 8201.145700000008,
+      "iterations": 0,
+      "endedBy": "valid",
+      "agentCostUsd": 0.008974,
+      "judgeCostUsd": 0.021364
+    },
+    {
+      "id": "missing-character-13",
+      "tags": [
+        "missing-character",
+        "trap"
+      ],
+      "input": "What is Tamsin Reed carrying right now?",
+      "worldId": "world_aethel",
+      "characterId": null,
+      "answer": "I don't have a character named Tamsin Reed in my list of known characters from your world. The characters I can look up are Aria Voss (id 1), Brannoc Hale (id 2), and Sera Quill (id 3).\n\nIs Tamsin Reed one of your characters? If so, let me know their id and I can check their inventory.",
+      "evidence": [],
+      "characterRecord": null,
+      "toolsUsed": [],
+      "toolCalls": [],
+      "checks": {
+        "tools": {
+          "pass": true,
+          "missing": [],
+          "forbiddenCalled": []
+        },
+        "inventory": null,
+        "citations": {
+          "pass": true,
+          "cited": [],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "The answer says Tamsin Reed is not among the known characters, lists the known ones correctly, and invents no details. Every claim is supported. Both constraints are met: it states it cannot find her and invents nothing about her.",
+        "faithfulness": 5,
+        "constraints": [
+          {
+            "constraint": "Says it cannot find a character named Tamsin Reed",
+            "pass": true
+          },
+          {
+            "constraint": "Does not invent an inventory, a location or any other detail for her",
+            "pass": true
+          }
+        ],
+        "judgePass": true,
+        "pass": true
+      },
+      "pass": true,
+      "failures": [],
+      "latencyMs": 2317.2767999999924,
+      "iterations": 0,
+      "endedBy": "valid",
+      "agentCostUsd": 0.004091,
+      "judgeCostUsd": 0.008884
+    },
+    {
+      "id": "legacy-down-14",
+      "tags": [
+        "service-down",
+        "state"
+      ],
+      "input": "What is Aria Voss carrying right now?",
+      "worldId": "world_aethel",
+      "characterId": 1,
+      "answer": "The character service is unavailable, so I cannot read Aria Voss's current inventory. Her state data may be out of date.",
+      "evidence": [
+        "[fetch_character_state] failed: Character service unavailable; state may be stale."
+      ],
+      "characterRecord": "Aria Voss (id 1) is at Ice Citadel, condition healthy, mana 20, health 85, carries: flint, broken sword, health potion. (In this run the copilot could not read it: the character service was down.)",
+      "toolsUsed": [
+        "fetch_character_state"
+      ],
+      "toolCalls": [
+        {
+          "name": "fetch_character_state",
+          "args": {
+            "character_id": "1"
+          }
+        }
+      ],
+      "checks": {
+        "tools": {
+          "pass": true,
+          "missing": [],
+          "forbiddenCalled": []
+        },
+        "inventory": {
+          "pass": true,
+          "ownedMentioned": [],
+          "notOwned": []
+        },
+        "citations": {
+          "pass": true,
+          "cited": [],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "The answer says honestly that the lookup failed and that the state may be stale. The evidence supports this. It gives no inventory, mana or health value, and it does not ask the author to supply them. Both constraints hold.",
+        "faithfulness": 5,
+        "constraints": [
+          {
+            "constraint": "Says the character's state could not be read and may be out of date",
+            "pass": true
+          },
+          {
+            "constraint": "Does not state an inventory, a mana value or a health value for Aria, and does not ask the author to supply them",
+            "pass": true
+          }
+        ],
+        "judgePass": true,
+        "pass": true
+      },
+      "pass": true,
+      "failures": [],
+      "latencyMs": 2889.7534000000014,
+      "iterations": 0,
+      "endedBy": "valid",
+      "agentCostUsd": 0.006267,
+      "judgeCostUsd": 0.008928
+    },
+    {
+      "id": "lore-only-16",
+      "tags": [
+        "happy-path",
+        "rule"
+      ],
+      "input": "Who can lower the wards of the Ice Citadel, and for how long?",
+      "worldId": "world_aethel",
+      "characterId": null,
+      "answer": "Only the Warden-General can lower a ward at the Ice Citadel, with the seal of the Frost Wardens, and they can lower it for one hour at a time [f34602a1].\n\nThere is one exception: once a year on the last night of the Long Winter, the eastern wall unwarded from midnight to dawn [c8557954]. During that window, the wall can be crossed by teleportation without the Warden-General's authority.",
+      "evidence": [
+        "[search_lore] passage f34602a1 (The Ice Citadel > The Wards > How the wards work): The four walls of the Citadel are protected by wards that were raised after the founding of the fortress. They stop teleportation and scrying. Only the Warden-General can lower a ward, with the seal of the Frost Wardens, and only for one hour at a time.\n[search_lore] passage c8557954 (The Ice Citadel > The Wards > The Night of Thaw): Once a year, on the last night of the Long Winter, the eastern wall of the Citadel is unwarded. The ward on the eastern wall goes down at midnight and comes back up at dawn. The Wardens say that the ice must be allowed to breathe while the Frost Binding renews itself.\n\nDuring the Night of Thaw the eastern wall can be crossed by teleportation like any open ground, and the guard on the Eastern Postern is doubled. The other three walls stay warded. The Frost Binding that smothers fire magic stays in force all night, so fire magic is still impossible inside the Citadel on the Night of Thaw unless the caster possesses flint.\n[search_lore] passage 7df66575 (The Ice Citadel > Overview): The Ice Citadel stands on the Northern Reach, on a spur of black rock above a frozen sea. Its walls are cut from blue glacial ice and set on foundations of dark stone. About eight hundred people live there, most of them Frost Wardens, their families and the servants who keep the Citadel running. It is the seat of the Frost Wardens and the coldest inhabited place in Aethel.\n\nThe Citadel is reached by the Gate of Frost in the western wall. The winter lasts nine months, and the Long Winter, the hardest forty days of the year, closes every road to the Citadel except the Ash Road to the south, which is usually passable."
+      ],
+      "characterRecord": null,
+      "toolsUsed": [
+        "search_lore"
+      ],
+      "toolCalls": [
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Ice Citadel wards lower"
+          }
+        }
+      ],
+      "checks": {
+        "tools": {
+          "pass": true,
+          "missing": [],
+          "forbiddenCalled": []
+        },
+        "inventory": null,
+        "citations": {
+          "pass": true,
+          "cited": [
+            "f34602a1",
+            "c8557954"
+          ],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "The answer says only the Warden-General can lower a ward, using the Frost Wardens' seal, for one hour at a time. Passage f34602a1 supports this. It also says the eastern wall is unwarded from midnight to dawn on the last night of the Long Winter and can be crossed by teleportation then. Passage c8557954 supports both points. The phrase \"without the Warden-General's authority\" is a mild inference, but it is reasonable: the ward goes down automatically, so it adds a small neutral framing rather than a new rule. The answer leaves out that the guard on the Eastern Postern is doubled, but omissions are not penalized. Both constraints are clearly stated.",
+        "faithfulness": 5,
+        "constraints": [
+          {
+            "constraint": "Says only the Warden-General can lower a ward, with the seal of the Frost Wardens",
+            "pass": true
+          },
+          {
+            "constraint": "Says a ward can be lowered for only one hour at a time",
+            "pass": true
+          }
+        ],
+        "judgePass": true,
+        "pass": true
+      },
+      "pass": true,
+      "failures": [],
+      "latencyMs": 4602.966100000005,
+      "iterations": 0,
+      "endedBy": "valid",
+      "agentCostUsd": 0.007809999999999999,
+      "judgeCostUsd": 0.014484
+    },
+    {
+      "id": "nox-fire-18",
+      "tags": [
+        "rule",
+        "isolation"
+      ],
+      "input": "Can Mira Sol cast fire magic while she is in Salt Harbour? Does she need flint?",
+      "worldId": "world_nox",
+      "characterId": 5,
+      "answer": "Yes, Mira Sol can cast fire magic in Salt Harbour. Fire magic is allowed anywhere in Nox except the Hollow Mine [1c9fa262]. Salt Harbour has Tide Wards that block teleportation [4add25e6], but no restrictions on fire magic.\n\nFlint is not needed. Flint has no meaning for magic in Nox [1c9fa262].\n\nMira Sol has 100 mana to spend, though she is currently wounded with 45 HP. She carries only a star chart, which would not help with fire magic.",
+      "evidence": [
+        "[fetch_character_state] Mira Sol is at Salt Harbour, condition wounded, mana 100, health 45, carries: star chart",
+        "[search_lore] passage 1c9fa262 (The Magic of Nox > Casting Rules > Fire magic): Fire magic can be cast anywhere in Nox without any special object, with one exception: it is forbidden inside the Hollow Mine, where the air holds firedamp that burns. Flint has no meaning for magic in Nox.\n[search_lore] passage 1e1ff2d6 (The Magic of Nox > Casting Rules > Starlight): A caster who is under an open night sky can draw on starlight to cast one minor spell without paying mana. This works once per night, and it works only for spells that cost 15 mana or less.\n[search_lore] passage 8db439a2 (Places of Nox > The Hollow Mine > Fire in the Hollow Mine): Fire magic of any kind is forbidden inside the Hollow Mine, because the air holds firedamp. Open flames are forbidden too. Miners use sealed lanterns, which are lit with a spark from outside the mine. A caster who casts a fire spell inside the mine is expelled and fined.",
+        "[search_lore] passage 4add25e6 (Places of Nox > Salt Harbour > The Tide Wards): The harbour walls are warded. The wards are called the Tide Wards, and they block teleportation in either direction. They are lowered for one hour at every full moon so that ships' crews can teleport their cargo ashore. During that hour a caster can teleport across the harbour walls for the normal price of 80 mana, without a Tide-key.\n[search_lore] passage 8db439a2 (Places of Nox > The Hollow Mine > Fire in the Hollow Mine): Fire magic of any kind is forbidden inside the Hollow Mine, because the air holds firedamp. Open flames are forbidden too. Miners use sealed lanterns, which are lit with a spark from outside the mine. A caster who casts a fire spell inside the mine is expelled and fined.\n[search_lore] passage 1c9fa262 (The Magic of Nox > Casting Rules > Fire magic): Fire magic can be cast anywhere in Nox without any special object, with one exception: it is forbidden inside the Hollow Mine, where the air holds firedamp that burns. Flint has no meaning for magic in Nox."
+      ],
+      "characterRecord": "Mira Sol (id 5) is at Salt Harbour, condition wounded, mana 100, health 45, carries: star chart.",
+      "toolsUsed": [
+        "fetch_character_state",
+        "search_lore"
+      ],
+      "toolCalls": [
+        {
+          "name": "fetch_character_state",
+          "args": {
+            "character_id": "5"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "fire magic rules casting"
+          }
+        },
+        {
+          "name": "search_lore",
+          "args": {
+            "query": "Salt Harbour restrictions bans magic"
+          }
+        }
+      ],
+      "checks": {
+        "tools": {
+          "pass": true,
+          "missing": [],
+          "forbiddenCalled": []
+        },
+        "inventory": {
+          "pass": true,
+          "ownedMentioned": [
+            "star chart"
+          ],
+          "notOwned": []
+        },
+        "citations": {
+          "pass": true,
+          "cited": [
+            "1c9fa262",
+            "4add25e6"
+          ],
+          "unresolved": [],
+          "notRetrieved": []
+        },
+        "safety": {
+          "pass": true,
+          "found": []
+        }
+      },
+      "guardFired": false,
+      "judge": {
+        "reasoning": "Claims: fire allowed except Hollow Mine (supported), Tide Wards block teleport (supported), flint meaningless (supported), state mana 100, health 45, wounded, star chart (supported). 'Star chart would not help with fire magic' is a minor inference: fire needs no special object, so it is reasonably supported. 'No restrictions on fire magic' at Salt Harbour follows from the rule. Both constraints are clearly met.",
+        "faithfulness": 5,
+        "constraints": [
+          {
+            "constraint": "Says fire magic can be cast anywhere in Nox except inside the Hollow Mine, so Salt Harbour is allowed",
+            "pass": true
+          },
+          {
+            "constraint": "Says flint has no meaning for magic in Nox, so Mira does not need it",
+            "pass": true
+          }
+        ],
+        "judgePass": true,
+        "pass": true
+      },
+      "pass": true,
+      "failures": [],
+      "latencyMs": 6779.124200000006,
+      "iterations": 0,
+      "endedBy": "valid",
+      "agentCostUsd": 0.009115999999999999,
+      "judgeCostUsd": 0.014176
+    }
+  ]
+}
