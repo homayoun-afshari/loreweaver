@@ -181,6 +181,7 @@ On Vercel, import the GitHub repository and set the project's **Root Directory**
 | `pnpm format`                   | Format the whole repo with Prettier                                         |
 | `pnpm ingest`                   | Chunk and embed the lore into Postgres (idempotent; `--dry-run` to preview) |
 | `pnpm eval`                     | Run the agent on the end-to-end eval set and grade every answer             |
+| `pnpm eval:labels`              | Compare the eval judge with hand labels (writes the sheet, then scores it)  |
 | `pnpm eval:retrieval`           | Score the lore search on its own against a labeled set of questions         |
 | `pnpm measure:retrieval`        | Time the lore search: embedding the question, and the vector search         |
 | `pnpm measure:search-tool`      | Time the chat's `search_lore` tool on any running app, deployed or local    |

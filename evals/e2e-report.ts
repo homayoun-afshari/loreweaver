@@ -22,9 +22,15 @@ export type CaseResult = {
   characterId: number | null;
   /** The answer the author would get, or "" when the run failed. */
   answer: string;
+  /** What the tools returned in this run, one line or block per result, as the judge saw it. */
+  evidence: string[];
+  /** The true state of the character, as the judge saw it, or null when no character is named. */
+  characterRecord: string | null;
   /** Set when the agent run threw. */
   error?: string;
   toolsUsed: string[];
+  /** Every tool call of the run in order, with the arguments the model chose (the search queries). */
+  toolCalls: { name: string; args: unknown }[];
   checks?: CaseChecks;
   judge?: JudgeGrade;
   /** Set when the judge could not give a usable grade. */

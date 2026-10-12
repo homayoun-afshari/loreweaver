@@ -7,7 +7,7 @@ import { charactersOf } from "@/lib/worlds";
  * compared like any other change. To change it, copy the latest version to a new file, edit the
  * copy and change this constant. Old versions stay in the repo.
  */
-export const PROMPT_VERSION = "agent.v3";
+export const PROMPT_VERSION = "agent.v5";
 
 let cachedTemplate: string | undefined;
 

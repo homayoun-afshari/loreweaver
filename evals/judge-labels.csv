@@ -1,0 +1,11 @@
+report,case_id,human_pass,human_faithfulness,notes
+e2e-20261012T203518-before.json,fire-escape-01,fail,4,Fails constraint 1: does not explicitly say fire magic is normally smothered or that flint is the exception.
+e2e-20261012T203518-before.json,heal-self-12,pass,5,
+e2e-20261012T203518-before.json,lore-only-16,pass,5,
+e2e-20261012T203518-before.json,missing-lore-17,pass,5,
+e2e-20261012T203518-before.json,no-flint-02,fail,5,Fails constraint 1 (silent on him being mana-blind) and constraint 3 (suggests burning door with a torch).
+e2e-20261012T203518-before.json,old-price-08,fail,5,"Fails constraint 3: fails to state that the Citadel's warded walls stop teleportation, as it lacked the lore."
+e2e-20261012T203518-before.json,restricted-stacks-04,pass,5,
+e2e-20261012T203518-before.json,strike-flint-10,fail,5,Fails constraint 1: mentions magic rules but does not name the Archive.
+e2e-20261012T203518-before.json,teleport-ward-03,fail,5,"Fails constraint 1: fails to state that the Citadel has warded walls that stop teleportation, as it lacked the lore."
+e2e-20261012T203518-before.json,thaw-teleport-11,fail,5,"Fails constraint 2: does not state that teleportation costs 50 mana or that she cannot teleport, as it lacked the lore."

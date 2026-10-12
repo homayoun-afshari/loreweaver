@@ -32,7 +32,10 @@ import { eq } from "drizzle-orm";
 import { createStandaloneDb } from "../apps/web/src/db/standalone";
 import { loreChunks } from "../apps/web/src/db/schema";
 import { agentRunConfig } from "../apps/web/src/lib/agent";
-import { REFLECTION_PROMPT_VERSION } from "../apps/web/src/lib/agent/reflection";
+import {
+  describeToolResult,
+  REFLECTION_PROMPT_VERSION,
+} from "../apps/web/src/lib/agent/reflection";
 import { textOf } from "../apps/web/src/lib/agent/messages";
 import { summarizeRun, type RunEvent } from "../apps/web/src/lib/agent-metrics";
 import { createRuntimeGraph } from "../apps/web/src/lib/ai/agent-runtime";
@@ -167,6 +170,7 @@ async function main() {
     const character = c.character_id === null ? null : (characters.get(c.character_id) ?? null);
     const events: RunEvent[] = [];
     const toolMessages: BaseMessage[] = [];
+    const toolCalls: CaseResult["toolCalls"] = [];
     let answer = "";
     const start = performance.now();
     let error: string | undefined;
@@ -186,7 +190,13 @@ async function main() {
         for (const [node, update] of Object.entries(chunk as Record<string, RunEvent["update"]>)) {
           events.push({ node, atMs: performance.now() - start, update });
           if (typeof update.draftAnswer === "string") answer = update.draftAnswer;
-          for (const m of update.messages ?? []) if (m.type === "tool") toolMessages.push(m);
+          for (const m of update.messages ?? []) {
+            if (m.type === "tool") toolMessages.push(m);
+            if (m.type === "ai") {
+              const calls = (m as { tool_calls?: { name: string; args: unknown }[] }).tool_calls;
+              for (const call of calls ?? []) toolCalls.push({ name: call.name, args: call.args });
+            }
+          }
         }
       }
     } catch (e) {
@@ -267,8 +277,11 @@ async function main() {
       worldId: c.world_id,
       characterId: c.character_id,
       answer,
+      evidence: toolMessages.map((m) => describeToolResult(m)),
+      characterRecord: character ? describeRecord(character, c.legacy) : null,
       error,
       toolsUsed: record.toolsUsed,
+      toolCalls,
       checks,
       judge: grade,
       judgeError,

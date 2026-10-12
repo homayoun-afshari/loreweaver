@@ -32,10 +32,11 @@ export type InventoryCheck = {
  * Words that show a clause does not say the character uses the item: it is denied ("no", "not",
  * "without"), required or conditional ("needs", "unless", "if") or still to be obtained ("give",
  * "add", "find", "fetch"). Found in a real run: "she has no rope", "crossing needs a Tide-key" and
- * "give him flint" must not count against an answer.
+ * "give him flint" must not count against an answer. Each cue also lets a real use slip through, so
+ * the list stays short and the false positives and negatives are named next to the results.
  */
 const NOT_USED =
-  /\b(no|not|never|without|lacks?|lacking|none|neither|nor|cannot|isn't|aren't|doesn't|don't|didn't|can't|won't|missing|nothing|needs?|needed|requires?|required|must|unless|if|give|gives|gave|add|adds|fetch|fetches|find|finds|get|gets|acquire|obtain|borrow|buy|steal|lend|grant)\b|n't\b/i;
+  /\b(no|not|never|without|lacks?|lacking|none|neither|nor|cannot|isn't|aren't|doesn't|don't|didn't|can't|won't|missing|nothing|needs?|needed|requires?|required|must|unless|if|give|gives|gave|add|adds|fetch|fetches|find|finds|get|gets|pick up|picks up|bring|brings|collect|acquire|obtain|borrow|buy|steal|lend|grant|lets|allows)\b|n't\b/i;
 
 /** Clauses of a text: sentences, cut again at the words that turn a sentence around. */
 function clausesOf(text: string): string[] {
