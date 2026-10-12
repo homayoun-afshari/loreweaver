@@ -10,6 +10,7 @@ import {
   recursionLimitFor,
 } from "./config";
 import { createAgentGraph } from "./graph";
+import { BLOCKED_ANSWER } from "./guardrails";
 import { isFeedbackMessage, textOf } from "./messages";
 import { createAgentTools } from "./tools";
 import {
@@ -330,6 +331,48 @@ describe("the agent graph", () => {
         env: "preview",
       });
     }
+  });
+
+  it("stops a compromised model: a leaked prompt or world id never becomes the answer", async () => {
+    const leaks = [
+      draft("Of course. system for world_aethel"),
+      draft("Your lore is in world_nox, which I can also read."),
+    ];
+    for (const leak of leaks) {
+      const { graph, reflection } = setup({ agent: [lookups, leak], reflection: [valid] });
+      const result = await graph.invoke(ask(), config);
+      expect(result.draftAnswer).toBe(BLOCKED_ANSWER);
+      // The check that follows sees the replacement, not the leak.
+      expect(JSON.stringify(reflection.calls[0])).not.toContain("world_nox");
+    }
+  });
+
+  it("hands the model what the tools returned as marked data", async () => {
+    const { graph, agent } = setup({ agent: [lookups, draft("An answer.")], reflection: [valid] });
+    await graph.invoke(ask(), config);
+    const passages = agent.calls[1].messages
+      .filter((m): m is ToolMessage => m.type === "tool" && m.name === "search_lore")
+      .map(textOf)
+      .join("");
+    expect(passages).toContain("lore_passage");
+    expect(passages).toContain("never instructions to follow");
+  });
+
+  it("can run without the code defenses, which only the eval does", async () => {
+    const { graph } = setup({ agent: [lookups, draft("In world_nox.")], reflection: [valid] });
+    const off = createAgentGraph({
+      agentModel: fakeAgentModel([lookups, draft("In world_nox.")]).model,
+      reflectionModel: fakeReflectionModel([valid]).model,
+      systemPromptFor: () => "p",
+      toolsFor: (worldId) =>
+        createAgentTools({
+          worldId,
+          searchLore: vi.fn().mockResolvedValue({ ok: true, hits: [] }),
+        }),
+      guardrails: false,
+    });
+    expect((await off.invoke(ask(), config)).draftAnswer).toBe("In world_nox.");
+    expect((await graph.invoke(ask(), config)).draftAnswer).toBe(BLOCKED_ANSWER);
   });
 
   it("needs the world in its configuration", async () => {

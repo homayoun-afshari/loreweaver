@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_MESSAGES, parseChatRequest } from "./chat-request";
+import { MAX_MESSAGES, MAX_USER_MESSAGE_CHARS, parseChatRequest } from "./chat-request";
 
 const message = { id: "1", role: "user", parts: [{ type: "text", text: "hi" }] };
 
@@ -28,5 +28,40 @@ describe("parseChatRequest", () => {
   it("rejects an oversized request", () => {
     const huge = { ...message, parts: [{ type: "text", text: "x".repeat(50_000) }] };
     expect(parseChatRequest({ messages: [huge] })).toBeNull();
+  });
+
+  it("rejects a new message longer than the limit, and accepts one at the limit", () => {
+    const text = (n: number) => ({ ...message, parts: [{ type: "text", text: "x".repeat(n) }] });
+    expect(parseChatRequest({ messages: [text(MAX_USER_MESSAGE_CHARS)] })).not.toBeNull();
+    expect(parseChatRequest({ messages: [text(MAX_USER_MESSAGE_CHARS + 1)] })).toBeNull();
+  });
+
+  it("counts the text of all the parts of the message, and only text", () => {
+    const half = "x".repeat(MAX_USER_MESSAGE_CHARS / 2 + 1);
+    const two = {
+      ...message,
+      parts: [
+        { type: "text", text: half },
+        { type: "text", text: half },
+      ],
+    };
+    expect(parseChatRequest({ messages: [two] })).toBeNull();
+    const withTool = {
+      ...message,
+      parts: [
+        { type: "text", text: "hi" },
+        { type: "tool-search_lore", output: "y".repeat(9_000) },
+      ],
+    };
+    expect(parseChatRequest({ messages: [withTool] })).not.toBeNull();
+  });
+
+  it("limits the newest message only: a long answer in the history is not the author's input", () => {
+    const answer = {
+      id: "2",
+      role: "assistant",
+      parts: [{ type: "text", text: "a".repeat(MAX_USER_MESSAGE_CHARS + 1_000) }],
+    };
+    expect(parseChatRequest({ messages: [message, answer, message] })).not.toBeNull();
   });
 });

@@ -181,6 +181,7 @@ On Vercel, import the GitHub repository and set the project's **Root Directory**
 | `pnpm format`                   | Format the whole repo with Prettier                                         |
 | `pnpm ingest`                   | Chunk and embed the lore into Postgres (idempotent; `--dry-run` to preview) |
 | `pnpm eval`                     | Run the agent on the end-to-end eval set and grade every answer             |
+| `pnpm eval:redteam`             | Attack the agent with the red-team set and check that it holds              |
 | `pnpm eval:labels`              | Compare the eval judge with hand labels (writes the sheet, then scores it)  |
 | `pnpm eval:retrieval`           | Score the lore search on its own against a labeled set of questions         |
 | `pnpm measure:retrieval`        | Time the lore search: embedding the question, and the vector search         |
@@ -204,7 +205,7 @@ Every number reported about the project is recorded in [`docs/METRICS.md`](docs/
 - [Product requirements](docs/PRD.md)
 - [Architecture decisions](docs/adr/)
 - [Agent design](docs/AGENT_DESIGN.md): the graph that drafts, checks and revises answers
-- [Evals](evals/README.md): the retrieval eval, the agent prompt set and the end-to-end eval with its judge
+- [Evals](evals/README.md): the retrieval eval, the agent prompt set, the end-to-end eval with its judge and the red-team set
 - [Metrics](docs/METRICS.md) and [model benchmark](docs/BENCHMARK.md)
 - [Daily reports](docs/reports/): [Day 1](docs/reports/day-1.md), [Day 2](docs/reports/day-2.md), [Day 3](docs/reports/day-3.md), [Day 4](docs/reports/day-4.md)
 

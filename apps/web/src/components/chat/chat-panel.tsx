@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { MAX_USER_MESSAGE_CHARS } from "@/lib/ai/input-limits";
 import type { ChatMessage } from "@/lib/ai/chat-message";
 import { parseLimitError } from "@/lib/usage/limit-error";
 import { canRegenerate } from "./chat-controls";
@@ -250,6 +251,7 @@ export function ChatPanel() {
           }}
           placeholder="Ask about your world…"
           aria-label="Your message"
+          maxLength={MAX_USER_MESSAGE_CHARS}
           rows={2}
         />
         <p className="text-xs text-muted-foreground">
