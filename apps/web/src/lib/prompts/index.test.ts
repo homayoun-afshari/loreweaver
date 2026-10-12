@@ -3,7 +3,7 @@ import { getSystemPrompt, PROMPT_VERSION } from "./index";
 
 describe("system prompt", () => {
   it("loads the versioned prompt file", () => {
-    expect(PROMPT_VERSION).toBe("agent.v5");
+    expect(PROMPT_VERSION).toBe("agent.v6");
     expect(getSystemPrompt("world_aethel")).toMatch(/^You are Loreweaver/);
   });
 
@@ -34,6 +34,12 @@ describe("system prompt", () => {
     expect(prompt).toMatch(/both searches in the same turn/i);
     expect(prompt).toMatch(/state the ban itself, then its exception/i);
     expect(prompt).toMatch(/say that it is a change/i);
+  });
+
+  it("says that a world, place or character that is not in the lore is not there, and stops", () => {
+    const prompt = getSystemPrompt("world_aethel");
+    expect(prompt).toMatch(/not in this lore and stop/i);
+    expect(prompt).toMatch(/do not answer about a different one/i);
   });
 
   it("keeps the rules the product depends on", () => {

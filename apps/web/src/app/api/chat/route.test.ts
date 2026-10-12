@@ -196,7 +196,7 @@ describe("POST /api/chat", () => {
       output: { ok: true, character: { name: "Aria Voss" } },
     });
     expect(chunks.at(-1)).toMatchObject({
-      messageMetadata: { modelId: "claude-haiku-4-5", promptVersion: "agent.v5" },
+      messageMetadata: { modelId: "claude-haiku-4-5", promptVersion: "agent.v6" },
     });
   });
 
@@ -270,7 +270,7 @@ describe("the consumption limits", () => {
       visitorId: visitorA,
       worldId: "world_aethel",
       modelId: "claude-haiku-4-5",
-      promptVersion: "agent.v5",
+      promptVersion: "agent.v6",
     });
     // The fake check reports 100 input and 10 output tokens.
     expect(usageRows[0].finished).toMatchObject({
@@ -304,7 +304,7 @@ describe("the consumption limits", () => {
       visitorId: visitorA,
       worldId: "world_aethel",
       modelId: "claude-sonnet-5-5",
-      promptVersion: "agent.v5",
+      promptVersion: "agent.v6",
       createdAt: new Date(Date.now() - 1000),
       finished: finishedWith(1000),
     });
