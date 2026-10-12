@@ -1,0 +1,11 @@
+report,case_id,human_pass,human_faithfulness,notes
+e2e-20261012T203518-before.json,fire-escape-01,,,
+e2e-20261012T203518-before.json,heal-self-12,,,
+e2e-20261012T203518-before.json,lore-only-16,,,
+e2e-20261012T203518-before.json,missing-lore-17,,,
+e2e-20261012T203518-before.json,no-flint-02,,,
+e2e-20261012T203518-before.json,old-price-08,,,
+e2e-20261012T203518-before.json,restricted-stacks-04,,,
+e2e-20261012T203518-before.json,strike-flint-10,,,
+e2e-20261012T203518-before.json,teleport-ward-03,,,
+e2e-20261012T203518-before.json,thaw-teleport-11,,,

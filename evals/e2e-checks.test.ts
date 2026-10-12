@@ -66,6 +66,8 @@ describe("checkInventory", () => {
     expect(look("Fire is smothered unless the caster has flint.")).toEqual([]);
     expect(look("Give him a flint and some mana, then let him cast.")).toEqual([]);
     expect(look("You add a rope to his inventory.")).toEqual([]);
+    expect(look("Have him pick up a rope first.")).toEqual([]);
+    expect(look("Only a Tide-key lets her cross.")).toEqual([]);
     expect(look("He grabs the rope and climbs.")).toEqual(["rope"]);
   });
 

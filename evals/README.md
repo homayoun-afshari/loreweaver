@@ -123,6 +123,9 @@ It needs the same local services as the chat (`docker compose up -d`, and the lo
 | `e2e-judge.ts`      | The judge: rubric, reply schema, consistency rule and cost                                                                   |
 | `e2e-report.ts`     | Decides whether a case passes, and sums the results                                                                          |
 | `judge.ts`          | The command: runs the cases, grades them and writes the report                                                               |
+| `labels.ts`         | The command that checks the judge against a person's labels                                                                  |
+| `e2e-labels.ts`     | Picks the answers to label, reads the labels and computes the agreement                                                      |
+| `judge-labels.csv`  | The labels: pass or fail and a faithfulness score for about ten answers                                                      |
 | `reports/`          | One JSON report per run: the setup, every answer, every grade and the summary                                                |
 | `*.test.ts`         | Unit tests for all of the above (no model is called). One checks the cases against the real world list and the agent prompts |
 
@@ -168,6 +171,17 @@ A case passes when every code check holds **and** the judge passes it.
 | 3            | One unsupported or wrong claim that could matter to the story                                 |
 | 2            | Several unsupported claims, or one that contradicts the evidence                              |
 | 1            | The core is invented, or it contradicts the rules or the character's state                    |
+
+## Checking the judge
+
+A judge is only as good as its agreement with a person. `pnpm eval:labels` checks it without calling a model:
+
+```sh
+pnpm eval:labels --report evals/reports/e2e-<run>.json                # writes the sheet to label
+pnpm eval:labels --report evals/reports/e2e-<run>.json --agreement    # compares the labels with the judge
+```
+
+The first form picks about ten answers from a report (half the judge failed, half it passed, spread evenly, so the same report always gives the same sample) and writes a reading copy next to the report and an empty `judge-labels.csv`. The reading copy shows the question, the evidence the agent had, the true character record, the answer and the constraints, but **not the judge's grades**. Write `pass` or `fail` and a faithfulness score from 1 to 5 for each row, then run the second form. It prints how often the judge gives the same verdict and the same score, which way it errs, and every case where they differ. A report written before the sheet existed has no evidence and cannot be used.
 
 ## Limits to keep in mind
 

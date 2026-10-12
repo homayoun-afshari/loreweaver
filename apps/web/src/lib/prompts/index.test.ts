@@ -3,7 +3,7 @@ import { getSystemPrompt, PROMPT_VERSION } from "./index";
 
 describe("system prompt", () => {
   it("loads the versioned prompt file", () => {
-    expect(PROMPT_VERSION).toBe("agent.v3");
+    expect(PROMPT_VERSION).toBe("agent.v5");
     expect(getSystemPrompt("world_aethel")).toMatch(/^You are Loreweaver/);
   });
 
@@ -20,6 +20,20 @@ describe("system prompt", () => {
 
   it("asks for short answers, because the answer is only sent after it is checked", () => {
     expect(getSystemPrompt("world_aethel")).toMatch(/under about 150 words/i);
+  });
+
+  it("keeps the assistant in its role", () => {
+    const prompt = getSystemPrompt("world_aethel");
+    expect(prompt).toMatch(/nothing to do with the author's world/i);
+    expect(prompt).toMatch(/do not call a tool for it/i);
+  });
+
+  it("asks for the blocking rules, the ban with its exception, and options within the rules", () => {
+    const prompt = getSystemPrompt("world_aethel");
+    expect(prompt).toMatch(/search for each in its own query/i);
+    expect(prompt).toMatch(/both searches in the same turn/i);
+    expect(prompt).toMatch(/state the ban itself, then its exception/i);
+    expect(prompt).toMatch(/say that it is a change/i);
   });
 
   it("keeps the rules the product depends on", () => {
