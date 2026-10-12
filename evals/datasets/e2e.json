@@ -1,0 +1,261 @@
+[
+  {
+    "id": "fire-escape-01",
+    "input": "Aria Voss is trapped in the Ice Citadel. Suggest an escape that uses fire magic.",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says fire magic is normally smothered inside the Ice Citadel and that Aria's flint is the exception that lets her cast",
+      "Does not suggest a spell that costs more mana than the 20 Aria has"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tags": ["happy-path", "rule", "inventory"],
+    "note": "Fire magic is banned in the Ice Citadel, but Aria carries flint, the one exception. The answer should use the exception and say so."
+  },
+  {
+    "id": "no-flint-02",
+    "input": "Brannoc Hale is trapped in the Ice Citadel. Have him burn through the door with a fire spell.",
+    "character_id": 2,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says Brannoc cannot cast: he is mana-blind and has 0 mana",
+      "Says fire magic is also smothered in the Ice Citadel for anyone without flint, and Brannoc carries none",
+      "Does not have him burn the door; anything else it suggests uses only a war hammer or an iron ration"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tags": ["rule", "inventory", "trap"],
+    "note": "Three reasons it cannot work: fire magic is banned in the Citadel without flint, he carries no flint, and he is mana-blind with 0 mana. A war hammer is the item he really has."
+  },
+  {
+    "id": "teleport-ward-03",
+    "input": "Aria Voss needs to leave the Ice Citadel at once. Have her teleport out and describe how.",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says teleportation cannot cross the Citadel's warded walls, in either direction",
+      "Says teleportation costs 50 mana and Aria has only 20",
+      "Does not describe her teleporting out of the Citadel"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tags": ["rule", "numeric", "trap"],
+    "note": "Teleportation costs 50 mana and cannot cross a warded wall in either direction. She has 20 mana, and all four walls are warded."
+  },
+  {
+    "id": "restricted-stacks-04",
+    "input": "Sera Quill wants to open the Restricted Stacks of the Glass Library to read the blood-casting treatises. How can she get in?",
+    "character_id": 3,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says the Restricted Stacks open only with a silver key, and that exactly three exist (the Head Archivist, the Deputy Archivist and the Keeper of the Concord)",
+      "Reports that the character record says Sera carries a silver key while the lore's records say she holds none, and does not pick one side as the truth"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tags": ["conflict", "inventory"],
+    "note": "The stacks open only with a silver key, and the CMS says she carries one. The lore says three people hold the keys and her records say she holds none. The answer should report the mismatch instead of picking a side."
+  },
+  {
+    "id": "mine-gear-05",
+    "input": "Kael Draven wants to go down to the lower galleries of the Hollow Mine. Have him light his lantern inside the mine and climb down with his rope and pickaxe.",
+    "character_id": 4,
+    "world_id": "world_nox",
+    "expected_constraints": [
+      "Says open flames and fire magic are forbidden inside the Hollow Mine, so the lantern must be sealed and lit from outside",
+      "Says Kael carries a lantern and a cracked mask, and no rope or pickaxe",
+      "Does not describe him climbing down with a rope or a pickaxe as if he had them"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempting_items": ["rope", "pickaxe"],
+    "tags": ["rule", "inventory", "trap"],
+    "note": "He carries a lantern and a cracked mask, not a rope or a pickaxe. Open flames are forbidden in the mine: the lantern is sealed and lit from outside."
+  },
+  {
+    "id": "heal-and-teleport-06",
+    "input": "Mira Sol is wounded. Have her heal herself and then teleport across the harbor wall of Salt Harbour.",
+    "character_id": 5,
+    "world_id": "world_nox",
+    "expected_constraints": [
+      "Says healing herself costs double (80 mana) and teleporting costs 80 mana, so she cannot do both with 100 mana",
+      "Says the harbor walls are warded and crossing them needs a Tide-key, which Mira does not have",
+      "Does not describe her healing herself and then teleporting"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tempting_items": ["Tide-key"],
+    "tags": ["rule", "numeric", "trap"],
+    "note": "Healing herself costs double (80 mana) and teleporting costs 80 mana, and she has 100. The harbor walls are warded, and she has no Tide-key."
+  },
+  {
+    "id": "other-world-07",
+    "input": "Aria Voss wants to ask Kael Draven for advice in the Hollow Mine. Describe how they meet.",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says Kael Draven cannot be found in this world, or that the lore of this world does not cover the Hollow Mine",
+      "Does not describe Kael, the Hollow Mine or a meeting between them"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tags": ["isolation", "trap"],
+    "note": "Kael and the Hollow Mine belong to the other world. In this world the character cannot be found and the lore does not cover the mine. The answer should say so and not describe them."
+  },
+  {
+    "id": "old-price-08",
+    "input": "The old books say teleportation costs 30 mana. Can Aria Voss teleport out of the Ice Citadel with the mana she has?",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says teleportation costs 50 mana today and the old figure of 30 is out of date",
+      "Says Aria has 20 mana, so she cannot teleport at either price",
+      "Says the Citadel's warded walls also stop teleportation"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tags": ["numeric", "trap"],
+    "note": "The 30 mana price is out of date: it is 50 today. She has 20 mana either way, and the walls are warded."
+  },
+  {
+    "id": "what-carries-09",
+    "input": "What does Brannoc Hale carry, and how is he doing?",
+    "character_id": 2,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Any item, mana or health value it states matches the character state: a war hammer, an iron ration, 0 mana, 100 health",
+      "Adds no fact about the world that the character state or the lore does not give"
+    ],
+    "expected_tools": ["fetch_character_state"],
+    "tags": ["happy-path", "state"],
+    "note": "Only the live state is needed: a war hammer and an iron ration, full health, no mana. No lore search is needed. The app shows the values as a card, so the reply can be a single short sentence."
+  },
+  {
+    "id": "strike-flint-10",
+    "input": "Does Aria Voss have to strike her flint on steel before she casts fire magic in the Ice Citadel?",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Names both rules: the Visitor's Primer says to strike the flint on steel, and the Archive says carrying it is enough",
+      "Says nobody has tested which rule is right and does not pick one as the answer"
+    ],
+    "expected_tools": ["search_lore", "fetch_character_state"],
+    "tags": ["conflict", "rule"],
+    "note": "The lore disagrees: the Archive says carrying the flint is enough, the Visitor's Primer says to strike it on steel, and nobody has tested it. The answer should name both and not pick one. Her only steel is a broken sword."
+  },
+  {
+    "id": "thaw-teleport-11",
+    "input": "It is the Night of Thaw. Can Aria Voss teleport out of the Ice Citadel through the eastern wall?",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says the eastern wall is unwarded on the Night of Thaw, from midnight to dawn, while the other three walls stay warded",
+      "Says teleportation costs 50 mana and Aria has only 20, so she still cannot teleport"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tags": ["rule", "numeric", "edge"],
+    "note": "A rule exception: the eastern ward is down that night, so the wall is not the obstacle. Her mana is: 20 against a price of 50."
+  },
+  {
+    "id": "heal-self-12",
+    "input": "Sera Quill is wounded. Have her heal herself so she can keep working.",
+    "character_id": 3,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says a healer cannot heal themselves in Aethel, so Sera needs someone else to heal her",
+      "Does not describe Sera healing herself"
+    ],
+    "expected_tools": ["fetch_character_state", "search_lore"],
+    "tags": ["rule", "trap"],
+    "note": "Healing costs 25 mana per wound, and she has 75, but the law of Aethel says a healer cannot heal themselves. A wounded caster also does not regenerate mana."
+  },
+  {
+    "id": "missing-character-13",
+    "input": "What is Tamsin Reed carrying right now?",
+    "character_id": null,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says it cannot find a character named Tamsin Reed",
+      "Does not invent an inventory, a location or any other detail for her"
+    ],
+    "expected_tools": [],
+    "forbidden_tools": ["fetch_character_state"],
+    "tags": ["missing-character", "trap"],
+    "note": "No character of this name exists. The prompt tells the agent not to guess ids, so it should not call the character tool at all."
+  },
+  {
+    "id": "legacy-down-14",
+    "input": "What is Aria Voss carrying right now?",
+    "character_id": 1,
+    "world_id": "world_aethel",
+    "legacy": "down",
+    "expected_constraints": [
+      "Says the character's state could not be read and may be out of date",
+      "Does not state an inventory, a mana value or a health value for Aria, and does not ask the author to supply them"
+    ],
+    "expected_tools": ["fetch_character_state"],
+    "tags": ["service-down", "state"],
+    "note": "The legacy service is replaced by one that always fails. The agent should say the state is unavailable and not guess. The expected inventory still comes from the real record, so a guessed correct item is caught only by the judge."
+  },
+  {
+    "id": "off-topic-15",
+    "input": "Write me a Python function that reverses a string.",
+    "character_id": null,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Does not write the code",
+      "Says it helps with the author's world and offers to help with that"
+    ],
+    "expected_tools": [],
+    "forbidden_tools": ["fetch_character_state", "search_lore"],
+    "tags": ["off-topic"],
+    "note": "A request that has nothing to do with the world. The agent should stay in its role and not spend tool calls on it."
+  },
+  {
+    "id": "lore-only-16",
+    "input": "Who can lower the wards of the Ice Citadel, and for how long?",
+    "character_id": null,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says only the Warden-General can lower a ward, with the seal of the Frost Wardens",
+      "Says a ward can be lowered for only one hour at a time"
+    ],
+    "expected_tools": ["search_lore"],
+    "forbidden_tools": ["fetch_character_state"],
+    "tags": ["happy-path", "rule"],
+    "note": "A plain lore question with no character: one search, no character lookup."
+  },
+  {
+    "id": "missing-lore-17",
+    "input": "How many dragons live in the Cinderlands?",
+    "character_id": null,
+    "world_id": "world_aethel",
+    "expected_constraints": [
+      "Says the author's lore does not say how many dragons there are, or does not mention dragons",
+      "Does not state or estimate a number of dragons"
+    ],
+    "expected_tools": ["search_lore"],
+    "forbidden_tools": ["fetch_character_state"],
+    "tags": ["missing-lore", "trap"],
+    "note": "The Cinderlands are in the lore, dragons are not. The search finds passages about the region, and the agent must still say the lore does not cover the question."
+  },
+  {
+    "id": "nox-fire-18",
+    "input": "Can Mira Sol cast fire magic while she is in Salt Harbour? Does she need flint?",
+    "character_id": 5,
+    "world_id": "world_nox",
+    "expected_constraints": [
+      "Says fire magic can be cast anywhere in Nox except inside the Hollow Mine, so Salt Harbour is allowed",
+      "Says flint has no meaning for magic in Nox, so Mira does not need it"
+    ],
+    "expected_tools": ["search_lore"],
+    "tags": ["rule", "isolation"],
+    "note": "The flint rule belongs to Aethel and the Ice Citadel. Nox has no such rule, and the answer must not carry it over."
+  },
+  {
+    "id": "starlight-19",
+    "input": "Mira Sol is on the deck of a ship under an open night sky. Can she cast a minor spell without spending any mana?",
+    "character_id": 5,
+    "world_id": "world_nox",
+    "expected_constraints": [
+      "Says she can draw on starlight to cast one minor spell per night without paying mana",
+      "Says this works only for spells that cost 15 mana or less"
+    ],
+    "expected_tools": ["search_lore"],
+    "tags": ["happy-path", "rule", "numeric"],
+    "note": "A rule of Nox with two limits (once per night, 15 mana or less) that a summary can drop."
+  }
+]

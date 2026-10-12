@@ -7,3 +7,5 @@ pnpm-lock.yaml
 *.tsbuildinfo
 # The system prompt is read byte for byte by the app: never reformat it.
 apps/web/src/lib/prompts/*.md
+# Reports written by the eval runner: machine output, kept as it was written.
+evals/reports/
