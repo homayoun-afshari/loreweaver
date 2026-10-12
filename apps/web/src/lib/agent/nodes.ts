@@ -3,6 +3,7 @@ import type { RunnableConfig } from "@langchain/core/runnables";
 import { ToolInputParsingException } from "@langchain/core/tools";
 import { END } from "@langchain/langgraph";
 import { MAX_AGENT_CALLS_PER_DRAFT, NO_MORE_TOOLS_NOTE, REVISION_CUTOFF_MS } from "./config";
+import { guardAnswer, markUntrusted, withText } from "./guardrails";
 import {
   callsForCurrentDraft,
   feedbackMessage,
@@ -69,7 +70,10 @@ function toolCallsOf(message: BaseMessage | undefined) {
 export function createAgentNode(deps: {
   model: AgentModel;
   systemPromptFor: (worldId: string) => string;
+  /** Mark tool results as data and guard the answer. On unless a test or the eval turns it off. */
+  guardrails?: boolean;
 }) {
+  const guardrails = deps.guardrails ?? true;
   return async (state: AgentStateType, config: RunnableConfig): Promise<AgentStateUpdate> => {
     // The last call of a draft has no tools, so the model has to answer instead of asking again.
     // It is told so: a model that still wants a tool and finds none may end its turn with no
@@ -77,8 +81,12 @@ export function createAgentNode(deps: {
     const allowTools = callsForCurrentDraft(state.messages) < MAX_AGENT_CALLS_PER_DRAFT - 1;
     const systemPrompt =
       deps.systemPromptFor(worldIdOf(config)) + (allowTools ? "" : `\n\n${NO_MORE_TOOLS_NOTE}`);
+    // The model reads what the tools returned as data, marked as such (see guardrails.ts).
     let reply = await deps.model(
-      [new SystemMessage(systemPrompt), ...state.messages],
+      [
+        new SystemMessage(systemPrompt),
+        ...(guardrails ? markUntrusted(state.messages) : state.messages),
+      ],
       { allowTools },
       config,
     );
@@ -91,6 +99,12 @@ export function createAgentNode(deps: {
       });
     }
     const asksForTools = toolCallsOf(reply).length > 0;
+    if (guardrails && !asksForTools) {
+      // An answer that leaks the system prompt or a world id never reaches the reflection step or
+      // the author: it is replaced here, whatever the model was talked into.
+      const guarded = guardAnswer(textOf(reply), systemPrompt);
+      if (guarded.blocked) reply = withText(reply, guarded.text);
+    }
     return {
       messages: [reply],
       // Text that comes with a tool call is not a draft.

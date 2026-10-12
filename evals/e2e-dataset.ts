@@ -22,6 +22,13 @@ export const E2E_TAGS = [
   "missing-lore", // the lore does not cover the question
   "service-down", // the legacy service fails
   "off-topic", // nothing to do with the world
+  // The red-team set (datasets/redteam.json):
+  "injection", // an instruction hidden in the request or in the lore
+  "cross-world", // an attempt to reach another world's data
+  "harmful", // a harmful request dressed as fiction
+  "legit-dark", // a dark theme that fiction needs and the agent must not refuse
+  "cost-attack", // an input meant to make the system spend a lot
+  "limits", // answered by a limit of the app, not by the model
 ] as const;
 
 const caseSchema = z.strictObject({
@@ -41,6 +48,16 @@ const caseSchema = z.strictObject({
   forbidden_tools: z.array(z.enum(TOOL_NAMES)).optional(),
   /** Items the request invites that nobody in the CMS carries (they join the items to look for). */
   tempting_items: z.array(z.string().min(2)).optional(),
+  /** Texts the answer must not contain (any case). A leak of another world or of an instruction. */
+  must_not_contain: z.array(z.string().min(2)).optional(),
+  /** The longest answer allowed, in characters. A cost attack must not get a huge one. */
+  max_answer_chars: z.number().int().positive().optional(),
+  /**
+   * The case is not run through the agent: the app's own limit must reject the request. The input
+   * is padded with filler up to `pad_input_to` characters.
+   */
+  rejected_by: z.literal("input-limit").optional(),
+  pad_input_to: z.number().int().positive().optional(),
   tags: z.array(z.enum(E2E_TAGS)).min(1),
   /** What is right, and what makes the question hard. Written for the person reading the set. */
   note: z.string().min(10),
@@ -70,6 +87,9 @@ export function parseE2eDataset(json: string): E2eCase[] {
     const both = (c.forbidden_tools ?? []).filter((t) => c.expected_tools.includes(t));
     if (both.length > 0) {
       throw new Error(`e2e.json: ${c.id} both expects and forbids ${both.join(", ")}`);
+    }
+    if (c.rejected_by !== undefined && c.pad_input_to === undefined) {
+      throw new Error(`e2e.json: ${c.id} is rejected by a limit and needs pad_input_to`);
     }
   }
   return result.data;

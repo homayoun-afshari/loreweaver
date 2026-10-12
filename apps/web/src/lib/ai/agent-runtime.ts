@@ -14,12 +14,14 @@ const graphs = new Map<ModelId, AgentGraph>();
 
 /**
  * A new agent graph with the real models, tools and prompts. `toolDeps` replaces parts of what the
- * tools use (for example the legacy client, so the eval can play a service that is down). Server-side
- * only.
+ * tools use (for example the legacy client, so the eval can play a service that is down), and
+ * `options.guardrails: false` turns the code defenses off (only the eval does that, to measure them).
+ * Server-side only.
  */
 export function createRuntimeGraph(
   modelId: ModelId,
   toolDeps: Omit<ToolDeps, "worldId"> = {},
+  options: { guardrails?: boolean } = {},
 ): AgentGraph {
   const env = getEnv();
   return createAgentGraph({
@@ -28,6 +30,7 @@ export function createRuntimeGraph(
     systemPromptFor: getSystemPrompt,
     toolsFor: (worldId) => createAgentTools({ worldId, ...toolDeps }),
     maxIterations: env.AGENT_MAX_ITERATIONS,
+    guardrails: options.guardrails,
   });
 }
 

@@ -27,6 +27,8 @@ export type AgentGraphDeps = {
   revisionCutoffMs?: number;
   /** The clock, for tests. */
   now?: () => number;
+  /** The code defenses of the agent (guardrails.ts). Only the eval turns them off, to measure them. */
+  guardrails?: boolean;
 };
 
 /**
@@ -44,7 +46,11 @@ export function createAgentGraph(deps: AgentGraphDeps) {
   return new StateGraph(AgentState)
     .addNode(
       "agent",
-      createAgentNode({ model: deps.agentModel, systemPromptFor: deps.systemPromptFor }),
+      createAgentNode({
+        model: deps.agentModel,
+        systemPromptFor: deps.systemPromptFor,
+        guardrails: deps.guardrails,
+      }),
     )
     .addNode("tools", createToolsNode({ toolsFor: deps.toolsFor }))
     .addNode(

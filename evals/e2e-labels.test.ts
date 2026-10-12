@@ -29,6 +29,7 @@ function result(id: string, judge?: JudgeGrade): CaseResult {
     answer: `Answer of ${id}`,
     toolsUsed: [],
     toolCalls: [],
+    guardFired: false,
     evidence: ["[search_lore] passage 3fa9c1d2 (A): Flint lets it pass."],
     characterRecord: "Aria Voss carries: flint.",
     judge,
