@@ -1,6 +1,7 @@
 // Builds the architecture diagrams in docs/diagrams/, one snapshot per day of the build.
-// Every snapshot uses the same canvas and the same slot for each module, so a module never moves:
-// a later snapshot only adds modules and edges, and changes what a module lists.
+// Every snapshot uses the same canvas and shows every module in the same slot, so a module never
+// moves: a module that is not built yet is drawn in gray, without its badge and connections, and a
+// later snapshot only brings modules to life, adds edges and changes what a module lists.
 //
 // Run from the repository root: node docs/diagrams/scripts/build.mjs
 
@@ -12,12 +13,12 @@ const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // The snapshots. The file name is built from the title: the number, then each segment in PascalCase.
 const SNAPSHOTS = [
-  { day: 1, segments: ["Product Discovery", "Legacy CMS", "Scaffolding"] },
-  { day: 2, segments: ["Model Layer", "Streaming", "Generative UI"] },
-  { day: 3, segments: ["Lore", "Embeddings", "Retrieval"] },
-  { day: 4, segments: ["Agentic Orchestration", "Reflection"] },
-  { day: 5, segments: ["Observability", "Token Economics", "Performance"] },
-  { day: 6, segments: ["Evaluation", "Safety", "Responsible AI"] },
+  { day: 1, title: "Product Discovery, Scaffolding, Legacy CMS, and Walking Skeleton" },
+  { day: 2, title: "UI Design, Agent v1, and Tools v1" },
+  { day: 3, title: "LoreBible, RAG, and Tools v2" },
+  { day: 4, title: "State Graph, Agent v2" },
+  { day: 5, title: "Observability, Cost Optimization, and Guardrails" },
+  { day: 6, title: "Evals, Judges, and Safety" },
 ];
 
 // ---------------------------------------------------------------------------------------------
@@ -55,6 +56,16 @@ const TEXT = "#1e293b";
 const MUTED = "#475569";
 const LINE = "#475569";
 
+// A module that is not built yet: a matte gray card, its title kept legible.
+const GRAY = {
+  header: "#a1a1aa",
+  card: "#f4f4f5",
+  stroke: "#d4d4d8",
+  text: "#a1a1aa",
+  rule: "#e4e4e7",
+  env: "#ececee",
+};
+
 // Location badges use neutral tones that no module header uses.
 const LOCATIONS = {
   Core: {
@@ -81,12 +92,6 @@ const LOCATIONS = {
     stroke: "#27272a",
     dash: "4 3",
     meaning: "A third-party API, called over HTTPS",
-  },
-  Tooling: {
-    fill: "#ffffff",
-    text: "#27272a",
-    stroke: "#27272a",
-    meaning: "Runs only on a developer's machine and in CI, never in the product",
   },
 };
 
@@ -447,9 +452,10 @@ const MODULES = {
       [
         4,
         [
+          "Prompt Engineering: Reflection Rubric",
           "Checks draft vs. tool results",
           "Structured verdict",
-          "Prompt reflection.v2",
+          "Rubric reflection.v2",
           "Temperature 0",
           "Counts tokens",
         ],
@@ -529,10 +535,19 @@ const MODULES = {
     env: ["Haiku", "Sonnet", "Sonnet"],
     tech: [[2, ["Anthropic, Claude Haiku 4.5,", "Claude Sonnet 5.5"]]],
     ops: [
-      [2, ["Streams the answer", "Chooses tool calls", "Counts tokens"]],
+      [
+        2,
+        [
+          "Prompt Engineering: Agent Prompt",
+          "Streams the answer",
+          "Chooses tool calls",
+          "Counts tokens",
+        ],
+      ],
       [
         4,
         [
+          "Prompt Engineering: Agent Prompt",
           "Chooses tool calls",
           "Writes and revises drafts",
           "At most 1,024 tokens a call",
@@ -543,6 +558,7 @@ const MODULES = {
       [
         5,
         [
+          "Prompt Engineering: Agent Prompt",
           "Chooses tool calls",
           "Writes and revises drafts",
           "At most 1,024 tokens a call",
@@ -607,23 +623,25 @@ const MODULES = {
       ],
     ],
   },
-  evals: {
-    title: "Evals",
-    slot: [1, 3],
+  judge: {
+    title: "LLM Judge",
+    slot: [2, 3],
     color: "#be123c",
-    location: "Tooling",
+    location: "External",
     from: 6,
-    env: ["Node", "GitHub CI", "—"],
-    tech: [[6, ["tsx, Claude Opus 5.5 judge,", "GitHub Actions"]]],
+    env: ["Opus 5.5", "Opus 5.5 (CI)", "—"],
+    tech: [[6, ["Anthropic, Claude Opus 5.5"]]],
     ops: [
       [
         6,
         [
-          "pnpm eval: cases, code + judge",
-          "pnpm eval:redteam: attacks",
-          "pnpm eval:labels: judge check",
-          "pnpm eval:retrieval: search",
-          "CI gate: smoke + red team",
+          "Prompt Engineering: Eval Rubric",
+          "Rubric judge.v1, reasoning first",
+          "Faithfulness 1 to 5, pass at 4",
+          "Pass or fail per constraint",
+          "Structured verdict, effort low",
+          "Grades pnpm eval and red team",
+          "Checked against human labels",
         ],
       ],
     ],
@@ -716,27 +734,31 @@ const EDGES = [
     side: "right",
   },
 
-  // Days 2 and 3: the AI SDK runs the model and the tools itself, through the empty slots of
-  // the orchestrator and the reflection model.
+  // Days 2 and 3: the AI SDK runs the model and the tools itself. The edges go around the gray
+  // slots of the orchestrator and the reflection model.
   {
     days: [2, 3],
     points: [
       [right(1), ROW2_EDGE_Y],
-      [cx(3) - 50, ROW2_EDGE_Y],
+      [gapX(1), ROW2_EDGE_Y],
+      [gapX(1), gapY(0) - 18],
+      [cx(3) - 50, gapY(0) - 18],
       [cx(3) - 50, bottom(0)],
     ],
     label: ["Tool calls", "in-process"],
-    at: [gapX(1), above(ROW2_EDGE_Y)],
+    at: [gapX(1), (gapY(0) - 18 + ROW2_EDGE_Y) / 2],
   },
   {
     days: [2, 3],
     points: [
       [cx(3) + 50, bottom(0)],
-      [cx(3) + 50, rowY(2) + CARD_H / 2],
+      [cx(3) + 50, gapY(0) + 18],
+      [gapX(2), gapY(0) + 18],
+      [gapX(2), rowY(2) + CARD_H / 2],
       [right(2), rowY(2) + CARD_H / 2],
     ],
     label: ["HTTPS", "Messages API"],
-    at: [cx(3) + 50, gapY(1)],
+    at: [gapX(2), gapY(1)],
   },
 
   // Row 2, from day 4.
@@ -814,25 +836,16 @@ const EDGES = [
     at: [gapX(3), gapY(1)],
   },
 
-  // Row 4: the evals.
+  // Row 4: the judge grades the graph's answers when the evals run it.
   {
     days: [6, 6],
     points: [
-      [cx(1), bottom(2)],
-      [cx(1), rowY(3)],
-    ],
-    label: ["SQL", "test world, search"],
-    side: "right",
-  },
-  {
-    days: [6, 6],
-    points: [
-      [right(1), rowY(3) + CARD_H / 2],
-      [gapX(1), rowY(3) + CARD_H / 2],
-      [gapX(1), rowY(1) + 270],
       [colX(2), rowY(1) + 270],
+      [gapX(1), rowY(1) + 270],
+      [gapX(1), rowY(3) + CARD_H / 2],
+      [colX(2), rowY(3) + CARD_H / 2],
     ],
-    label: ["In-process", "the real graph"],
+    label: ["HTTPS, in the evals", "answer and evidence"],
     at: [gapX(1), gapY(2)],
   },
 ];
@@ -859,54 +872,63 @@ function badge(x, y, name) {
   ].join("\n  ");
 }
 
+// A module that is not built yet on `day` is drawn in gray with what it lists on its first day,
+// and without its badge.
 function card(mod, day) {
   const [c, r] = mod.slot;
   const x = colX(c);
   const y = rowY(r);
-  const tech = pick(mod.tech, day);
-  const ops = pick(mod.ops, day);
+  const built = mod.from <= day;
+  const shown = built ? day : mod.from;
+  const tech = pick(mod.tech, shown);
+  const ops = pick(mod.ops, shown);
+  const color = built ? mod.color : GRAY.header;
+  const muted = built ? MUTED : GRAY.text;
+  const text = built ? TEXT : GRAY.text;
   const out = [];
-  out.push(`<!-- ${mod.title} -->`);
+  out.push(`<!-- ${mod.title}${built ? "" : " (not built yet)"} -->`);
   out.push(
-    `<rect x="${x}" y="${y}" width="${CARD_W}" height="${CARD_H}" rx="14" fill="#ffffff" filter="url(#shadow)"/>`,
+    built
+      ? `<rect x="${x}" y="${y}" width="${CARD_W}" height="${CARD_H}" rx="14" fill="#ffffff" filter="url(#shadow)"/>`
+      : `<rect x="${x}" y="${y}" width="${CARD_W}" height="${CARD_H}" rx="14" fill="${GRAY.card}" stroke="${GRAY.stroke}"/>`,
   );
   out.push(
-    `<path d="M${x},${y + HEADER_H} L${x},${y + 14} Q${x},${y} ${x + 14},${y} L${x + CARD_W - 14},${y} Q${x + CARD_W},${y} ${x + CARD_W},${y + 14} L${x + CARD_W},${y + HEADER_H} Z" fill="${mod.color}"/>`,
+    `<path d="M${x},${y + HEADER_H} L${x},${y + 14} Q${x},${y} ${x + 14},${y} L${x + CARD_W - 14},${y} Q${x + CARD_W},${y} ${x + CARD_W},${y + 14} L${x + CARD_W},${y + HEADER_H} Z" fill="${color}"/>`,
   );
   out.push(
     `<text x="${x + CARD_W / 2}" y="${y + 32}" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">${esc(mod.title)}</text>`,
   );
   tech.forEach((line, i) => {
     out.push(
-      `<text x="${x + CARD_W / 2}" y="${y + 76 + i * 18}" text-anchor="middle" font-size="13.5" fill="${MUTED}">${esc(line)}</text>`,
+      `<text x="${x + CARD_W / 2}" y="${y + 76 + i * 18}" text-anchor="middle" font-size="13.5" fill="${muted}">${esc(line)}</text>`,
     );
   });
   const sepY = y + 76 + (tech.length - 1) * 18 + 14;
   out.push(
-    `<line x1="${x + 20}" y1="${sepY}" x2="${x + CARD_W - 20}" y2="${sepY}" stroke="#e2e8f0" stroke-width="1.5"/>`,
+    `<line x1="${x + 20}" y1="${sepY}" x2="${x + CARD_W - 20}" y2="${sepY}" stroke="${built ? "#e2e8f0" : GRAY.rule}" stroke-width="1.5"/>`,
   );
   ops.forEach((line, i) => {
     // A line that starts with spaces continues the previous one and gets no bullet.
     const continued = line.startsWith(" ");
-    const text = continued ? line.trim() : `- ${line}`;
+    const item = continued ? line.trim() : `- ${line}`;
     out.push(
-      `<text x="${x + (continued ? 34 : 20)}" y="${sepY + 26 + i * 20}" font-size="13" fill="${TEXT}">${esc(text)}</text>`,
+      `<text x="${x + (continued ? 30 : 16)}" y="${sepY + 26 + i * 20}" font-size="13" fill="${text}">${esc(item)}</text>`,
     );
   });
   const envY = y + CARD_H - ENV_H;
   out.push(
-    `<path d="M${x},${envY} L${x + CARD_W},${envY} L${x + CARD_W},${y + CARD_H - 14} Q${x + CARD_W},${y + CARD_H} ${x + CARD_W - 14},${y + CARD_H} L${x + 14},${y + CARD_H} Q${x},${y + CARD_H} ${x},${y + CARD_H - 14} Z" fill="#f1f5f9"/>`,
+    `<path d="M${x},${envY} L${x + CARD_W},${envY} L${x + CARD_W},${y + CARD_H - 14} Q${x + CARD_W},${y + CARD_H} ${x + CARD_W - 14},${y + CARD_H} L${x + 14},${y + CARD_H} Q${x},${y + CARD_H} ${x},${y + CARD_H - 14} Z" fill="${built ? "#f1f5f9" : GRAY.env}"/>`,
   );
   ["DEV", "PREV", "PROD"].forEach((name, i) => {
     const ex = x + (CARD_W * (2 * i + 1)) / 6;
     out.push(
-      `<text x="${ex}" y="${envY + 20}" text-anchor="middle" font-size="11" font-weight="700" fill="${mod.color}">${name}</text>`,
+      `<text x="${ex}" y="${envY + 20}" text-anchor="middle" font-size="11" font-weight="700" fill="${color}">${name}</text>`,
     );
     out.push(
-      `<text x="${ex}" y="${envY + 44}" text-anchor="middle" font-size="11" fill="${TEXT}">${esc(mod.env[i])}</text>`,
+      `<text x="${ex}" y="${envY + 44}" text-anchor="middle" font-size="11" fill="${text}">${esc(mod.env[i])}</text>`,
     );
   });
-  out.push(badge(x + 12, y - 12, mod.location));
+  if (built) out.push(badge(x + 12, y - 12, mod.location));
   return out.join("\n  ");
 }
 
@@ -937,8 +959,9 @@ function edge(e) {
   return out.join("\n  ");
 }
 
+// The legend fills the last two slots of the bottom row.
 function legend() {
-  const x = colX(2);
+  const x = colX(3);
   const y = rowY(3) + 6;
   const w = right(4) - x;
   const h = CARD_H - 12;
@@ -948,36 +971,41 @@ function legend() {
     `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" fill="#ffffff" fill-opacity="0.7" stroke="#cbd5e1"/>`,
   );
   out.push(
-    `<text x="${x + 28}" y="${y + 40}" font-size="16" font-weight="700" fill="${INK}">Legend</text>`,
+    `<text x="${x + 24}" y="${y + 38}" font-size="16" font-weight="700" fill="${INK}">Legend</text>`,
   );
   out.push(
-    `<text x="${x + 28}" y="${y + 68}" font-size="13" font-weight="700" fill="${MUTED}">Location (the badge on each module)</text>`,
+    `<text x="${x + 24}" y="${y + 66}" font-size="13" font-weight="700" fill="${MUTED}">Location (the badge on each module)</text>`,
   );
   Object.entries(LOCATIONS).forEach(([name, loc], i) => {
-    const ry = y + 86 + i * 34;
-    out.push(badge(x + 28, ry, name));
+    const ry = y + 82 + i * 32;
+    out.push(badge(x + 24, ry, name));
     out.push(
-      `<text x="${x + 140}" y="${ry + 16.5}" font-size="13" fill="${TEXT}">${esc(loc.meaning)}</text>`,
+      `<text x="${x + 128}" y="${ry + 16.5}" font-size="13" fill="${TEXT}">${esc(loc.meaning)}</text>`,
     );
   });
-  const ry = y + 86 + 5 * 34 + 20;
+  const ry = y + 82 + Object.keys(LOCATIONS).length * 32 + 26;
   out.push(
-    `<text x="${x + 28}" y="${ry}" font-size="13" fill="${TEXT}"><tspan font-weight="700">DEV, PREV, PROD:</tspan> what the module runs on in development, Preview and Production.</text>`,
+    `<text x="${x + 24}" y="${ry}" font-size="13" fill="${TEXT}"><tspan font-weight="700">DEV, PREV, PROD:</tspan> what the module runs on in development, Preview and Production.</text>`,
   );
   out.push(
-    `<line x1="${x + 28}" y1="${ry + 26}" x2="${x + 92}" y2="${ry + 26}" stroke="${LINE}" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`,
+    `<line x1="${x + 24}" y1="${ry + 28}" x2="${x + 88}" y2="${ry + 28}" stroke="${LINE}" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`,
   );
   out.push(
-    `<text x="${x + 104}" y="${ry + 30}" font-size="13" fill="${TEXT}">Who talks to whom; the label names the protocol and how.</text>`,
+    `<text x="${x + 100}" y="${ry + 32}" font-size="13" fill="${TEXT}">Who talks to whom; the label names the protocol and how.</text>`,
+  );
+  out.push(
+    `<rect x="${x + 24}" y="${ry + 48}" width="64" height="22" rx="6" fill="${GRAY.header}"/>`,
+  );
+  out.push(
+    `<text x="${x + 100}" y="${ry + 64}" font-size="13" fill="${TEXT}">A gray module is not built yet on this day.</text>`,
   );
   return out.join("\n  ");
 }
 
 function svg(snapshot) {
-  const { day, segments } = snapshot;
-  const number = String(day).padStart(2, "0");
-  const title = `${number} · ${segments.slice(0, -1).join(", ")}${segments.length > 1 ? " & " : ""}${segments.at(-1)}`;
-  const modules = Object.values(MODULES).filter((m) => m.from <= day);
+  const { day } = snapshot;
+  const title = `${String(day).padStart(2, "0")} · ${snapshot.title}`;
+  const modules = Object.values(MODULES);
   const edges = EDGES.filter((e) => e.days[0] <= day && day <= e.days[1]);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">
   <title>${esc(title)}</title>
@@ -1011,7 +1039,8 @@ function svg(snapshot) {
 
 for (const snapshot of SNAPSHOTS) {
   const number = String(snapshot.day).padStart(2, "0");
-  const file = `${number}_${snapshot.segments.map((s) => s.replace(/\s+/g, "")).join("_")}.svg`;
+  const segments = snapshot.title.split(/,\s*(?:and\s+)?/);
+  const file = `${number}_${segments.map((s) => s.replace(/\s+/g, "")).join("_")}.svg`;
   writeFileSync(join(OUT_DIR, file), svg(snapshot));
   console.log(`Wrote docs/diagrams/${file}`);
 }

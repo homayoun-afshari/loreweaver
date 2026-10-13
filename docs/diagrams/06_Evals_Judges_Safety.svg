@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1980" height="1844" viewBox="0 0 1980 1844" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">
-  <title>06 · Evaluation, Safety &amp; Responsible AI</title>
+  <title>06 · Evals, Judges, and Safety</title>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#f8fafc"/>
@@ -15,7 +15,7 @@
 
   <rect width="1980" height="1844" fill="url(#bg)"/>
 
-  <text x="990" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">06 · Evaluation, Safety &amp; Responsible AI</text>
+  <text x="990" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">06 · Evals, Judges, and Safety</text>
   <line x1="890" y1="74" x2="1090" y2="74" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
 
   <!-- Legacy CMS -->
@@ -24,12 +24,12 @@
   <text x="170" y="162" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">Legacy CMS</text>
   <text x="170" y="206" text-anchor="middle" font-size="13.5" fill="#475569">PHP 8.4, Slim 4, Docker</text>
   <line x1="60" y1="220" x2="280" y2="220" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="60" y="246" font-size="13" fill="#1e293b">- GET /health</text>
-  <text x="60" y="266" font-size="13" fill="#1e293b">- GET /v1/characters/{id}/state</text>
-  <text x="60" y="286" font-size="13" fill="#1e293b">- GET /v1/characters?world_id&amp;page</text>
-  <text x="60" y="306" font-size="13" fill="#1e293b">- X-API-Key, 30 requests/min</text>
-  <text x="60" y="326" font-size="13" fill="#1e293b">- Random delays and 503s</text>
-  <text x="60" y="346" font-size="13" fill="#1e293b">- OpenAPI contract</text>
+  <text x="56" y="246" font-size="13" fill="#1e293b">- GET /health</text>
+  <text x="56" y="266" font-size="13" fill="#1e293b">- GET /v1/characters/{id}/state</text>
+  <text x="56" y="286" font-size="13" fill="#1e293b">- GET /v1/characters?world_id&amp;page</text>
+  <text x="56" y="306" font-size="13" fill="#1e293b">- X-API-Key, 30 requests/min</text>
+  <text x="56" y="326" font-size="13" fill="#1e293b">- Random delays and 503s</text>
+  <text x="56" y="346" font-size="13" fill="#1e293b">- OpenAPI contract</text>
   <path d="M40,404 L300,404 L300,452 Q300,466 286,466 L54,466 Q40,466 40,452 Z" fill="#f1f5f9"/>
   <text x="83.33333333333334" y="424" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">DEV</text>
   <text x="83.33333333333334" y="448" text-anchor="middle" font-size="11" fill="#1e293b">Docker</text>
@@ -46,11 +46,11 @@
   <text x="580" y="162" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">Anti-Corruption</text>
   <text x="580" y="206" text-anchor="middle" font-size="13.5" fill="#475569">TypeScript, Zod, fetch</text>
   <line x1="470" y1="220" x2="690" y2="220" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="470" y="246" font-size="13" fill="#1e293b">- getCharacterState(id)</text>
-  <text x="470" y="266" font-size="13" fill="#1e293b">- Maps legacy fields to domain</text>
-  <text x="470" y="286" font-size="13" fill="#1e293b">- 2 s timeout, 3 retries, backoff</text>
-  <text x="470" y="306" font-size="13" fill="#1e293b">- Circuit breaker</text>
-  <text x="470" y="326" font-size="13" fill="#1e293b">- Typed errors, never exceptions</text>
+  <text x="466" y="246" font-size="13" fill="#1e293b">- getCharacterState(id)</text>
+  <text x="466" y="266" font-size="13" fill="#1e293b">- Maps legacy fields to domain</text>
+  <text x="466" y="286" font-size="13" fill="#1e293b">- 2 s timeout, 3 retries, backoff</text>
+  <text x="466" y="306" font-size="13" fill="#1e293b">- Circuit breaker</text>
+  <text x="466" y="326" font-size="13" fill="#1e293b">- Typed errors, never exceptions</text>
   <path d="M450,404 L710,404 L710,452 Q710,466 696,466 L464,466 Q450,466 450,452 Z" fill="#f1f5f9"/>
   <text x="493.3333333333333" y="424" text-anchor="middle" font-size="11" font-weight="700" fill="#0d9488">DEV</text>
   <text x="493.3333333333333" y="448" text-anchor="middle" font-size="11" fill="#1e293b">Node</text>
@@ -68,13 +68,13 @@
   <text x="990" y="206" text-anchor="middle" font-size="13.5" fill="#475569">Node 24, Next.js 16,</text>
   <text x="990" y="224" text-anchor="middle" font-size="13.5" fill="#475569">React 19, Tailwind 4</text>
   <line x1="880" y1="238" x2="1100" y2="238" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="880" y="264" font-size="13" fill="#1e293b">- Page /: chat, world selector</text>
-  <text x="880" y="284" font-size="13" fill="#1e293b">- POST /api/chat: runs the graph</text>
-  <text x="880" y="304" font-size="13" fill="#1e293b">- 429 at a limit, 413 too long</text>
-  <text x="880" y="324" font-size="13" fill="#1e293b">- GET|POST /api/session/world</text>
-  <text x="880" y="344" font-size="13" fill="#1e293b">- POST /api/feedback</text>
-  <text x="880" y="364" font-size="13" fill="#1e293b">- GET /api/health</text>
-  <text x="880" y="384" font-size="13" fill="#1e293b">- GET /api/legacy/character-state</text>
+  <text x="876" y="264" font-size="13" fill="#1e293b">- Page /: chat, world selector</text>
+  <text x="876" y="284" font-size="13" fill="#1e293b">- POST /api/chat: runs the graph</text>
+  <text x="876" y="304" font-size="13" fill="#1e293b">- 429 at a limit, 413 too long</text>
+  <text x="876" y="324" font-size="13" fill="#1e293b">- GET|POST /api/session/world</text>
+  <text x="876" y="344" font-size="13" fill="#1e293b">- POST /api/feedback</text>
+  <text x="876" y="364" font-size="13" fill="#1e293b">- GET /api/health</text>
+  <text x="876" y="384" font-size="13" fill="#1e293b">- GET /api/legacy/character-state</text>
   <path d="M860,404 L1120,404 L1120,452 Q1120,466 1106,466 L874,466 Q860,466 860,452 Z" fill="#f1f5f9"/>
   <text x="903.3333333333334" y="424" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">DEV</text>
   <text x="903.3333333333334" y="448" text-anchor="middle" font-size="11" fill="#1e293b">Node</text>
@@ -92,11 +92,11 @@
   <text x="1400" y="206" text-anchor="middle" font-size="13.5" fill="#475569">ai, @ai-sdk/react,</text>
   <text x="1400" y="224" text-anchor="middle" font-size="13.5" fill="#475569">@ai-sdk/langchain</text>
   <line x1="1290" y1="238" x2="1510" y2="238" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="1290" y="264" font-size="13" fill="#1e293b">- useChat(): chat state</text>
-  <text x="1290" y="284" font-size="13" fill="#1e293b">- validateUIMessages(): history</text>
-  <text x="1290" y="304" font-size="13" fill="#1e293b">- toBaseMessages(): to the graph</text>
-  <text x="1290" y="324" font-size="13" fill="#1e293b">- Node updates to SSE chunks</text>
-  <text x="1290" y="344" font-size="13" fill="#1e293b">- Answer sent in one part</text>
+  <text x="1286" y="264" font-size="13" fill="#1e293b">- useChat(): chat state</text>
+  <text x="1286" y="284" font-size="13" fill="#1e293b">- validateUIMessages(): history</text>
+  <text x="1286" y="304" font-size="13" fill="#1e293b">- toBaseMessages(): to the graph</text>
+  <text x="1286" y="324" font-size="13" fill="#1e293b">- Node updates to SSE chunks</text>
+  <text x="1286" y="344" font-size="13" fill="#1e293b">- Answer sent in one part</text>
   <path d="M1270,404 L1530,404 L1530,452 Q1530,466 1516,466 L1284,466 Q1270,466 1270,452 Z" fill="#f1f5f9"/>
   <text x="1313.3333333333333" y="424" text-anchor="middle" font-size="11" font-weight="700" fill="#4f46e5">DEV</text>
   <text x="1313.3333333333333" y="448" text-anchor="middle" font-size="11" fill="#1e293b">Node</text>
@@ -114,13 +114,13 @@
   <text x="1810" y="206" text-anchor="middle" font-size="13.5" fill="#475569">React, shadcn/ui, Base UI,</text>
   <text x="1810" y="224" text-anchor="middle" font-size="13.5" fill="#475569">Tailwind, lucide</text>
   <line x1="1700" y1="238" x2="1920" y2="238" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="1700" y="264" font-size="13" fill="#1e293b">- Character Status Card</text>
-  <text x="1700" y="284" font-size="13" fill="#1e293b">- Lore Citation cards</text>
-  <text x="1700" y="304" font-size="13" fill="#1e293b">- Skeleton and error states</text>
-  <text x="1700" y="324" font-size="13" fill="#1e293b">- World selector, AI badge</text>
-  <text x="1700" y="344" font-size="13" fill="#1e293b">- Status note, limit message</text>
-  <text x="1700" y="364" font-size="13" fill="#1e293b">- Length counter (8,000 chars)</text>
-  <text x="1700" y="384" font-size="13" fill="#1e293b">- Feedback, Stop, Regenerate</text>
+  <text x="1696" y="264" font-size="13" fill="#1e293b">- Character Status Card</text>
+  <text x="1696" y="284" font-size="13" fill="#1e293b">- Lore Citation cards</text>
+  <text x="1696" y="304" font-size="13" fill="#1e293b">- Skeleton and error states</text>
+  <text x="1696" y="324" font-size="13" fill="#1e293b">- World selector, AI badge</text>
+  <text x="1696" y="344" font-size="13" fill="#1e293b">- Status note, limit message</text>
+  <text x="1696" y="364" font-size="13" fill="#1e293b">- Length counter (8,000 chars)</text>
+  <text x="1696" y="384" font-size="13" fill="#1e293b">- Feedback, Stop, Regenerate</text>
   <path d="M1680,404 L1940,404 L1940,452 Q1940,466 1926,466 L1694,466 Q1680,466 1680,452 Z" fill="#f1f5f9"/>
   <text x="1723.3333333333333" y="424" text-anchor="middle" font-size="11" font-weight="700" fill="#db2777">DEV</text>
   <text x="1723.3333333333333" y="448" text-anchor="middle" font-size="11" fill="#1e293b">Node</text>
@@ -137,11 +137,11 @@
   <text x="170" y="608" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">State Database</text>
   <text x="170" y="652" text-anchor="middle" font-size="13.5" fill="#475569">SQLite (PDO)</text>
   <line x1="60" y1="666" x2="280" y2="666" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="60" y="692" font-size="13" fill="#1e293b">- Seeded when a container starts</text>
-  <text x="60" y="712" font-size="13" fill="#1e293b">- Table characters</text>
-  <text x="60" y="732" font-size="13" fill="#1e293b">- Reads a character by id</text>
-  <text x="60" y="752" font-size="13" fill="#1e293b">- Lists a world's characters</text>
-  <text x="60" y="772" font-size="13" fill="#1e293b">- Table rate_limit: calls per key</text>
+  <text x="56" y="692" font-size="13" fill="#1e293b">- Seeded when a container starts</text>
+  <text x="56" y="712" font-size="13" fill="#1e293b">- Table characters</text>
+  <text x="56" y="732" font-size="13" fill="#1e293b">- Reads a character by id</text>
+  <text x="56" y="752" font-size="13" fill="#1e293b">- Lists a world's characters</text>
+  <text x="56" y="772" font-size="13" fill="#1e293b">- Table rate_limit: calls per key</text>
   <path d="M40,850 L300,850 L300,898 Q300,912 286,912 L54,912 Q40,912 40,898 Z" fill="#f1f5f9"/>
   <text x="83.33333333333334" y="870" text-anchor="middle" font-size="11" font-weight="700" fill="#d97706">DEV</text>
   <text x="83.33333333333334" y="894" text-anchor="middle" font-size="11" fill="#1e293b">Docker</text>
@@ -159,13 +159,13 @@
   <text x="580" y="652" text-anchor="middle" font-size="13.5" fill="#475569">Zod, LangChain tool(),</text>
   <text x="580" y="670" text-anchor="middle" font-size="13.5" fill="#475569">AI SDK tool() for UI types</text>
   <line x1="470" y1="684" x2="690" y2="684" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="470" y="710" font-size="13" fill="#1e293b">- fetch_character_state</text>
-  <text x="484" y="730" font-size="13" fill="#1e293b">(character_id)</text>
-  <text x="470" y="750" font-size="13" fill="#1e293b">- search_lore(query, k ≤ 8)</text>
-  <text x="470" y="770" font-size="13" fill="#1e293b">- World set by the server</text>
-  <text x="470" y="790" font-size="13" fill="#1e293b">- Other worlds look missing</text>
-  <text x="470" y="810" font-size="13" fill="#1e293b">- Results as data, not errors</text>
-  <text x="470" y="830" font-size="13" fill="#1e293b">- One core for both layers</text>
+  <text x="466" y="710" font-size="13" fill="#1e293b">- fetch_character_state</text>
+  <text x="480" y="730" font-size="13" fill="#1e293b">(character_id)</text>
+  <text x="466" y="750" font-size="13" fill="#1e293b">- search_lore(query, k ≤ 8)</text>
+  <text x="466" y="770" font-size="13" fill="#1e293b">- World set by the server</text>
+  <text x="466" y="790" font-size="13" fill="#1e293b">- Other worlds look missing</text>
+  <text x="466" y="810" font-size="13" fill="#1e293b">- Results as data, not errors</text>
+  <text x="466" y="830" font-size="13" fill="#1e293b">- One core for both layers</text>
   <path d="M450,850 L710,850 L710,898 Q710,912 696,912 L464,912 Q450,912 450,898 Z" fill="#f1f5f9"/>
   <text x="493.3333333333333" y="870" text-anchor="middle" font-size="11" font-weight="700" fill="#0891b2">DEV</text>
   <text x="493.3333333333333" y="894" text-anchor="middle" font-size="11" fill="#1e293b">Node</text>
@@ -182,13 +182,13 @@
   <text x="990" y="608" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">Agent Orchestrator</text>
   <text x="990" y="652" text-anchor="middle" font-size="13.5" fill="#475569">LangGraph, LangChain</text>
   <line x1="880" y1="666" x2="1100" y2="666" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="880" y="692" font-size="13" fill="#1e293b">- Nodes: agent, tools, reflect</text>
-  <text x="880" y="712" font-size="13" fill="#1e293b">- ≤ 2 revisions, 3 calls a draft</text>
-  <text x="880" y="732" font-size="13" fill="#1e293b">- No revision after 12 s</text>
-  <text x="880" y="752" font-size="13" fill="#1e293b">- Caveat when a limit is hit</text>
-  <text x="880" y="772" font-size="13" fill="#1e293b">- Answer sent once, when checked</text>
-  <text x="880" y="792" font-size="13" fill="#1e293b">- Lore marked as data</text>
-  <text x="880" y="812" font-size="13" fill="#1e293b">- Leaks blocked; prompt agent.v6</text>
+  <text x="876" y="692" font-size="13" fill="#1e293b">- Nodes: agent, tools, reflect</text>
+  <text x="876" y="712" font-size="13" fill="#1e293b">- ≤ 2 revisions, 3 calls a draft</text>
+  <text x="876" y="732" font-size="13" fill="#1e293b">- No revision after 12 s</text>
+  <text x="876" y="752" font-size="13" fill="#1e293b">- Caveat when a limit is hit</text>
+  <text x="876" y="772" font-size="13" fill="#1e293b">- Answer sent once, when checked</text>
+  <text x="876" y="792" font-size="13" fill="#1e293b">- Lore marked as data</text>
+  <text x="876" y="812" font-size="13" fill="#1e293b">- Leaks blocked; prompt agent.v6</text>
   <path d="M860,850 L1120,850 L1120,898 Q1120,912 1106,912 L874,912 Q860,912 860,898 Z" fill="#f1f5f9"/>
   <text x="903.3333333333334" y="870" text-anchor="middle" font-size="11" font-weight="700" fill="#4d7c0f">DEV</text>
   <text x="903.3333333333334" y="894" text-anchor="middle" font-size="11" fill="#1e293b">Node</text>
@@ -205,11 +205,12 @@
   <text x="1400" y="608" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">Reflection LLM</text>
   <text x="1400" y="652" text-anchor="middle" font-size="13.5" fill="#475569">Anthropic, Claude Haiku 4.5</text>
   <line x1="1290" y1="666" x2="1510" y2="666" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="1290" y="692" font-size="13" fill="#1e293b">- Checks draft vs. tool results</text>
-  <text x="1290" y="712" font-size="13" fill="#1e293b">- Structured verdict</text>
-  <text x="1290" y="732" font-size="13" fill="#1e293b">- Prompt reflection.v2</text>
-  <text x="1290" y="752" font-size="13" fill="#1e293b">- Temperature 0</text>
-  <text x="1290" y="772" font-size="13" fill="#1e293b">- Counts tokens</text>
+  <text x="1286" y="692" font-size="13" fill="#1e293b">- Prompt Engineering: Reflection Rubric</text>
+  <text x="1286" y="712" font-size="13" fill="#1e293b">- Checks draft vs. tool results</text>
+  <text x="1286" y="732" font-size="13" fill="#1e293b">- Structured verdict</text>
+  <text x="1286" y="752" font-size="13" fill="#1e293b">- Rubric reflection.v2</text>
+  <text x="1286" y="772" font-size="13" fill="#1e293b">- Temperature 0</text>
+  <text x="1286" y="792" font-size="13" fill="#1e293b">- Counts tokens</text>
   <path d="M1270,850 L1530,850 L1530,898 Q1530,912 1516,912 L1284,912 Q1270,912 1270,898 Z" fill="#f1f5f9"/>
   <text x="1313.3333333333333" y="870" text-anchor="middle" font-size="11" font-weight="700" fill="#a21caf">DEV</text>
   <text x="1313.3333333333333" y="894" text-anchor="middle" font-size="11" fill="#1e293b">Haiku</text>
@@ -227,11 +228,11 @@
   <text x="1810" y="652" text-anchor="middle" font-size="13.5" fill="#475569">PostgreSQL, Drizzle,</text>
   <text x="1810" y="670" text-anchor="middle" font-size="13.5" fill="#475569">postgres.js</text>
   <line x1="1700" y1="684" x2="1920" y2="684" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="1700" y="710" font-size="13" fill="#1e293b">- Table feedback_events</text>
-  <text x="1700" y="730" font-size="13" fill="#1e293b">- Appends up, down and copy</text>
-  <text x="1700" y="750" font-size="13" fill="#1e293b">- Model and prompt version</text>
-  <text x="1700" y="770" font-size="13" fill="#1e293b">- No text, no visitor id</text>
-  <text x="1700" y="790" font-size="13" fill="#1e293b">- Row Level Security on</text>
+  <text x="1696" y="710" font-size="13" fill="#1e293b">- Table feedback_events</text>
+  <text x="1696" y="730" font-size="13" fill="#1e293b">- Appends up, down and copy</text>
+  <text x="1696" y="750" font-size="13" fill="#1e293b">- Model and prompt version</text>
+  <text x="1696" y="770" font-size="13" fill="#1e293b">- No text, no visitor id</text>
+  <text x="1696" y="790" font-size="13" fill="#1e293b">- Row Level Security on</text>
   <path d="M1680,850 L1940,850 L1940,898 Q1940,912 1926,912 L1694,912 Q1680,912 1680,898 Z" fill="#f1f5f9"/>
   <text x="1723.3333333333333" y="870" text-anchor="middle" font-size="11" font-weight="700" fill="#059669">DEV</text>
   <text x="1723.3333333333333" y="894" text-anchor="middle" font-size="11" fill="#1e293b">Docker</text>
@@ -248,11 +249,11 @@
   <text x="170" y="1054" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">Embedding Model</text>
   <text x="170" y="1098" text-anchor="middle" font-size="13.5" fill="#475569">Voyage AI, REST over fetch</text>
   <line x1="60" y1="1112" x2="280" y2="1112" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="60" y="1138" font-size="13" fill="#1e293b">- Embeds lore chunks (ingest)</text>
-  <text x="60" y="1158" font-size="13" fill="#1e293b">- Embeds search questions</text>
-  <text x="60" y="1178" font-size="13" fill="#1e293b">- 1024 dims, normalized</text>
-  <text x="60" y="1198" font-size="13" fill="#1e293b">- Batches, retries on 429/5xx</text>
-  <text x="60" y="1218" font-size="13" fill="#1e293b">- Counts tokens at ingest</text>
+  <text x="56" y="1138" font-size="13" fill="#1e293b">- Embeds lore chunks (ingest)</text>
+  <text x="56" y="1158" font-size="13" fill="#1e293b">- Embeds search questions</text>
+  <text x="56" y="1178" font-size="13" fill="#1e293b">- 1024 dims, normalized</text>
+  <text x="56" y="1198" font-size="13" fill="#1e293b">- Batches, retries on 429/5xx</text>
+  <text x="56" y="1218" font-size="13" fill="#1e293b">- Counts tokens at ingest</text>
   <path d="M40,1296 L300,1296 L300,1344 Q300,1358 286,1358 L54,1358 Q40,1358 40,1344 Z" fill="#f1f5f9"/>
   <text x="83.33333333333334" y="1316" text-anchor="middle" font-size="11" font-weight="700" fill="#ca8a04">DEV</text>
   <text x="83.33333333333334" y="1340" text-anchor="middle" font-size="11" fill="#1e293b">voyage-4-lite</text>
@@ -270,12 +271,12 @@
   <text x="580" y="1098" text-anchor="middle" font-size="13.5" fill="#475569">PostgreSQL 17, pgvector,</text>
   <text x="580" y="1116" text-anchor="middle" font-size="13.5" fill="#475569">Drizzle</text>
   <line x1="470" y1="1130" x2="690" y2="1130" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="470" y="1156" font-size="13" fill="#1e293b">- Table lore_chunks</text>
-  <text x="470" y="1176" font-size="13" fill="#1e293b">- vector(1024) per chunk</text>
-  <text x="470" y="1196" font-size="13" fill="#1e293b">- Exact cosine search, no index</text>
-  <text x="470" y="1216" font-size="13" fill="#1e293b">- Filters by world_id</text>
-  <text x="470" y="1236" font-size="13" fill="#1e293b">- Similarity floor</text>
-  <text x="470" y="1256" font-size="13" fill="#1e293b">- Rebuilt by pnpm ingest</text>
+  <text x="466" y="1156" font-size="13" fill="#1e293b">- Table lore_chunks</text>
+  <text x="466" y="1176" font-size="13" fill="#1e293b">- vector(1024) per chunk</text>
+  <text x="466" y="1196" font-size="13" fill="#1e293b">- Exact cosine search, no index</text>
+  <text x="466" y="1216" font-size="13" fill="#1e293b">- Filters by world_id</text>
+  <text x="466" y="1236" font-size="13" fill="#1e293b">- Similarity floor</text>
+  <text x="466" y="1256" font-size="13" fill="#1e293b">- Rebuilt by pnpm ingest</text>
   <path d="M450,1296 L710,1296 L710,1344 Q710,1358 696,1358 L464,1358 Q450,1358 450,1344 Z" fill="#f1f5f9"/>
   <text x="493.3333333333333" y="1316" text-anchor="middle" font-size="11" font-weight="700" fill="#0369a1">DEV</text>
   <text x="493.3333333333333" y="1340" text-anchor="middle" font-size="11" fill="#1e293b">Docker</text>
@@ -293,12 +294,13 @@
   <text x="990" y="1098" text-anchor="middle" font-size="13.5" fill="#475569">Anthropic, Claude Haiku 4.5,</text>
   <text x="990" y="1116" text-anchor="middle" font-size="13.5" fill="#475569">Claude Sonnet 5.5</text>
   <line x1="880" y1="1130" x2="1100" y2="1130" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="880" y="1156" font-size="13" fill="#1e293b">- Chooses tool calls</text>
-  <text x="880" y="1176" font-size="13" fill="#1e293b">- Writes and revises drafts</text>
-  <text x="880" y="1196" font-size="13" fill="#1e293b">- At most 1,024 tokens a call</text>
-  <text x="880" y="1216" font-size="13" fill="#1e293b">- Streaming off: text held back</text>
-  <text x="880" y="1236" font-size="13" fill="#1e293b">- Prompt caching (Sonnet)</text>
-  <text x="880" y="1256" font-size="13" fill="#1e293b">- Counts cached tokens apart</text>
+  <text x="876" y="1156" font-size="13" fill="#1e293b">- Prompt Engineering: Agent Prompt</text>
+  <text x="876" y="1176" font-size="13" fill="#1e293b">- Chooses tool calls</text>
+  <text x="876" y="1196" font-size="13" fill="#1e293b">- Writes and revises drafts</text>
+  <text x="876" y="1216" font-size="13" fill="#1e293b">- At most 1,024 tokens a call</text>
+  <text x="876" y="1236" font-size="13" fill="#1e293b">- Streaming off: text held back</text>
+  <text x="876" y="1256" font-size="13" fill="#1e293b">- Prompt caching (Sonnet)</text>
+  <text x="876" y="1276" font-size="13" fill="#1e293b">- Counts cached tokens apart</text>
   <path d="M860,1296 L1120,1296 L1120,1344 Q1120,1358 1106,1358 L874,1358 Q860,1358 860,1344 Z" fill="#f1f5f9"/>
   <text x="903.3333333333334" y="1316" text-anchor="middle" font-size="11" font-weight="700" fill="#c2410c">DEV</text>
   <text x="903.3333333333334" y="1340" text-anchor="middle" font-size="11" fill="#1e293b">Haiku</text>
@@ -315,12 +317,12 @@
   <text x="1400" y="1054" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">Observability</text>
   <text x="1400" y="1098" text-anchor="middle" font-size="13.5" fill="#475569">LangSmith (EU), langsmith</text>
   <line x1="1290" y1="1112" x2="1510" y2="1112" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="1290" y="1138" font-size="13" fill="#1e293b">- Traces every graph run</text>
-  <text x="1290" y="1158" font-size="13" fill="#1e293b">- env, model, prompt_version</text>
-  <text x="1290" y="1178" font-size="13" fill="#1e293b">- Tokens, cost, latency</text>
-  <text x="1290" y="1198" font-size="13" fill="#1e293b">- Sent after the response</text>
-  <text x="1290" y="1218" font-size="13" fill="#1e293b">- Read by pnpm cost:report</text>
-  <text x="1290" y="1238" font-size="13" fill="#1e293b">- Off in CI and in the evals</text>
+  <text x="1286" y="1138" font-size="13" fill="#1e293b">- Traces every graph run</text>
+  <text x="1286" y="1158" font-size="13" fill="#1e293b">- env, model, prompt_version</text>
+  <text x="1286" y="1178" font-size="13" fill="#1e293b">- Tokens, cost, latency</text>
+  <text x="1286" y="1198" font-size="13" fill="#1e293b">- Sent after the response</text>
+  <text x="1286" y="1218" font-size="13" fill="#1e293b">- Read by pnpm cost:report</text>
+  <text x="1286" y="1238" font-size="13" fill="#1e293b">- Off in CI and in the evals</text>
   <path d="M1270,1296 L1530,1296 L1530,1344 Q1530,1358 1516,1358 L1284,1358 Q1270,1358 1270,1344 Z" fill="#f1f5f9"/>
   <text x="1313.3333333333333" y="1316" text-anchor="middle" font-size="11" font-weight="700" fill="#b91c1c">DEV</text>
   <text x="1313.3333333333333" y="1340" text-anchor="middle" font-size="11" fill="#1e293b">Dev project</text>
@@ -338,12 +340,12 @@
   <text x="1810" y="1098" text-anchor="middle" font-size="13.5" fill="#475569">PostgreSQL, Drizzle,</text>
   <text x="1810" y="1116" text-anchor="middle" font-size="13.5" fill="#475569">postgres.js</text>
   <line x1="1700" y1="1130" x2="1920" y2="1130" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="1700" y="1156" font-size="13" fill="#1e293b">- Table usage_events</text>
-  <text x="1700" y="1176" font-size="13" fill="#1e293b">- One row per accepted request</text>
-  <text x="1700" y="1196" font-size="13" fill="#1e293b">- Tokens, cost, latency</text>
-  <text x="1700" y="1216" font-size="13" fill="#1e293b">- Rate limit per visitor</text>
-  <text x="1700" y="1236" font-size="13" fill="#1e293b">- Daily token budget</text>
-  <text x="1700" y="1256" font-size="13" fill="#1e293b">- Fails open on a DB error</text>
+  <text x="1696" y="1156" font-size="13" fill="#1e293b">- Table usage_events</text>
+  <text x="1696" y="1176" font-size="13" fill="#1e293b">- One row per accepted request</text>
+  <text x="1696" y="1196" font-size="13" fill="#1e293b">- Tokens, cost, latency</text>
+  <text x="1696" y="1216" font-size="13" fill="#1e293b">- Rate limit per visitor</text>
+  <text x="1696" y="1236" font-size="13" fill="#1e293b">- Daily token budget</text>
+  <text x="1696" y="1256" font-size="13" fill="#1e293b">- Fails open on a DB error</text>
   <path d="M1680,1296 L1940,1296 L1940,1344 Q1940,1358 1926,1358 L1694,1358 Q1680,1358 1680,1344 Z" fill="#f1f5f9"/>
   <text x="1723.3333333333333" y="1316" text-anchor="middle" font-size="11" font-weight="700" fill="#047857">DEV</text>
   <text x="1723.3333333333333" y="1340" text-anchor="middle" font-size="11" fill="#1e293b">Docker</text>
@@ -354,27 +356,28 @@
   <rect x="1692" y="1010" width="62" height="24" rx="12" fill="#52606d" stroke="#ffffff" stroke-width="2"/>
   <text x="1723" y="1026.5" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Docker</text>
 
-  <!-- Evals -->
-  <rect x="450" y="1468" width="260" height="336" rx="14" fill="#ffffff" filter="url(#shadow)"/>
-  <path d="M450,1518 L450,1482 Q450,1468 464,1468 L696,1468 Q710,1468 710,1482 L710,1518 Z" fill="#be123c"/>
-  <text x="580" y="1500" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">Evals</text>
-  <text x="580" y="1544" text-anchor="middle" font-size="13.5" fill="#475569">tsx, Claude Opus 5.5 judge,</text>
-  <text x="580" y="1562" text-anchor="middle" font-size="13.5" fill="#475569">GitHub Actions</text>
-  <line x1="470" y1="1576" x2="690" y2="1576" stroke="#e2e8f0" stroke-width="1.5"/>
-  <text x="470" y="1602" font-size="13" fill="#1e293b">- pnpm eval: cases, code + judge</text>
-  <text x="470" y="1622" font-size="13" fill="#1e293b">- pnpm eval:redteam: attacks</text>
-  <text x="470" y="1642" font-size="13" fill="#1e293b">- pnpm eval:labels: judge check</text>
-  <text x="470" y="1662" font-size="13" fill="#1e293b">- pnpm eval:retrieval: search</text>
-  <text x="470" y="1682" font-size="13" fill="#1e293b">- CI gate: smoke + red team</text>
-  <path d="M450,1742 L710,1742 L710,1790 Q710,1804 696,1804 L464,1804 Q450,1804 450,1790 Z" fill="#f1f5f9"/>
-  <text x="493.3333333333333" y="1762" text-anchor="middle" font-size="11" font-weight="700" fill="#be123c">DEV</text>
-  <text x="493.3333333333333" y="1786" text-anchor="middle" font-size="11" fill="#1e293b">Node</text>
-  <text x="580" y="1762" text-anchor="middle" font-size="11" font-weight="700" fill="#be123c">PREV</text>
-  <text x="580" y="1786" text-anchor="middle" font-size="11" fill="#1e293b">GitHub CI</text>
-  <text x="666.6666666666666" y="1762" text-anchor="middle" font-size="11" font-weight="700" fill="#be123c">PROD</text>
-  <text x="666.6666666666666" y="1786" text-anchor="middle" font-size="11" fill="#1e293b">—</text>
-  <rect x="462" y="1456" width="69" height="24" rx="12" fill="#ffffff" stroke="#27272a" stroke-width="1.5"/>
-  <text x="496.5" y="1472.5" text-anchor="middle" font-size="12" font-weight="700" fill="#27272a">Tooling</text>
+  <!-- LLM Judge -->
+  <rect x="860" y="1468" width="260" height="336" rx="14" fill="#ffffff" filter="url(#shadow)"/>
+  <path d="M860,1518 L860,1482 Q860,1468 874,1468 L1106,1468 Q1120,1468 1120,1482 L1120,1518 Z" fill="#be123c"/>
+  <text x="990" y="1500" text-anchor="middle" font-size="19" font-weight="700" fill="#ffffff">LLM Judge</text>
+  <text x="990" y="1544" text-anchor="middle" font-size="13.5" fill="#475569">Anthropic, Claude Opus 5.5</text>
+  <line x1="880" y1="1558" x2="1100" y2="1558" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="876" y="1584" font-size="13" fill="#1e293b">- Prompt Engineering: Eval Rubric</text>
+  <text x="876" y="1604" font-size="13" fill="#1e293b">- Rubric judge.v1, reasoning first</text>
+  <text x="876" y="1624" font-size="13" fill="#1e293b">- Faithfulness 1 to 5, pass at 4</text>
+  <text x="876" y="1644" font-size="13" fill="#1e293b">- Pass or fail per constraint</text>
+  <text x="876" y="1664" font-size="13" fill="#1e293b">- Structured verdict, effort low</text>
+  <text x="876" y="1684" font-size="13" fill="#1e293b">- Grades pnpm eval and red team</text>
+  <text x="876" y="1704" font-size="13" fill="#1e293b">- Checked against human labels</text>
+  <path d="M860,1742 L1120,1742 L1120,1790 Q1120,1804 1106,1804 L874,1804 Q860,1804 860,1790 Z" fill="#f1f5f9"/>
+  <text x="903.3333333333334" y="1762" text-anchor="middle" font-size="11" font-weight="700" fill="#be123c">DEV</text>
+  <text x="903.3333333333334" y="1786" text-anchor="middle" font-size="11" fill="#1e293b">Opus 5.5</text>
+  <text x="990" y="1762" text-anchor="middle" font-size="11" font-weight="700" fill="#be123c">PREV</text>
+  <text x="990" y="1786" text-anchor="middle" font-size="11" fill="#1e293b">Opus 5.5 (CI)</text>
+  <text x="1076.6666666666667" y="1762" text-anchor="middle" font-size="11" font-weight="700" fill="#be123c">PROD</text>
+  <text x="1076.6666666666667" y="1786" text-anchor="middle" font-size="11" fill="#1e293b">—</text>
+  <rect x="872" y="1456" width="76" height="24" rx="12" fill="#ffffff" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="910" y="1472.5" text-anchor="middle" font-size="12" font-weight="700" fill="#27272a">External</text>
 
   <!-- Connections -->
   <polyline points="300,240 450,240" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
@@ -452,36 +455,30 @@
   <text x="1605" y="965" text-anchor="middle" font-size="11" font-weight="700" fill="#334155">SQL</text>
   <text x="1605" y="978" text-anchor="middle" font-size="10.5" fill="#475569">usage guard, Drizzle</text>
 
-  <polyline points="580,1358 580,1468" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-  <rect x="589.92" y="1397" width="122" height="32" rx="7" fill="#ffffff" fill-opacity="0.88" stroke="#cbd5e1"/>
-  <text x="650.92" y="1411" text-anchor="middle" font-size="11" font-weight="700" fill="#334155">SQL</text>
-  <text x="650.92" y="1424" text-anchor="middle" font-size="10.5" fill="#475569">test world, search</text>
-
-  <polyline points="710,1636 785,1636 785,846 860,846" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-  <rect x="736" y="1397" width="98" height="32" rx="7" fill="#ffffff" fill-opacity="0.88" stroke="#cbd5e1"/>
-  <text x="785" y="1411" text-anchor="middle" font-size="11" font-weight="700" fill="#334155">In-process</text>
-  <text x="785" y="1424" text-anchor="middle" font-size="10.5" fill="#475569">the real graph</text>
+  <polyline points="860,846 785,846 785,1636 860,1636" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <rect x="718.5" y="1397" width="133" height="32" rx="7" fill="#ffffff" fill-opacity="0.88" stroke="#cbd5e1"/>
+  <text x="785" y="1411" text-anchor="middle" font-size="11" font-weight="700" fill="#334155">HTTPS, in the evals</text>
+  <text x="785" y="1424" text-anchor="middle" font-size="10.5" fill="#475569">answer and evidence</text>
 
   <!-- Legend -->
-  <rect x="860" y="1474" width="1080" height="324" rx="14" fill="#ffffff" fill-opacity="0.7" stroke="#cbd5e1"/>
-  <text x="888" y="1514" font-size="16" font-weight="700" fill="#0f172a">Legend</text>
-  <text x="888" y="1542" font-size="13" font-weight="700" fill="#475569">Location (the badge on each module)</text>
-  <rect x="888" y="1560" width="49" height="24" rx="12" fill="#27272a" stroke="#ffffff" stroke-width="2"/>
-  <text x="912.5" y="1576.5" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Core</text>
-  <text x="1000" y="1576.5" font-size="13" fill="#1e293b">Runs inside the web app: Node locally, Vercel functions when deployed</text>
-  <rect x="888" y="1594" width="62" height="24" rx="12" fill="#52606d" stroke="#ffffff" stroke-width="2"/>
-  <text x="919" y="1610.5" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Docker</text>
-  <text x="1000" y="1610.5" font-size="13" fill="#1e293b">A container on the developer's machine; a managed service when deployed</text>
-  <rect x="888" y="1628" width="76" height="24" rx="12" fill="#8a7560" stroke="#ffffff" stroke-width="2"/>
-  <text x="926" y="1644.5" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Embedded</text>
-  <text x="1000" y="1644.5" font-size="13" fill="#1e293b">Lives inside another module (the SQLite file of the legacy CMS)</text>
-  <rect x="888" y="1662" width="76" height="24" rx="12" fill="#ffffff" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4 3"/>
-  <text x="926" y="1678.5" text-anchor="middle" font-size="12" font-weight="700" fill="#27272a">External</text>
-  <text x="1000" y="1678.5" font-size="13" fill="#1e293b">A third-party API, called over HTTPS</text>
-  <rect x="888" y="1696" width="69" height="24" rx="12" fill="#ffffff" stroke="#27272a" stroke-width="1.5"/>
-  <text x="922.5" y="1712.5" text-anchor="middle" font-size="12" font-weight="700" fill="#27272a">Tooling</text>
-  <text x="1000" y="1712.5" font-size="13" fill="#1e293b">Runs only on a developer's machine and in CI, never in the product</text>
-  <text x="888" y="1750" font-size="13" fill="#1e293b"><tspan font-weight="700">DEV, PREV, PROD:</tspan> what the module runs on in development, Preview and Production.</text>
-  <line x1="888" y1="1776" x2="952" y2="1776" stroke="#475569" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-  <text x="964" y="1780" font-size="13" fill="#1e293b">Who talks to whom; the label names the protocol and how.</text>
+  <rect x="1270" y="1474" width="670" height="324" rx="14" fill="#ffffff" fill-opacity="0.7" stroke="#cbd5e1"/>
+  <text x="1294" y="1512" font-size="16" font-weight="700" fill="#0f172a">Legend</text>
+  <text x="1294" y="1540" font-size="13" font-weight="700" fill="#475569">Location (the badge on each module)</text>
+  <rect x="1294" y="1556" width="49" height="24" rx="12" fill="#27272a" stroke="#ffffff" stroke-width="2"/>
+  <text x="1318.5" y="1572.5" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Core</text>
+  <text x="1398" y="1572.5" font-size="13" fill="#1e293b">Runs inside the web app: Node locally, Vercel functions when deployed</text>
+  <rect x="1294" y="1588" width="62" height="24" rx="12" fill="#52606d" stroke="#ffffff" stroke-width="2"/>
+  <text x="1325" y="1604.5" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Docker</text>
+  <text x="1398" y="1604.5" font-size="13" fill="#1e293b">A container on the developer's machine; a managed service when deployed</text>
+  <rect x="1294" y="1620" width="76" height="24" rx="12" fill="#8a7560" stroke="#ffffff" stroke-width="2"/>
+  <text x="1332" y="1636.5" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Embedded</text>
+  <text x="1398" y="1636.5" font-size="13" fill="#1e293b">Lives inside another module (the SQLite file of the legacy CMS)</text>
+  <rect x="1294" y="1652" width="76" height="24" rx="12" fill="#ffffff" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="1332" y="1668.5" text-anchor="middle" font-size="12" font-weight="700" fill="#27272a">External</text>
+  <text x="1398" y="1668.5" font-size="13" fill="#1e293b">A third-party API, called over HTTPS</text>
+  <text x="1294" y="1710" font-size="13" fill="#1e293b"><tspan font-weight="700">DEV, PREV, PROD:</tspan> what the module runs on in development, Preview and Production.</text>
+  <line x1="1294" y1="1738" x2="1358" y2="1738" stroke="#475569" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="1370" y="1742" font-size="13" fill="#1e293b">Who talks to whom; the label names the protocol and how.</text>
+  <rect x="1294" y="1758" width="64" height="22" rx="6" fill="#a1a1aa"/>
+  <text x="1370" y="1774" font-size="13" fill="#1e293b">A gray module is not built yet on this day.</text>
 </svg>

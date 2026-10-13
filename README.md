@@ -38,7 +38,7 @@ Loreweaver was built over seven days, and each day is documented by a report in 
 
 ## Architecture
 
-[![Architecture of Loreweaver](docs/diagrams/06_Evaluation_Safety_ResponsibleAI.svg)](docs/diagrams/06_Evaluation_Safety_ResponsibleAI.svg)
+[![Architecture of Loreweaver](docs/diagrams/06_Evals_Judges_Safety.svg)](docs/diagrams/06_Evals_Judges_Safety.svg)
 
 How a question is answered:
 
@@ -443,18 +443,19 @@ The cost of each run is listed with its entry in METRICS.md.
 - [Metrics](docs/METRICS.md) and [model benchmark](docs/BENCHMARK.md)
 - [System card](docs/SYSTEM_CARD.md): what the agent is for and not for, how it was checked, its limits and who stays in charge
 - [Privacy](docs/PRIVACY.md): where the data goes, what is stored and for how long, and how a world's data is deleted
+- [Summary of the days](docs/DAILY_SUMMARY.md): one table of the tasks, documents, decisions and metrics of each day
 - Daily reports: [Day 1](docs/reports/day-1.md), [Day 2](docs/reports/day-2.md), [Day 3](docs/reports/day-3.md), [Day 4](docs/reports/day-4.md), [Day 5](docs/reports/day-5.md), [Day 6](docs/reports/day-6.md)
 
 ### Architecture diagrams
 
-[`docs/diagrams/`](docs/diagrams/) holds one snapshot per day of the build. All six use the same canvas and keep every module in the same place, so the snapshots can be compared side by side:
+[`docs/diagrams/`](docs/diagrams/) holds one snapshot per day of the build. All six use the same canvas and show every module in the same place, so the snapshots can be compared side by side. A module that is not built yet on that day is drawn in gray, without its badge and connections:
 
-1. [Product Discovery, Legacy CMS & Scaffolding](docs/diagrams/01_ProductDiscovery_LegacyCMS_Scaffolding.svg)
-2. [Model Layer, Streaming & Generative UI](docs/diagrams/02_ModelLayer_Streaming_GenerativeUI.svg)
-3. [Lore, Embeddings & Retrieval](docs/diagrams/03_Lore_Embeddings_Retrieval.svg)
-4. [Agentic Orchestration & Reflection](docs/diagrams/04_AgenticOrchestration_Reflection.svg)
-5. [Observability, Token Economics & Performance](docs/diagrams/05_Observability_TokenEconomics_Performance.svg)
-6. [Evaluation, Safety & Responsible AI](docs/diagrams/06_Evaluation_Safety_ResponsibleAI.svg)
+1. [Product Discovery, Scaffolding, Legacy CMS, and Walking Skeleton](docs/diagrams/01_ProductDiscovery_Scaffolding_LegacyCMS_WalkingSkeleton.svg)
+2. [UI Design, Agent v1, and Tools v1](docs/diagrams/02_UIDesign_Agentv1_Toolsv1.svg)
+3. [LoreBible, RAG, and Tools v2](docs/diagrams/03_LoreBible_RAG_Toolsv2.svg)
+4. [State Graph, Agent v2](docs/diagrams/04_StateGraph_Agentv2.svg)
+5. [Observability, Cost Optimization, and Guardrails](docs/diagrams/05_Observability_CostOptimization_Guardrails.svg)
+6. [Evals, Judges, and Safety](docs/diagrams/06_Evals_Judges_Safety.svg)
 
 Each module shows:
 
@@ -473,7 +474,7 @@ data/lore/             The lore of each world, as Markdown files (the source of 
 evals/                 Eval datasets, runners, judge, labels and the reports that documents rely on
 services/legacy-cms/   The legacy CMS (PHP, Slim, SQLite) and its OpenAPI contract
 packages/shared/       Reserved for code shared between projects (empty so far)
-docs/                  PRD, ADRs, agent design, system card, privacy, metrics, benchmark and daily reports
+docs/                  PRD, ADRs, agent design, system card, privacy, metrics, benchmark, daily reports and their summary
 docs/diagrams/         The architecture diagrams and the script that generates them
 docker-compose.yml     The legacy CMS and Postgres for local development
 .github/workflows/     CI: format, lint, types and tests on every pull request, and the eval gate
