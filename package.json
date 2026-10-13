@@ -28,6 +28,7 @@
     "ingest": "pnpm --filter web exec tsx scripts/ingest.ts",
     "eval": "pnpm --filter web exec tsx ../../evals/judge.ts",
     "eval:redteam": "pnpm --filter web exec tsx ../../evals/judge.ts --dataset redteam",
+    "eval:summary": "pnpm --filter web exec tsx ../../evals/report-summary.ts",
     "eval:labels": "pnpm --filter web exec tsx ../../evals/labels.ts",
     "eval:retrieval": "pnpm --filter web exec tsx ../../evals/retrieval.ts",
     "measure:retrieval": "pnpm --filter web exec tsx scripts/measure-retrieval.ts",

@@ -198,7 +198,7 @@ On Vercel, import the GitHub repository and set the project's **Root Directory**
 
 ## Measurements
 
-Every number reported about the project is recorded in [`docs/METRICS.md`](docs/METRICS.md), with how it was measured and the command that reproduces it. The comparison of Claude Haiku 4.5 and Sonnet 5.5 behind the choice of model is in [`docs/BENCHMARK.md`](docs/BENCHMARK.md). `pnpm benchmark` and `pnpm measure:chat` spend a few cents of model credit per run.
+Every number reported about the project is recorded in [`docs/METRICS.md`](docs/METRICS.md), with how it was measured and the command that reproduces it. The comparison of Claude Haiku 4.5 and Sonnet 5.5 behind the choice of model is in [`docs/BENCHMARK.md`](docs/BENCHMARK.md). `pnpm benchmark` and `pnpm measure:chat` spend a few cents of model credit per run. `pnpm eval` and `pnpm eval:redteam` call the agent and a judge model, and cost from a few cents to about sixty cents per run (see the entries of Day 6); `pnpm eval:summary` and `pnpm eval:labels --agreement` call no model.
 
 ## Docs
 

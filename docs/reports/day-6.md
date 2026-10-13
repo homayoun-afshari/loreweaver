@@ -89,7 +89,7 @@ Same URLs as Day 5. One changes.
 
 ## 6. Unit tests and CI
 
-**515 tests** (133 new today), Vitest, ten of them skipped without a database as before. None calls a real model.
+**523 tests** (141 new today), Vitest, ten of them skipped without a database as before. None calls a real model.
 
 | Area                      | What is checked                                                                                                                                                                                                                                                         |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
