@@ -864,7 +864,7 @@ The cases where they differ: `strike-flint-10` (judge pass 5, human fail 5: the 
 pnpm eval:labels --report evals/reports/e2e-20261012T203518-before.json --agreement
 ```
 
-It calls no model and **costs nothing**, and it is **deterministic**: the same report and the same labels give the same table. Check out `567aa6d` to have the labels and the tooling together. To label again, move `evals/judge-labels.csv` away, run the same command without `--agreement` to write a new sheet and a reading copy next to the report, fill in the CSV, and run it with `--agreement`.
+It calls no model and **costs nothing**, and it is **deterministic**: the same report and the same labels give the same table. Check out `567aa6d` to have the labels and the tooling together. To label again, move `evals/judge-labels.csv` away, run the same command without `--agreement` to write a new sheet and a reading copy next to the report, fill in the CSV, and run it with `--agreement`. Nothing in the judge's grading, the labels or the sheet has changed since `567aa6d`.
 
 ## Day 6: the red-team set and the code defenses
 
@@ -940,7 +940,7 @@ pnpm eval:redteam --only cross-world-03 --agent-model claude-haiku-4-5 --faithfu
 pnpm eval:summary evals/reports/redteam-20261012T213155-guarded.json evals/reports/redteam-20261012T213345-unguarded.json --names guarded,unguarded
 ```
 
-The length limit: start `pnpm dev`, then POST a body of 9,000 characters to `/api/chat` (`{"messages":[{"id":"1","role":"user","parts":[{"type":"text","text":"xxx..."}]}]}`). **A run costs about $0.14 to $0.21 with the judge and about $0.04 without it**, and the input-limit case costs nothing. The tables come from the committed reports (`evals/reports/redteam-*.json`) through `pnpm eval:summary`, which is free and repeatable. **To repeat the runs, check out `2e452f9`** (`dac7bcd` for `agent.v6`). The runs are **not deterministic**, so a new run gives close numbers, not identical ones, and a case that sits on the edge (`cross-world-03`) can come out either way.
+The length limit: start `pnpm dev`, then POST a body of 9,000 characters to `/api/chat` (`{"messages":[{"id":"1","role":"user","parts":[{"type":"text","text":"xxx..."}]}]}`). **A run costs about $0.14 to $0.21 with the judge and about $0.04 without it**, and the input-limit case costs nothing. The tables come from the committed reports (`evals/reports/redteam-*.json`) through `pnpm eval:summary`, which is free and repeatable. **To repeat the runs, check out `2e452f9`** (`dac7bcd` for `agent.v6`). The runs are **not deterministic**, so a new run gives close numbers, not identical ones, and a case that sits on the edge (`cross-world-03`) can come out either way. Since `2e452f9` the agent prompt became `agent.v6` (which changes how `cross-world-03` comes out) and the text box and the server gained a clear message for a message that is too long; neither changes how a case is graded.
 
 ## Day 6: the CI gate, its calibration and its proof
 
@@ -1025,4 +1025,52 @@ pnpm eval --only fire-escape-01,teleport-ward-03,restricted-stacks-04,other-worl
 pnpm eval:summary evals/reports/e2e-20261012T223456-calib2-smoke-1.json evals/reports/e2e-20261012T223705-calib2-smoke-2.json evals/reports/e2e-20261012T233259-v6-smoke.json evals/reports/e2e-20261012T223954-calib2-broken.json evals/reports/e2e-20261012T225430-calib4-broken.json --names healthy-1,healthy-2,healthy-v6,invent-canon,general-knowledge
 ```
 
-**A smoke run costs about $0.21 to $0.34 and a red-team run about $0.14.** The tables come from the committed reports (`evals/reports/e2e-*calib*`, `e2e-*v6-smoke*`, `redteam-*calib-rt*`) through `pnpm eval:summary`, free and repeatable. **To repeat the runs, check out `30e9e96`** (`dac7bcd` for `agent.v6`); `evals/break_prompt.py` applies the general-knowledge break and refuses to run if the prompt no longer holds the two sentences. The runs are **not deterministic**: the same configuration gave 4.20 and 4.70, and the proof gave 4.20 where the same break gave 3.20 on the laptop. The job runs on GitHub on every pull request that touches a file the agent depends on, so its results for later pull requests are in the job summaries and the artifacts, not here.
+**A smoke run costs about $0.21 to $0.34 and a red-team run about $0.14.** The tables come from the committed reports (`evals/reports/e2e-*calib*`, `e2e-*v6-smoke*`, `redteam-*calib-rt*`) through `pnpm eval:summary`, free and repeatable. **To repeat the runs, check out `30e9e96`** (`dac7bcd` for `agent.v6`); `evals/break_prompt.py` applies the general-knowledge break and refuses to run if the prompt no longer holds the two sentences. The runs are **not deterministic**: the same configuration gave 4.20 and 4.70, and the proof gave 4.20 where the same break gave 3.20 on the laptop. The job runs on GitHub on every pull request that touches a file the agent depends on, so its results for later pull requests are in the job summaries and the artifacts, not here. Since `30e9e96` the prompt became `agent.v6`, which lifted `cross-world-03` and so the red-team gate's results, and the report summary script was added; the rules of the gate are unchanged.
+
+## Day 6: model spend of the day
+
+**What was measured:** how much model credit the day's work used, by group of work, and what was left. It matters because the evals call a model for every case and a second, stronger model to grade it, and the gate calibration repeated them.
+
+### Setup
+
+| Item         | Value                                                                                                                                                                                                                                                                                                    |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code version | Not tied to one commit: the sums cover the runs of the entries above, made on the branches that ended at `fc7a1d6`, `2e452f9`, `30e9e96` and `dac7bcd`                                                                                                                                                   |
+| Source       | The line "Cost: agent / judge / total" of each run, which prices the tokens the provider reported at list prices (Sonnet 5.5 $2 / $10, Haiku 4.5 $1 / $5, Opus 5.5 $4 / $20 per million input / output tokens); the logs of the CI jobs; and the balance of the Anthropic Console, read by the developer |
+| Not included | Voyage AI embeddings (a fraction of a cent, inside the free allowance), the chat questions asked by hand on the Preview deployments, and any model use outside the runs below                                                                                                                            |
+
+### Results
+
+| Group of work                                                                                                   | Spend (list prices) |
+| --------------------------------------------------------------------------------------------------------------- | ------------------: |
+| The end-to-end eval: a smoke test and two full runs                                                             |               $1.10 |
+| The judge check and the prompt fixes: the `before`, `agent.v4` and `agent.v5` runs and a probe                  |               $1.74 |
+| The red-team set and the code defenses: five red-team runs and one full run                                     |               $1.26 |
+| Calibrating the CI gate: nine ten-case smoke runs, two red-team runs, a few checks                              |               $3.03 |
+| The first failure of the job and its fix: eleven repeats, a smoke run, a red-team run, a full run on Sonnet 5.5 |               $1.25 |
+| **Runs made from the laptop**                                                                                   |           **$8.38** |
+| CI job on GitHub, first run (`agent.v5`)                                                                        |               $0.40 |
+| CI job on GitHub, proof pull request                                                                            |               $0.43 |
+| CI jobs of the later pull requests (two runs, not read from the logs)                                           |     about $0.4 each |
+
+| Balance of the Anthropic Console |     Amount |
+| -------------------------------- | ---------: |
+| Before the day's builds          |     $16.10 |
+| At the end of the day            |      $5.93 |
+| **Used over the day**            | **$10.17** |
+
+### Key findings
+
+- **The calibration of the gate was the largest part**: its own runs ($3.03) and the failure it led to ($1.25) are about half of the runs made from the laptop, and they settled one threshold.
+- **A CI run that runs both evals costs about $0.40 to $0.43**, two thirds of it the judge. Every pull request that touches the agent pays it.
+- **The itemized runs add up to about $9.2 plus about $0.8 for the two CI runs that were not read, which is within about twenty cents of the $10.17 that the Console shows.** So the runs listed account for the day's use; very little was spent outside them.
+
+### Caveats
+
+- **List prices, not invoices.** Cached tokens are priced at the cache-read price and the thinking tokens as output, as the provider reports them.
+- **The Console balance was read by the developer**, and the balance before the day's builds was noted before the first run.
+- **The two later CI runs are estimated** from the two that were read.
+
+### Reproduce
+
+Each run's cost is printed by the run itself and stored in its report, and `pnpm eval:summary` prints it for any set of reports (free). The sums above are the sums of those lines; the CI numbers come from the job logs of the pull requests; the balances are read in the Anthropic Console (Usage and Settings). There is no single command, and no commit to check out: the figures are specific to the day's runs. Repeating a full end-to-end run costs about $0.52 to $0.58, a smoke or red-team run about $0.14 to $0.34 (see the entries above).

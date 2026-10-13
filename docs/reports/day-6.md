@@ -172,3 +172,4 @@ The eval can switch the two code defenses off, to show what the model does alone
 - **A world's data cannot be deleted entirely by world**: the click rows and the traces carry no world id. The request and click logs have no expiry. There is no privacy notice on the page and no "delete my data" action.
 - **The history of a conversation comes from the browser**, so a client can forge parts of its own; the tools stay scoped.
 - **The latency goal for a complete answer is still not met.**
+- **The day's model spend was high**, mostly the calibration of the gate and the failure it led to, and the credit left at the model provider is low; the figures are in [`METRICS.md`](../METRICS.md).
