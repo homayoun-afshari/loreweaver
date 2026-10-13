@@ -1,5 +1,23 @@
 # Loreweaver
 
+[![CI](https://github.com/homayoun-afshari/loreweaver/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/homayoun-afshari/loreweaver/actions/workflows/ci.yml)
+[![Eval gate](https://github.com/homayoun-afshari/loreweaver/actions/workflows/eval.yml/badge.svg)](https://github.com/homayoun-afshari/loreweaver/actions/workflows/eval.yml)
+[![Live demo](https://img.shields.io/badge/demo-live-000000?logo=vercel&logoColor=white)](https://loreweaver-nine.vercel.app)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+[![Node.js 24](https://img.shields.io/badge/Node.js-24-5FA04E?logo=nodedotjs&logoColor=white)](.nvmrc)
+[![pnpm 12](https://img.shields.io/badge/pnpm-12-F69220?logo=pnpm&logoColor=white)](package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](apps/web/tsconfig.json)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](apps/web/package.json)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](apps/web/package.json)
+[![Vercel AI SDK 7](https://img.shields.io/badge/Vercel_AI_SDK-7-000000?logo=vercel&logoColor=white)](apps/web/package.json)
+[![LangGraph](https://img.shields.io/badge/LangGraph-1.4-1C3C3C?logo=langchain&logoColor=white)](docs/AGENT_DESIGN.md)
+[![Claude](https://img.shields.io/badge/Claude-Sonnet_5.5_%7C_Haiku_4.5-D97757?logo=anthropic&logoColor=white)](docs/adr/0002-model-choice.md)
+[![Voyage AI](https://img.shields.io/badge/embeddings-Voyage_AI-4B5563)](docs/adr/0003-chunking-and-retrieval.md)
+[![PostgreSQL 17 + pgvector](https://img.shields.io/badge/PostgreSQL-17_%2B_pgvector-4169E1?logo=postgresql&logoColor=white)](docker-compose.yml)
+[![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&logoColor=white)](services/legacy-cms)
+[![LangSmith](https://img.shields.io/badge/tracing-LangSmith-1C3C3C?logo=langchain&logoColor=white)](docs/METRICS.md)
+
 A worldbuilding copilot for novelists. Pick a world and ask a question about it ("Can fire magic be cast inside the Ice Citadel?", "How can Aria get out of the Citadel?"). Loreweaver reads the world's lore and the live state of its characters, answers with options that fit the world's own rules, and cites the lore passages it used. A second model checks every draft against the rules and the character's real inventory before the author sees it. It suggests; the author decides, and it never changes the lore or the character data.
 
 Loreweaver was built over seven days, and each day is documented by a report in [`docs/reports/`](docs/reports/). The core product was built in the first six days (Days 1 to 6); Day 7 is about making the project presentable.
