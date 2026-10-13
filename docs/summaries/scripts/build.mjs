@@ -1,9 +1,9 @@
-// Builds the architecture diagrams in docs/diagrams/, one snapshot per day of the build.
+// Builds the architecture diagrams in docs/summaries/, one snapshot per day of the build.
 // Every snapshot uses the same canvas and shows every module in the same slot, so a module never
 // moves: a module that is not built yet is drawn in gray, without its badge and connections, and a
 // later snapshot only brings modules to life, adds edges and changes what a module lists.
 //
-// Run from the repository root: node docs/diagrams/scripts/build.mjs
+// Run from the repository root: node docs/summaries/scripts/build.mjs
 
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -11,7 +11,8 @@ import { fileURLToPath } from "node:url";
 
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-// The snapshots. The file name is built from the title: the number, then each segment in PascalCase.
+// The snapshots. The file name is built from the title: "Day" and the number, then each segment in
+// PascalCase. Each snapshot has a summary of its day next to it, with the same name.
 const SNAPSHOTS = [
   { day: 1, title: "Product Discovery, Scaffolding, Legacy CMS, and Walking Skeleton" },
   { day: 2, title: "UI Design, Agent v1, and Tools v1" },
@@ -1004,7 +1005,7 @@ function legend() {
 
 function svg(snapshot) {
   const { day } = snapshot;
-  const title = `${String(day).padStart(2, "0")} · ${snapshot.title}`;
+  const title = `Day ${day}: ${snapshot.title}`;
   const modules = Object.values(MODULES);
   const edges = EDGES.filter((e) => e.days[0] <= day && day <= e.days[1]);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">
@@ -1040,7 +1041,7 @@ function svg(snapshot) {
 for (const snapshot of SNAPSHOTS) {
   const number = String(snapshot.day).padStart(2, "0");
   const segments = snapshot.title.split(/,\s*(?:and\s+)?/);
-  const file = `${number}_${segments.map((s) => s.replace(/\s+/g, "")).join("_")}.svg`;
+  const file = `Day${number}_${segments.map((s) => s.replace(/\s+/g, "")).join("_")}.svg`;
   writeFileSync(join(OUT_DIR, file), svg(snapshot));
-  console.log(`Wrote docs/diagrams/${file}`);
+  console.log(`Wrote docs/summaries/${file}`);
 }

@@ -38,7 +38,7 @@ Loreweaver was built over seven days, and each day is documented by a report in 
 
 ## Architecture
 
-[![Architecture of Loreweaver](docs/diagrams/06_Evals_Judges_Safety.svg)](docs/diagrams/06_Evals_Judges_Safety.svg)
+[![Architecture of Loreweaver](docs/summaries/Day06_Evals_Judges_Safety.svg)](docs/summaries/Day06_Evals_Judges_Safety.svg)
 
 How a question is answered:
 
@@ -49,7 +49,7 @@ How a question is answered:
 3. The **reflection model** checks the draft against what the tools returned. A draft that breaks a rule is revised a bounded number of times. The accepted answer is streamed back once, with the cards drawn from the tool results.
 4. Each run can be traced in **LangSmith** (observability). Thumbs and copy clicks go to the **feedback database**. The **evals** run the same graph on fixed cases, with a stronger judge model, on a developer's machine and on every pull request.
 
-The world comes from the visitor's session, never from the model, and every lookup is limited to it. The diagram above is the last of six snapshots in [`docs/diagrams/`](docs/diagrams/), one per day of the build, all on the same layout (see [Architecture diagrams](#architecture-diagrams)).
+The world comes from the visitor's session, never from the model, and every lookup is limited to it. The diagram above is the last of six snapshots in [`docs/summaries/`](docs/summaries/), one per day of the build, all on the same layout (see [Daily summaries](#daily-summaries)).
 
 ## What you need
 
@@ -391,31 +391,31 @@ The eval gate is a coarse alarm. One run of ten cases varies on its own, so re-r
 
 Run them from the repository folder.
 
-| Command                                | What it does                                                                |
-| -------------------------------------- | --------------------------------------------------------------------------- |
-| `pnpm dev`                             | Start the web app in development mode                                       |
-| `pnpm test`                            | Run the unit tests (database tests: see above)                              |
-| `pnpm lint`                            | Lint with ESLint                                                            |
-| `pnpm typecheck`                       | Type-check with TypeScript                                                  |
-| `pnpm format`                          | Format the whole repository with Prettier                                   |
-| `pnpm format:check`                    | Check the formatting, as CI does                                            |
-| `pnpm --filter web build`              | Build the web app for production, as Vercel does                            |
-| `pnpm --filter web db:generate`        | Create a database migration from the schema                                 |
-| `pnpm --filter web db:migrate`         | Apply the migrations to the database in `DATABASE_URL`                      |
-| `pnpm ingest`                          | Chunk and embed the lore into Postgres (idempotent; `--dry-run` to preview) |
-| `pnpm eval`                            | Run the agent on the end-to-end eval set and grade every answer             |
-| `pnpm eval:redteam`                    | Attack the agent with the red-team set and check that it holds              |
-| `pnpm eval:labels`                     | Compare the eval judge with hand labels (writes the sheet, then scores it)  |
-| `pnpm eval:summary`                    | Compare stored eval reports side by side (no model call)                    |
-| `pnpm eval:retrieval`                  | Score the lore search on its own against a labeled set of questions         |
-| `pnpm benchmark`                       | Compare two models on the same five prompts through the chat route          |
-| `pnpm measure:legacy`                  | Load-test the legacy CMS and its client                                     |
-| `pnpm measure:chat`                    | Time the chat with its tool: time to first UI, card, first token, total     |
-| `pnpm measure:retrieval`               | Time the lore search: embedding the question, and the vector search         |
-| `pnpm measure:search-tool`             | Time the chat's `search_lore` tool on any running app, deployed or local    |
-| `pnpm measure:agent`                   | Run the agent prompt set and measure the reflection loop                    |
-| `pnpm cost:report`                     | Cost, tokens and latency per query from the LangSmith traces                |
-| `node docs/diagrams/scripts/build.mjs` | Rebuild the architecture diagrams                                           |
+| Command                                 | What it does                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------- |
+| `pnpm dev`                              | Start the web app in development mode                                       |
+| `pnpm test`                             | Run the unit tests (database tests: see above)                              |
+| `pnpm lint`                             | Lint with ESLint                                                            |
+| `pnpm typecheck`                        | Type-check with TypeScript                                                  |
+| `pnpm format`                           | Format the whole repository with Prettier                                   |
+| `pnpm format:check`                     | Check the formatting, as CI does                                            |
+| `pnpm --filter web build`               | Build the web app for production, as Vercel does                            |
+| `pnpm --filter web db:generate`         | Create a database migration from the schema                                 |
+| `pnpm --filter web db:migrate`          | Apply the migrations to the database in `DATABASE_URL`                      |
+| `pnpm ingest`                           | Chunk and embed the lore into Postgres (idempotent; `--dry-run` to preview) |
+| `pnpm eval`                             | Run the agent on the end-to-end eval set and grade every answer             |
+| `pnpm eval:redteam`                     | Attack the agent with the red-team set and check that it holds              |
+| `pnpm eval:labels`                      | Compare the eval judge with hand labels (writes the sheet, then scores it)  |
+| `pnpm eval:summary`                     | Compare stored eval reports side by side (no model call)                    |
+| `pnpm eval:retrieval`                   | Score the lore search on its own against a labeled set of questions         |
+| `pnpm benchmark`                        | Compare two models on the same five prompts through the chat route          |
+| `pnpm measure:legacy`                   | Load-test the legacy CMS and its client                                     |
+| `pnpm measure:chat`                     | Time the chat with its tool: time to first UI, card, first token, total     |
+| `pnpm measure:retrieval`                | Time the lore search: embedding the question, and the vector search         |
+| `pnpm measure:search-tool`              | Time the chat's `search_lore` tool on any running app, deployed or local    |
+| `pnpm measure:agent`                    | Run the agent prompt set and measure the reflection loop                    |
+| `pnpm cost:report`                      | Cost, tokens and latency per query from the LangSmith traces                |
+| `node docs/summaries/scripts/build.mjs` | Rebuild the architecture diagrams                                           |
 
 ## Measurements and cost
 
@@ -437,34 +437,33 @@ The cost of each run is listed with its entry in METRICS.md.
   - [ADR-0002](docs/adr/0002-model-choice.md): the model choice
   - [ADR-0003](docs/adr/0003-chunking-and-retrieval.md): chunking and retrieval
   - [ADR-0004](docs/adr/0004-orchestration-vs-ui-streaming.md): orchestration apart from UI streaming
-- [Architecture diagrams](docs/diagrams/): six snapshots of the architecture, one per day of the build
 - [Agent design](docs/AGENT_DESIGN.md): the graph that drafts, checks and revises answers, and its guardrails
 - [Evals](evals/README.md): the retrieval eval, the agent prompt set, the end-to-end eval with its judge, the red-team set and the CI gate
 - [Metrics](docs/METRICS.md) and [model benchmark](docs/BENCHMARK.md)
 - [System card](docs/SYSTEM_CARD.md): what the agent is for and not for, how it was checked, its limits and who stays in charge
 - [Privacy](docs/PRIVACY.md): where the data goes, what is stored and for how long, and how a world's data is deleted
-- [Summary of the days](docs/DAILY_SUMMARY.md): one table of the tasks, documents, decisions and metrics of each day
+- [Daily summaries](docs/summaries/): the tasks, documents, decisions, metrics and architecture diagram of each day
 - Daily reports: [Day 1](docs/reports/day-1.md), [Day 2](docs/reports/day-2.md), [Day 3](docs/reports/day-3.md), [Day 4](docs/reports/day-4.md), [Day 5](docs/reports/day-5.md), [Day 6](docs/reports/day-6.md)
 
-### Architecture diagrams
+### Daily summaries
 
-[`docs/diagrams/`](docs/diagrams/) holds one snapshot per day of the build. All six use the same canvas and show every module in the same place, so the snapshots can be compared side by side. A module that is not built yet on that day is drawn in gray, without its badge and connections:
+[`docs/summaries/`](docs/summaries/) holds one summary per day of the build. Each summary lists the day's tasks, the documents it added or changed, the decisions it made and the metrics it measured, and shows the architecture as it stood at the end of that day:
 
-1. [Product Discovery, Scaffolding, Legacy CMS, and Walking Skeleton](docs/diagrams/01_ProductDiscovery_Scaffolding_LegacyCMS_WalkingSkeleton.svg)
-2. [UI Design, Agent v1, and Tools v1](docs/diagrams/02_UIDesign_Agentv1_Toolsv1.svg)
-3. [LoreBible, RAG, and Tools v2](docs/diagrams/03_LoreBible_RAG_Toolsv2.svg)
-4. [State Graph, Agent v2](docs/diagrams/04_StateGraph_Agentv2.svg)
-5. [Observability, Cost Optimization, and Guardrails](docs/diagrams/05_Observability_CostOptimization_Guardrails.svg)
-6. [Evals, Judges, and Safety](docs/diagrams/06_Evals_Judges_Safety.svg)
+1. [Product Discovery, Scaffolding, Legacy CMS, and Walking Skeleton](docs/summaries/Day01_ProductDiscovery_Scaffolding_LegacyCMS_WalkingSkeleton.md)
+2. [UI Design, Agent v1, and Tools v1](docs/summaries/Day02_UIDesign_Agentv1_Toolsv1.md)
+3. [LoreBible, RAG, and Tools v2](docs/summaries/Day03_LoreBible_RAG_Toolsv2.md)
+4. [State Graph, Agent v2](docs/summaries/Day04_StateGraph_Agentv2.md)
+5. [Observability, Cost Optimization, and Guardrails](docs/summaries/Day05_Observability_CostOptimization_Guardrails.md)
+6. [Evals, Judges, and Safety](docs/summaries/Day06_Evals_Judges_Safety.md)
 
-Each module shows:
+Each architecture diagram has the same name as its summary, with `.svg`. All six use the same canvas and show every module in the same place, so the snapshots can be compared side by side. A module that is not built yet on that day is drawn in gray, without its badge and connections. Each module shows:
 
 - its location (the badge);
 - its main tools;
 - its most important operations;
 - what it runs on in development, Preview and Production.
 
-The diagrams are generated by [`docs/diagrams/scripts/build.mjs`](docs/diagrams/scripts/build.mjs), a plain Node script with no dependencies. To change one, edit the script and run `node docs/diagrams/scripts/build.mjs`.
+The diagrams are generated by [`docs/summaries/scripts/build.mjs`](docs/summaries/scripts/build.mjs), a plain Node script with no dependencies. To change one, edit the script and run `node docs/summaries/scripts/build.mjs`.
 
 ## Layout
 
@@ -474,8 +473,8 @@ data/lore/             The lore of each world, as Markdown files (the source of 
 evals/                 Eval datasets, runners, judge, labels and the reports that documents rely on
 services/legacy-cms/   The legacy CMS (PHP, Slim, SQLite) and its OpenAPI contract
 packages/shared/       Reserved for code shared between projects (empty so far)
-docs/                  PRD, ADRs, agent design, system card, privacy, metrics, benchmark, daily reports and their summary
-docs/diagrams/         The architecture diagrams and the script that generates them
+docs/                  PRD, ADRs, agent design, system card, privacy, metrics, benchmark and daily reports
+docs/summaries/        The daily summaries, their architecture diagrams and the script that generates them
 docker-compose.yml     The legacy CMS and Postgres for local development
 .github/workflows/     CI: format, lint, types and tests on every pull request, and the eval gate
 ```

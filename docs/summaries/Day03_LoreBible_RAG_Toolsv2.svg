@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1980" height="1844" viewBox="0 0 1980 1844" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">
-  <title>03 · LoreBible, RAG, and Tools v2</title>
+  <title>Day 3: LoreBible, RAG, and Tools v2</title>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#f8fafc"/>
@@ -15,7 +15,7 @@
 
   <rect width="1980" height="1844" fill="url(#bg)"/>
 
-  <text x="990" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">03 · LoreBible, RAG, and Tools v2</text>
+  <text x="990" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">Day 3: LoreBible, RAG, and Tools v2</text>
   <line x1="890" y1="74" x2="1090" y2="74" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
 
   <!-- Legacy CMS -->
