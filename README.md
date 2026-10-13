@@ -207,6 +207,8 @@ Every number reported about the project is recorded in [`docs/METRICS.md`](docs/
 - [Agent design](docs/AGENT_DESIGN.md): the graph that drafts, checks and revises answers
 - [Evals](evals/README.md): the retrieval eval, the agent prompt set, the end-to-end eval with its judge and the red-team set
 - [Metrics](docs/METRICS.md) and [model benchmark](docs/BENCHMARK.md)
+- [System card](docs/SYSTEM_CARD.md): what the agent is for, what it is not for, how it was checked, its limits and who stays in charge
+- [Privacy](docs/PRIVACY.md): where the data goes, what is stored and for how long, and how a world's data is deleted
 - [Daily reports](docs/reports/): [Day 1](docs/reports/day-1.md), [Day 2](docs/reports/day-2.md), [Day 3](docs/reports/day-3.md), [Day 4](docs/reports/day-4.md)
 
 ## Layout

@@ -258,6 +258,6 @@ A run that cannot be graded (a case that threw, a judge reply that was unreadabl
 
 **Cost.** A run that executes everything costs a few tens of cents (the judge is the larger part). It uses a separate API key with its own spend limit, stored as the Actions secrets `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY`; tracing is off, so nothing is sent to LangSmith. Pull requests from forks do not receive secrets and fail with a message.
 
-**Protecting `main`.** In the repository settings (Branches, a rule for `main`), require a pull request and require the status checks `check` (from `ci.yml`) and `eval` (from this workflow) to pass before merging.
+**Protecting `main`.** Requiring the `check` and `eval` jobs before a merge is a branch protection rule, and GitHub offers it for a private repository only on a paid plan (a public repository can use it for free). Where it is available, require a pull request and these two status checks in the repository settings (Branches). Without it, the gate reports but cannot block: **merge only when `eval` is green**, and re-run it once before looking for a cause when it is red.
 
 **Trying it by hand.** The same commands run on a laptop with the local services up (`docker compose up -d`, `pnpm ingest`); `--min-faithfulness`, `--require-all` and `--report-only` set the exit code, and without them the runner only reports.
